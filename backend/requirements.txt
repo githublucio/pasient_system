@@ -11,3 +11,4 @@ django-crispy-forms==2.3
 crispy-bootstrap5==2024.10
 gunicorn==23.0.0
 whitenoise==6.9.0
+dj-database-url==2.3.0

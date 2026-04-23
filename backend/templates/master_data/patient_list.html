@@ -1,0 +1,518 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Patient Master List" %} - {% trans "Clinic Lanud" %}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'master_data_dashboard' %}">{% trans "Master Data" %}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{% trans "Patients" %}</li>
+  </ol>
+</nav>
+
+<div class="card">
+    <div class="card-header bg-white py-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-people-fill me-2"></i>{% trans "Patient Master List" %}
+                <span class="badge bg-secondary ms-2">{{ total_count }}</span>
+            </h5>
+            {% if perms.patients.add_patient %}
+            <a href="{% url 'register_patient' %}" class="btn btn-primary btn-sm">
+                <i class="bi bi-person-plus-fill me-1"></i> {% trans "Add New Patient" %}
+            </a>
+            {% endif %}
+        </div>
+        <form method="get" class="d-flex gap-2">
+            <input type="text" name="q" class="form-control form-control-sm" style="max-width:350px;"
+                placeholder="{% trans 'Search name, ID, or phone...' %}" value="{{ query }}" autofocus>
+            <button type="submit" class="btn btn-sm btn-primary">{% trans "Search" %}</button>
+            {% if query %}<a href="{% url 'patient_list' %}" class="btn btn-sm btn-outline-secondary">{% trans "Clear" %}</a>{% endif %}
+        </form>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-3">{% trans "Patient ID" %}</th>
+                        <th>{% trans "Full Name" %}</th>
+                        <th>{% trans "Gender" %}</th>
+                        <th>{% trans "Date of Birth" %}</th>
+                        <th>{% trans "Address" %}</th>
+                        <th>{% trans "Fee (USD)" %}</th>
+                        <th class="text-end pe-3">{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for patient in patients %}
+                    <tr>
+                        <td class="ps-3"><code class="text-dark fw-bold">{{ patient.patient_id }}</code></td>
+                        <td>{{ patient.full_name }}</td>
+                        <td>{{ patient.get_gender_display }}</td>
+                        <td>{{ patient.date_of_birth|date:"d/m/Y" }}</td>
+                        <td class="small">{{ patient.full_address }}</td>
+                        <td>${{ patient.registration_fee }}</td>
+                        <td class="text-end pe-3">
+                            <a href="{% url 'patient_dashboard' patient.uuid %}" class="btn btn-sm btn-outline-info me-1" title="{% trans 'View Dashboard' %}">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'edit_patient' patient.uuid %}" class="btn btn-sm btn-outline-primary" title="{% trans 'Edit Patient' %}">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            {% if perms.medical_records.add_visit %}
+                            {# ── Standard Triage Check-in ── #}
+                            <button type="button" class="btn btn-sm btn-success ms-1"
+                                    data-bs-toggle="modal" data-bs-target="#checkInModal"
+                                    data-patient-uuid="{{ patient.uuid }}"
+                                    data-patient-name="{{ patient.full_name }}"
+                                    title="{% trans 'Check-in to Triage' %}">
+                                <i class="bi bi-box-arrow-in-right"></i>
+                            </button>
+
+                            {# ── MCH Direct Registration Dropdown ── #}
+                            <div class="btn-group ms-1" title="{% trans 'MCH Direct Registration' %}">
+                                <button class="btn btn-warning btn-sm dropdown-toggle shadow-sm text-dark fw-bold border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-gender-female"></i> MCH
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow">
+                                    <h6 class="dropdown-header text-uppercase small ls-1 fw-bold">
+                                        <i class="bi bi-heart-pulse me-1"></i> Maternidade / MCH
+                                    </h6></li>
+                                    <li>
+                                        <button class="dropdown-item kia-register-btn"
+                                                data-patient-uuid="{{ patient.uuid }}"
+                                                data-patient-name="{{ patient.full_name }}"
+                                                data-patient-age="{{ patient.age }}"
+                                                data-patient-address="{{ patient.full_address }}"
+                                                data-patient-phone="{{ patient.phone_number|default:'-' }}"
+                                                data-category="ANA_0_6"
+                                                data-bs-toggle="modal" data-bs-target="#kiaModal123">
+                                            <i class="bi bi-emoji-smile me-2 text-info"></i>
+                                            1. {% trans "Baby 0-6 Months" %}
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item kia-register-btn"
+                                                data-patient-uuid="{{ patient.uuid }}"
+                                                data-patient-name="{{ patient.full_name }}"
+                                                data-patient-age="{{ patient.age }}"
+                                                data-patient-address="{{ patient.full_address }}"
+                                                data-patient-phone="{{ patient.phone_number|default:'-' }}"
+                                                data-category="ANA_6_59"
+                                                data-bs-toggle="modal" data-bs-target="#kiaModal123">
+                                            <i class="bi bi-person me-2 text-primary"></i>
+                                            2. {% trans "Child 6-59 Months" %}
+                                        </button>
+                                    </li>
+                                    <li>
+                                        <button class="dropdown-item kia-register-btn"
+                                                data-patient-uuid="{{ patient.uuid }}"
+                                                data-patient-name="{{ patient.full_name }}"
+                                                data-patient-age="{{ patient.age }}"
+                                                data-patient-address="{{ patient.full_address }}"
+                                                data-patient-phone="{{ patient.phone_number|default:'-' }}"
+                                                data-category="IBU_MENYUSU"
+                                                data-bs-toggle="modal" data-bs-target="#kiaModal123">
+                                            <i class="bi bi-heart me-2 text-success"></i>
+                                            3. {% trans "Breastfeeding Mother" %}
+                                        </button>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <button class="dropdown-item kia-register-btn"
+                                                data-patient-uuid="{{ patient.uuid }}"
+                                                data-patient-name="{{ patient.full_name }}"
+                                                data-patient-age="{{ patient.age }}"
+                                                data-patient-address="{{ patient.full_address }}"
+                                                data-patient-phone="{{ patient.phone_number|default:'-' }}"
+                                                data-category="IBU_HAMIL"
+                                                data-bs-toggle="modal" data-bs-target="#kiaModalHamil">
+                                            <i class="bi bi-hospital me-2 text-danger"></i>
+                                            4. {% trans "Pregnant Mother" %}
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="100" class="text-center py-5 text-muted">{% trans "No patients found." %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if is_paginated %}
+    <div class="card-footer bg-white border-top">
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">
+                {% trans "Showing" %} {{ page_obj.start_index }}-{{ page_obj.end_index }} {% trans "of" %} {{ page_obj.paginator.count }} {% trans "patients" %}
+            </small>
+            <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm mb-0">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}page=1">&laquo;</a></li>
+                    <li class="page-item"><a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}page={{ page_obj.previous_page_number }}">{% trans "Prev" %}</a></li>
+                    {% endif %}
+ 
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if num == page_obj.number %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num >= page_obj.number|add:"-3" and num <= page_obj.number|add:"3" %}
+                            <li class="page-item"><a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}page={{ num }}">{{ num }}</a></li>
+                        {% elif num == 1 or num == page_obj.paginator.num_pages %}
+                            <li class="page-item"><a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}page={{ num }}">{{ num }}</a></li>
+                        {% elif num == page_obj.number|add:"-4" or num == page_obj.number|add:"4" %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+ 
+                    {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}page={{ page_obj.next_page_number }}">{% trans "Next" %}</a></li>
+                    <li class="page-item"><a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}page={{ page_obj.paginator.num_pages }}">&raquo;</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL 1: Standard Triage Check-In
+════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="checkInModal" tabindex="-1" aria-labelledby="checkInModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="checkInForm" method="post" action="">
+                {% csrf_token %}
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="checkInModalLabel">
+                        <i class="bi bi-box-arrow-in-right me-2 text-success"></i>{% trans "Check-in to Triage" %}
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>{% trans "Patient" %}: <strong id="modalPatientName"></strong></p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Patient Type" %}</label>
+                        <select name="patient_type" class="form-select">
+                            <option value="TUAN" selected>{% trans "Returning Patient" %}</option>
+                            <option value="FOUN">{% trans "New Patient" %}</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{% trans "Visit Fee (USD)" %}</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" name="visit_fee" class="form-control" value="0.00" step="0.01" min="0">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                    <button type="submit" class="btn btn-success">{% trans "Confirm Check-in" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL 2: KIA — Categories 1, 2, 3
+     (Baby 0-6m / Child 6-59m / Breastfeeding Mother)
+     Uses Table format 1: No, Name, Address, Age, Weight,
+                          Height, LILA, Reg.Date, Phone
+════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="kiaModal123" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" action="{% url 'kia_direct_registration' %}">
+                {% csrf_token %}
+                <input type="hidden" name="patient_uuid" id="kia123_patient_uuid">
+                <input type="hidden" name="kia_category" id="kia123_category">
+
+                <div class="modal-header text-white" style="background: linear-gradient(135deg,#e83e8c,#fd7e14);">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-gender-female me-2"></i>
+                        {% trans "KIA Direct Registration" %} — <span id="kia123_category_label"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <!-- Info Row -->
+                    <div class="alert alert-warning py-2 mb-3">
+                        <i class="bi bi-info-circle me-1"></i>
+                        {% trans "This patient will be registered <strong>directly</strong> to the KIA clinic queue, bypassing Triage." %}
+                    </div>
+
+                    <!-- Table-style layout matching the paper form -->
+                    <table class="table table-bordered table-sm align-middle">
+                        <thead class="table-light text-center">
+                            <tr>
+                                <th style="width:5%">No</th>
+                                <th>{% trans "Name" %}<br><small class="text-muted fw-normal">(Naran)</small></th>
+                                <th>{% trans "Address" %}<br><small class="text-muted fw-normal">(Hela fatin)</small></th>
+                                <th>{% trans "Age" %}<br><small class="text-muted fw-normal">(Idade)</small></th>
+                                <th>{% trans "Weight (kg)" %}<br><small class="text-muted fw-normal">(Todan)</small></th>
+                                <th>{% trans "Height (cm)" %}<br><small class="text-muted fw-normal">(Altura)</small></th>
+                                <th>{% trans "LILA (cm)" %}<br><small class="text-muted fw-normal">(MUAC)</small></th>
+                                <th>{% trans "Reg. Date" %}<br><small class="text-muted fw-normal">(Data)</small></th>
+                                <th>{% trans "Phone" %}<br><small class="text-muted fw-normal">(No HP)</small></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="text-center text-muted">1</td>
+                                <td>
+                                    <strong id="kia123_patient_name" class="text-primary"></strong>
+                                </td>
+                                <td>
+                                    <small id="kia123_patient_address" class="text-muted"></small>
+                                </td>
+                                <td class="text-center">
+                                    <span id="kia123_patient_age" class="fw-bold"></span> <small class="text-muted">yr</small>
+                                </td>
+                                <td>
+                                    <input type="number" name="weight" id="kia123_weight"
+                                           class="form-control form-control-sm text-center"
+                                           placeholder="e.g. 8.5" step="0.1" min="0" max="200" style="width:75px">
+                                </td>
+                                <td>
+                                    <input type="number" name="height" id="kia123_height"
+                                           class="form-control form-control-sm text-center"
+                                           placeholder="e.g. 72" step="0.1" min="0" max="250" style="width:75px">
+                                </td>
+                                <td>
+                                    <input type="number" name="muac" id="kia123_muac"
+                                           class="form-control form-control-sm text-center"
+                                           placeholder="e.g. 14.5" step="0.1" min="0" max="50" style="width:75px">
+                                </td>
+                                <td class="text-center">
+                                    <small class="text-muted">{% now "d/m/Y" %}</small>
+                                </td>
+                                <td>
+                                    <small id="kia123_patient_phone" class="text-muted"></small>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Extra options -->
+                    <div class="row g-2 mt-1">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">{% trans "Patient Type" %}</label>
+                            <select name="patient_type" class="form-select form-select-sm">
+                                <option value="TUAN" selected>{% trans "Returning Patient" %}</option>
+                                <option value="FOUN">{% trans "New Patient" %}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">{% trans "Referred From" %}</label>
+                            <select name="companion_name" class="form-select form-select-sm">
+                                <option value="">{% trans "Direct (Walk-in to KIA)" %}</option>
+                                <option value="From Triage">{% trans "Referred by Triage" %}</option>
+                                <option value="From Doctor">{% trans "Referred by Doctor" %}</option>
+                                <option value="From Receptionist">{% trans "Directed by Receptionist" %}</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                    <button type="submit" class="btn btn-warning fw-bold text-white">
+                        <i class="bi bi-gender-female me-1"></i>
+                        {% trans "Register to KIA Queue" %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL 3: KIA — Category 4: PREGNANT MOTHER (Ibu Hamil)
+     Uses Table format 2: extra field = Husband/Partner Name
+════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="kiaModalHamil" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <form method="post" action="{% url 'kia_direct_registration' %}">
+                {% csrf_token %}
+                <input type="hidden" name="patient_uuid" id="hamilPatientUuid">
+                <input type="hidden" name="kia_category" value="IBU_HAMIL">
+
+                <div class="modal-header text-white" style="background: linear-gradient(135deg,#c0392b,#e74c3c);">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-hospital me-2"></i>
+                        {% trans "KIA Direct Registration" %} — 4. {% trans "Pregnant Mother (Ibu Hamil)" %}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="alert alert-danger py-2 mb-3">
+                        <i class="bi bi-info-circle me-1"></i>
+                        {% trans "Pregnant mother will be registered <strong>directly</strong> to the KIA clinic queue." %}
+                    </div>
+
+                    <!-- Table matching paper form 2 (with husband name) -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm align-middle">
+                            <thead class="table-light text-center">
+                                <tr>
+                                    <th style="width:4%">No</th>
+                                    <th>{% trans "Name" %}<br><small class="fw-normal text-muted">(Naran)</small></th>
+                                    <th>{% trans "Address" %}<br><small class="fw-normal text-muted">(Hela fatin)</small></th>
+                                    <th>{% trans "Age" %}<br><small class="fw-normal text-muted">(Idade)</small></th>
+                                    <th>{% trans "Weight (kg)" %}<br><small class="fw-normal text-muted">(Todan)</small></th>
+                                    <th>{% trans "Height (cm)" %}<br><small class="fw-normal text-muted">(Altura)</small></th>
+                                    <th>{% trans "LILA (cm)" %}<br><small class="fw-normal text-muted">(Lila)</small></th>
+                                    <th>{% trans "Date of Birth" %}<br><small class="fw-normal text-muted">(Data moris)</small></th>
+                                    <th class="table-danger">{% trans "Husband's Name" %}<br><small class="fw-normal text-muted">(Laen nia naran)</small></th>
+                                    <th>{% trans "Phone" %}<br><small class="fw-normal text-muted">(No HP)</small></th>
+                                    <th>{% trans "Reg. Date" %}<br><small class="fw-normal text-muted">(Data Regjistu)</small></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td class="text-center text-muted">1</td>
+                                    <td>
+                                        <strong id="hamilPatientName" class="text-danger"></strong>
+                                    </td>
+                                    <td>
+                                        <small id="hamilPatientAddress" class="text-muted"></small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span id="hamilPatientAge" class="fw-bold"></span> <small class="text-muted">yr</small>
+                                    </td>
+                                    <td>
+                                        <input type="number" name="weight" class="form-control form-control-sm text-center"
+                                               placeholder="kg" step="0.1" min="0" max="200" style="width:70px">
+                                    </td>
+                                    <td>
+                                        <input type="number" name="height" class="form-control form-control-sm text-center"
+                                               placeholder="cm" step="0.1" min="0" max="250" style="width:70px">
+                                    </td>
+                                    <td>
+                                        <input type="number" name="muac" class="form-control form-control-sm text-center"
+                                               placeholder="cm" step="0.1" min="0" max="50" style="width:70px">
+                                    </td>
+                                    <td>
+                                        <small id="hamilPatientDob" class="text-muted"></small>
+                                    </td>
+                                    <td class="table-danger">
+                                        <input type="text" name="companion_name" class="form-control form-control-sm"
+                                               placeholder="{% trans 'Husband / Partner Name' %}" style="min-width:140px">
+                                    </td>
+                                    <td>
+                                        <small id="hamilPatientPhone" class="text-muted"></small>
+                                    </td>
+                                    <td class="text-center">
+                                        <small class="text-muted">{% now "d/m/Y" %}</small>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="row g-2 mt-1">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">{% trans "Patient Type" %}</label>
+                            <select name="patient_type" class="form-select form-select-sm">
+                                <option value="TUAN" selected>{% trans "Returning Patient" %}</option>
+                                <option value="FOUN">{% trans "New Patient" %}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small">{% trans "Referred From" %}</label>
+                            <select class="form-select form-select-sm" name="_referred_from">
+                                <option value="">{% trans "Direct (Walk-in to MCH)" %}</option>
+                                <option value="From Triage">{% trans "Referred by Triage" %}</option>
+                                <option value="From Doctor">{% trans "Referred by Doctor" %}</option>
+                                <option value="From Receptionist">{% trans "Directed by Receptionist" %}</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button>
+                    <button type="submit" class="btn btn-danger fw-bold">
+                        <i class="bi bi-hospital me-1"></i>
+                        {% trans "Register Pregnant Mother to MCH" %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    // ── Standard Triage Check-In Modal ──
+    const checkInModal = document.getElementById('checkInModal');
+    if (checkInModal) {
+        checkInModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const uuid = button.getAttribute('data-patient-uuid');
+            const name = button.getAttribute('data-patient-name');
+            checkInModal.querySelector('#modalPatientName').textContent = name;
+            checkInModal.querySelector('#checkInForm').action = `/patients/check-in/${uuid}/`;
+        });
+    }
+
+    // ── KIA Categories 1/2/3 Modal ──
+    const CATEGORY_LABELS = {
+        'ANA_0_6':     '1. Baby 0–6 Months',
+        'ANA_6_59':    '2. Child 6–59 Months',
+        'IBU_MENYUSU': '3. Breastfeeding Mother'
+    };
+
+    document.querySelectorAll('.kia-register-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const uuid    = this.getAttribute('data-patient-uuid');
+            const name    = this.getAttribute('data-patient-name');
+            const age     = this.getAttribute('data-patient-age');
+            const address = this.getAttribute('data-patient-address');
+            const phone   = this.getAttribute('data-patient-phone');
+            const cat     = this.getAttribute('data-category');
+
+            if (cat === 'IBU_HAMIL') {
+                // Pregnant mother → separate modal
+                document.getElementById('hamilPatientUuid').value    = uuid;
+                document.getElementById('hamilPatientName').textContent  = name;
+                document.getElementById('hamilPatientAge').textContent   = age;
+                document.getElementById('hamilPatientAddress').textContent = address;
+                document.getElementById('hamilPatientPhone').textContent = phone;
+            } else {
+                // Categories 1-3 → shared modal
+                document.getElementById('kia123_patient_uuid').value    = uuid;
+                document.getElementById('kia123_category').value         = cat;
+                document.getElementById('kia123_category_label').textContent = CATEGORY_LABELS[cat] || cat;
+                document.getElementById('kia123_patient_name').textContent   = name;
+                document.getElementById('kia123_patient_age').textContent    = age;
+                document.getElementById('kia123_patient_address').textContent = address;
+                document.getElementById('kia123_patient_phone').textContent  = phone;
+                // Reset previous vitals
+                document.getElementById('kia123_weight').value = '';
+                document.getElementById('kia123_height').value = '';
+                document.getElementById('kia123_muac').value   = '';
+            }
+        });
+    });
+
+});
+</script>
+{% endblock %}
+{% endblock %}

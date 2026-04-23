@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Fast-Track Emergency Registration" %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <!-- Header -->
+        <div class="card p-4 bg-danger text-white mb-4 border-0 shadow-sm">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <div class="bg-white bg-opacity-25 rounded-circle p-3 me-3">
+                        <i class="bi bi-lightning-charge-fill fs-2"></i>
+                    </div>
+                    <div>
+                        <h2 class="mb-0">{% trans "Direct Emergency Admission" %}</h2>
+                        <p class="mb-0 opacity-75">{% trans "Quickly admit patients arriving directly to the Emergency Department" %}</p>
+                    </div>
+                </div>
+                <a href="{% url 'emergency_dashboard' %}" class="btn btn-outline-light">
+                    <i class="bi bi-arrow-left me-1"></i>{% trans "Back to Dashboard" %}
+                </a>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Search Existing -->
+            <div class="col-md-5 mb-4">
+                <div class="card p-4 h-100 shadow-sm border-0">
+                    <h4 class="mb-3 text-dark fw-bold">
+                        <i class="bi bi-search me-2 text-danger"></i>{% trans "Find Existing Patient" %}
+                    </h4>
+                    
+                    <form method="get" class="mb-4">
+                        <div class="input-group shadow-sm">
+                            <input type="text" name="q" class="form-control form-control-lg"
+                                placeholder="{% trans 'Name or Patient ID...' %}" value="{{ query }}" autofocus>
+                            <button class="btn btn-danger" type="submit"><i class="bi bi-search"></i></button>
+                        </div>
+                    </form>
+
+                    <div class="list-group list-group-flush">
+                        {% for p in patients %}
+                        <div class="list-group-item px-0 py-3 d-flex justify-content-between align-items-center border-bottom">
+                            <div>
+                                <h6 class="mb-1 fw-bold">{{ p.full_name }}</h6>
+                                <div class="text-muted small">
+                                    ID: {{ p.patient_id }} • {{ p.get_gender_display }} • {{ p.date_of_birth|timesince }}
+                                </div>
+                            </div>
+                            <form method="post" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="patient_uuid" value="{{ p.uuid }}">
+                                <button type="submit" name="select_patient" class="btn btn-primary btn-sm px-3">
+                                    {% trans "Admit" %} <i class="bi bi-arrow-right-short"></i>
+                                </button>
+                            </form>
+                        </div>
+                        {% empty %}
+                            {% if query %}
+                            <div class="text-center py-4 text-muted">
+                                <i class="bi bi-person-exclamation fs-1 d-block mb-2"></i>
+                                {% trans "No patients found matching your search." %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-4 text-muted small">
+                                <i class="bi bi-info-circle d-block mb-2"></i>
+                                {% trans "Search for a patient to start an emergency admission." %}
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Register New -->
+            <div class="col-md-7 mb-4">
+                <div class="card p-4 h-100 shadow-sm border-0">
+                    <h2 class="text-center mb-4 text-success"><i class="bi bi-person-plus-fill me-2"></i>{% trans "New Patient Registration" %}</h2>
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold text-primary">{% trans "Assigned Patient ID" %}</label>
+                                {{ registration_form.patient_id }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Full Name" %}</label>
+                                {{ registration_form.full_name }}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Category" %}</label>
+                                {{ registration_form.patient_category }}
+                            </div>
+                            <div id="nationality-section" class="col-md-6 mb-3 d-none">
+                                <label class="form-label fw-bold">{% trans "Nationality" %}</label>
+                                {{ registration_form.nationality }}
+                            </div>
+                        </div>
+
+                        <div id="duplicate-warning" class="alert alert-warning d-none shadow-sm" role="alert">
+                            <h6 class="alert-heading fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i> {% trans "Potential Duplicates Found!" %}</h6>
+                            <ul id="duplicate-list" class="mb-0 small"></ul>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Date of Birth" %}</label>
+                                {{ registration_form.date_of_birth }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Gender" %}</label>
+                                {{ registration_form.gender }}
+                            </div>
+                        </div>
+
+                        <h5 class="mt-4 mb-3 text-secondary border-bottom pb-2">{% trans "Official Identification" %}</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "ID Type" %}</label>
+                                {{ registration_form.id_type }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "ID Number" %}</label>
+                                {{ registration_form.id_number }}
+                                <small class="text-muted">{% trans "Passport / Eleitoral / BI" %}</small>
+                            </div>
+                        </div>
+
+                        <div id="parent-info-section">
+                            <h5 class="mt-4 mb-3 text-secondary border-bottom pb-2">{% trans "Parent Information" %}</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">{% trans "Father's Name" %}</label>
+                                    {{ registration_form.father_name }}
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">{% trans "Mother's Name" %}</label>
+                                    {{ registration_form.mother_name }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <h5 class="mt-4 mb-3 text-secondary border-bottom pb-2">{% trans "Address / Location" %}</h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Municipality" %}</label>
+                                {{ registration_form.municipio }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Administrative Post" %}</label>
+                                {{ registration_form.posto_administrativo }}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Village (Suco)" %}</label>
+                                {{ registration_form.suco }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Hamlet (Aldeia)" %}</label>
+                                {{ registration_form.aldeia }}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">{% trans "Additional Address Detail" %}</label>
+                            {{ registration_form.address }}
+                        </div>
+
+                        <h5 class="mt-4 mb-3 text-danger border-bottom pb-2">
+                            <i class="bi bi-truck me-2"></i>{% trans "Emergency Arrival Details" %}
+                        </h5>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Arrival Mode" %}</label>
+                                <select name="arrival_mode" class="form-select">
+                                    <option value="WALK_IN">{% trans "Walk-in" %}</option>
+                                    <option value="AMBULANCE">{% trans "Ambulance" %}</option>
+                                    <option value="PRIVATE">{% trans "Private Vehicle" %}</option>
+                                    <option value="POLICE">{% trans "Police/Military" %}</option>
+                                    <option value="G_SUCO">{% trans "Government/Suco Vehicle" %}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Brought By (Person)" %}</label>
+                                <input type="text" name="brought_by_name" class="form-control" placeholder="{% trans 'Who brought the patient?' %}">
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Phone Number" %}</label>
+                                {{ registration_form.phone_number }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Contribution (USD)" %}</label>
+                                {{ registration_form.registration_fee }}
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        <div class="d-grid gap-2">
+                            <button type="submit" name="register_new" class="btn btn-success btn-lg mt-3 shadow-sm">
+                                <i class="bi bi-check2-circle me-1"></i>{% trans "Register & Admit to Emergency Now" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AJAX Scripts for Geolocation Cascading -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const municipioSelect = document.getElementById('id_municipio');
+    const postoSelect = document.getElementById('id_posto');
+    const sucoSelect = document.getElementById('id_suco');
+    const aldeiaSelect = document.getElementById('id_aldeia');
+
+    function fetchOptions(url, selectElement, defaultText) {
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                selectElement.innerHTML = `<option value="">${defaultText}</option>`;
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.name;
+                    selectElement.appendChild(option);
+                });
+                selectElement.removeAttribute('disabled');
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                selectElement.innerHTML = `<option value="">--- {% trans "Error loading data" %} ---</option>`;
+                selectElement.setAttribute('disabled', 'disabled');
+            });
+    }
+
+    municipioSelect.addEventListener('change', function() {
+        const municipioId = this.value;
+        postoSelect.innerHTML = '<option value="">{% trans "--- Loading ---" %}</option>';
+        postoSelect.setAttribute('disabled', 'disabled');
+        sucoSelect.innerHTML = '<option value="">{% trans "--- Select Village ---" %}</option>';
+        sucoSelect.setAttribute('disabled', 'disabled');
+        aldeiaSelect.innerHTML = '<option value="">{% trans "--- Select Hamlet ---" %}</option>';
+        aldeiaSelect.setAttribute('disabled', 'disabled');
+
+        if (municipioId) {
+            fetchOptions("{% url 'load_postos' %}?municipio=" + municipioId, postoSelect, '{% trans "--- Select Administrative Post ---" %}');
+        }
+    });
+
+    postoSelect.addEventListener('change', function() {
+        const postoId = this.value;
+        sucoSelect.innerHTML = '<option value="">{% trans "--- Loading ---" %}</option>';
+        sucoSelect.setAttribute('disabled', 'disabled');
+        aldeiaSelect.innerHTML = '<option value="">{% trans "--- Select Hamlet ---" %}</option>';
+        aldeiaSelect.setAttribute('disabled', 'disabled');
+
+        if (postoId) {
+            fetchOptions("{% url 'load_sucos' %}?posto=" + postoId, sucoSelect, '{% trans "--- Select Village ---" %}');
+        }
+    });
+
+    sucoSelect.addEventListener('change', function() {
+        const sucoId = this.value;
+        aldeiaSelect.innerHTML = '<option value="">{% trans "--- Loading ---" %}</option>';
+        aldeiaSelect.setAttribute('disabled', 'disabled');
+
+        if (sucoId) {
+            fetchOptions("{% url 'load_aldeias' %}?suco=" + sucoId, aldeiaSelect, '{% trans "--- Select Hamlet ---" %}');
+        }
+    });
+
+    // --- Category Logic (Show/Hide Parents) ---
+    const categorySelect = document.getElementById('id_patient_category');
+    const parentSection = document.getElementById('parent-info-section');
+    const nationalitySection = document.getElementById('nationality-section');
+
+    function toggleCategoryFields() {
+        if (!categorySelect || !parentSection || !nationalitySection) return;
+        if (categorySelect.value === 'RAI_LIUR') {
+            parentSection.classList.add('d-none');
+            nationalitySection.classList.remove('d-none');
+        } else {
+            parentSection.classList.remove('d-none');
+            nationalitySection.classList.add('d-none');
+        }
+    }
+
+    if (categorySelect) {
+        categorySelect.addEventListener('change', toggleCategoryFields);
+        toggleCategoryFields(); // Initial state
+    }
+
+    // --- Duplicate Check Logic ---
+    const nameInput = document.getElementById('id_full_name');
+    const dobInput = document.getElementById('id_dob');
+    const idInput = document.getElementById('id_id_number');
+    const warningDiv = document.getElementById('duplicate-warning');
+    const duplicateList = document.getElementById('duplicate-list');
+
+    function checkDuplicates() {
+        if (!nameInput || !dobInput || !idInput || !warningDiv) return;
+        const name = nameInput.value.trim();
+        const dob = dobInput.value;
+        const idNum = idInput.value ? idInput.value.trim() : '';
+
+        if ((name.length > 3 && dob) || idNum.length > 4) {
+            const url = `{% url 'api_check_duplicates' %}?name=${encodeURIComponent(name)}&dob=${dob}&id_number=${encodeURIComponent(idNum)}`;
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.duplicates && data.duplicates.length > 0) {
+                        warningDiv.classList.remove('d-none');
+                        duplicateList.innerHTML = '';
+                        data.duplicates.forEach(p => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `<strong>${p.name}</strong> (${p.dob}) - <span class="text-danger">${p.reason}</span>`;
+                            duplicateList.appendChild(li);
+                        });
+                    } else {
+                        warningDiv.classList.add('d-none');
+                    }
+                });
+        } else {
+            warningDiv.classList.add('d-none');
+        }
+    }
+
+    if (nameInput) nameInput.addEventListener('blur', checkDuplicates);
+    if (dobInput) dobInput.addEventListener('change', checkDuplicates);
+    if (idInput) idInput.addEventListener('blur', checkDuplicates);
+});
+</script>
+
+
+<!-- Styling to match existing registration forms -->
+<style>
+    .form-control, .form-select {
+        border-radius: 8px;
+        padding: 0.6rem 1rem;
+    }
+    .form-control:focus {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+    }
+</style>
+{% endblock %}

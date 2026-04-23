@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Triage Input" %} - {{ visit.patient.full_name }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'triage_dashboard' %}">{% trans "Triage Dashboard" %}</a></li>
+                <li class="breadcrumb-item active">{% trans "Input Vitals" %}</li>
+            </ol>
+        </nav>
+
+        <div class="card shadow-lg border-0 overflow-hidden">
+            <div class="bg-info p-4 text-white d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0">{{ visit.patient.full_name }}</h3>
+                    <p class="mb-0 opacity-75">{% trans "Patient ID" %}: {{ visit.patient.patient_id }} | {% trans "Queue" %}: #{{ visit.queue_number }}</p>
+                </div>
+                <div class="text-end">
+                    <i class="bi bi-activity fs-1"></i>
+                </div>
+            </div>
+            
+            <div class="card-body p-4">
+                <form method="post" class="row g-3">
+                    {% csrf_token %}
+                    
+                    {% if form.errors %}
+                    <div class="col-12 mb-2">
+                        <div class="alert alert-danger px-4 py-3 shadow-sm border-0 border-start border-danger border-4">
+                            <h6 class="fw-bold text-danger mb-2"><i class="bi bi-exclamation-triangle-fill me-2"></i> {% trans "Please check your input:" %}</h6>
+                            <ul class="mb-0 text-danger">
+                                {% for field in form %}
+                                    {% if field.errors %}
+                                        <li><strong>{{ field.label }}:</strong> {{ field.errors|striptags }}</li>
+                                    {% endif %}
+                                {% endfor %}
+                                {% if form.non_field_errors %}
+                                    <li><strong>{% trans "General Error:" %}</strong> {{ form.non_field_errors|striptags }}</li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="col-12 mb-4">
+                        <h5 class="border-bottom pb-2 text-primary"><i class="bi bi-chat-left-text me-2"></i> {% trans "Chief Complaint" %}</h5>
+                        {{ form.complaint }}
+                        <div class="form-text">{% trans "Briefly describe the patient's main concern or symptoms." %}</div>
+                    </div>
+
+                    <!-- NEW VAS SCALE UI -->
+                    <div class="col-12 mb-4 text-center">
+                        <h5 class="border-bottom pb-2 text-dark text-start"><i class="bi bi-emoji-expressionless me-2"></i> {% trans "VAS (Visual Analogue Scale)" %}</h5>
+                        {{ form.vas_score }}
+                        <div class="d-flex justify-content-between align-items-end flex-wrap mt-3 px-md-5 mx-md-5">
+                            
+                            <div class="vas-option text-center position-relative cursor-pointer" data-val="0">
+                                <div class="vas-icon vas-0 rounded-circle d-flex align-items-center justify-content-center mx-auto shadow" style="width:60px; height:60px; font-size:2rem; background-color:#28a745; color:white; border: 3px solid transparent;">
+                                    <i class="bi bi-emoji-smile"></i>
+                                    <div class="check-mark position-absolute top-0 end-0 bg-white rounded-circle shadow-sm" style="display:none; color:#198754; font-size:1.2rem; transform: translate(30%, -30%);"><i class="bi bi-check-circle-fill"></i></div>
+                                </div>
+                                <div class="fw-bold mt-2">0</div>
+                                <small class="text-muted d-block" style="font-size:0.75rem;">{% trans "No Pain" %}</small>
+                            </div>
+
+                            <div class="vas-option text-center position-relative cursor-pointer" data-val="1-3">
+                                <div class="vas-icon vas-1-3 rounded-circle d-flex align-items-center justify-content-center mx-auto shadow" style="width:60px; height:60px; font-size:2rem; background-color:#8bc34a; color:white; border: 3px solid transparent;">
+                                    <i class="bi bi-emoji-neutral"></i>
+                                    <div class="check-mark position-absolute top-0 end-0 bg-white rounded-circle shadow-sm" style="display:none; color:#198754; font-size:1.2rem; transform: translate(30%, -30%);"><i class="bi bi-check-circle-fill"></i></div>
+                                </div>
+                                <div class="fw-bold mt-2">1-3</div>
+                                <small class="text-muted d-block" style="font-size:0.75rem;">{% trans "Mild" %}</small>
+                            </div>
+
+                            <div class="vas-option text-center position-relative cursor-pointer" data-val="4-6">
+                                <div class="vas-icon vas-4-6 rounded-circle d-flex align-items-center justify-content-center mx-auto shadow" style="width:60px; height:60px; font-size:2rem; background-color:#ffc107; color:dark; border: 3px solid transparent;">
+                                    <i class="bi bi-emoji-frown"></i>
+                                    <div class="check-mark position-absolute top-0 end-0 bg-white rounded-circle shadow-sm" style="display:none; color:#198754; font-size:1.2rem; transform: translate(30%, -30%);"><i class="bi bi-check-circle-fill"></i></div>
+                                </div>
+                                <div class="fw-bold mt-2">4-6</div>
+                                <small class="text-muted d-block" style="font-size:0.75rem;">{% trans "Moderate" %}</small>
+                            </div>
+
+                            <div class="vas-option text-center position-relative cursor-pointer" data-val="7-9">
+                                <div class="vas-icon vas-7-9 rounded-circle d-flex align-items-center justify-content-center mx-auto shadow" style="width:60px; height:60px; font-size:2rem; background-color:#fd7e14; color:white; border: 3px solid transparent;">
+                                    <i class="bi bi-emoji-tear"></i>
+                                    <div class="check-mark position-absolute top-0 end-0 bg-white rounded-circle shadow-sm" style="display:none; color:#198754; font-size:1.2rem; transform: translate(30%, -30%);"><i class="bi bi-check-circle-fill"></i></div>
+                                </div>
+                                <div class="fw-bold mt-2">7-9</div>
+                                <small class="text-muted d-block" style="font-size:0.75rem;">{% trans "Severe" %}</small>
+                            </div>
+
+                            <div class="vas-option text-center position-relative cursor-pointer" data-val="10">
+                                <div class="vas-icon vas-10 rounded-circle d-flex align-items-center justify-content-center mx-auto shadow" style="width:60px; height:60px; font-size:2rem; background-color:#dc3545; color:white; border: 3px solid transparent;">
+                                    <i class="bi bi-emoji-dizzy"></i>
+                                    <div class="check-mark position-absolute top-0 end-0 bg-white rounded-circle shadow-sm" style="display:none; color:#198754; font-size:1.2rem; transform: translate(30%, -30%);"><i class="bi bi-check-circle-fill"></i></div>
+                                </div>
+                                <div class="fw-bold mt-2">10</div>
+                                <small class="text-muted d-block" style="font-size:0.75rem;">{% trans "Worst Pain" %}</small>
+                            </div>
+
+                        </div>
+                        <div class="progress mt-3 mx-md-5" style="height: 8px;">
+                            <div class="progress-bar" role="progressbar" style="width: 20%; background-color:#28a745"></div>
+                            <div class="progress-bar" role="progressbar" style="width: 20%; background-color:#8bc34a"></div>
+                            <div class="progress-bar" role="progressbar" style="width: 20%; background-color:#ffc107"></div>
+                            <div class="progress-bar" role="progressbar" style="width: 20%; background-color:#fd7e14"></div>
+                            <div class="progress-bar" role="progressbar" style="width: 20%; background-color:#dc3545"></div>
+                        </div>
+                    </div>
+
+
+                    <div class="col-12 mb-4">
+                        <h5 class="border-bottom pb-2 text-danger"><i class="bi bi-flag-fill me-2"></i> {% trans "Triage Level (Priority)" %}</h5>
+                        {{ form.triage_level }}
+                        <div class="row g-2 text-center mt-2">
+                            <div class="col-md-3">
+                                <button type="button" class="btn btn-outline-danger w-100 py-3 triage-btn" data-level="RED">
+                                    <i class="bi bi-exclamation-triangle-fill d-block fs-4 mb-1"></i>
+                                    <span class="fw-bold">{% trans "RED" %}</span><br>
+                                    <small class="opacity-75">{% trans "Immediate/Critical" %}</small>
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="button" class="btn btn-outline-warning w-100 py-3 triage-btn" data-level="YELLOW">
+                                    <i class="bi bi-exclamation-circle-fill d-block fs-4 mb-1"></i>
+                                    <span class="fw-bold">{% trans "YELLOW" %}</span><br>
+                                    <small class="opacity-75">{% trans "Urgent/Vital" %}</small>
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="button" class="btn btn-outline-success w-100 py-3 triage-btn" data-level="GREEN">
+                                    <i class="bi bi-check-circle-fill d-block fs-4 mb-1"></i>
+                                    <span class="fw-bold">{% trans "GREEN" %}</span><br>
+                                    <small class="opacity-75">{% trans "Stable/Non-Urgent" %}</small>
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="button" class="btn btn-outline-dark w-100 py-3 triage-btn" data-level="BLACK">
+                                    <i class="bi bi-slash-circle-fill d-block fs-4 mb-1"></i>
+                                    <span class="fw-bold">{% trans "BLACK" %}</span><br>
+                                    <small class="opacity-75">{% trans "Expectant" %}</small>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 mb-3">
+                        <h5 class="border-bottom pb-2"><i class="bi bi-heart-pulse me-2"></i> {% trans "Vital Signs" %}</h5>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">{% trans "BP Systolic (mmHg)" %}</label>
+                        {{ form.bp_sys }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">{% trans "BP Diastolic (mmHg)" %}</label>
+                        {{ form.bp_dia }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">{% trans "SPO2 (%)" %}</label>
+                        {{ form.spo2 }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">{% trans "Pulse (bpm)" %}</label>
+                        {{ form.pulse }}
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">{% trans "RR (breath/min)" %}</label>
+                        {{ form.rr }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">{% trans "Temperature (°C)" %}</label>
+                        {{ form.temp }}
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">{% trans "Weight (kg)" %}</label>
+                        {{ form.weight }}
+                    </div>
+                     <div class="col-md-3">
+                        <label class="form-label fw-bold">{% trans "MUAC (cm)" %}</label>
+                        {{ form.muac }}
+                    </div>
+
+                    <div class="col-12 mt-5 mb-3">
+                        <h5 class="border-bottom pb-2 text-primary"><i class="bi bi-box-arrow-right me-2"></i> {% trans "Patient Direction" %}</h5>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-primary">{{ form.current_room.label }}</label>
+                        {{ form.current_room }}
+                        <div class="form-text">{% trans "Select which doctor the patient should consult next." %}</div>
+                    </div>
+
+                    <div class="col-12 mt-5 border-top pt-4">
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'triage_dashboard' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> {% trans "Cancel" %}
+                            </a>
+                            <button type="submit" class="btn btn-info text-white px-5 btn-lg">
+                                <i class="bi bi-check-circle me-2"></i> {% trans "Save Triage & Send to Doctor" %}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const hiddenInput = document.getElementById('id_triage_level');
+    const buttons = document.querySelectorAll('.triage-btn');
+    const roomSelect = document.getElementById('id_current_room');
+
+    buttons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const level = this.getAttribute('data-level');
+            
+            // Update hidden input
+            hiddenInput.value = level;
+            
+            // UI Feedback: Highlight selected button
+            buttons.forEach(b => {
+                const bLevel = b.getAttribute('data-level');
+                const colorClass = bLevel === 'BLACK' ? 'dark' : bLevel.toLowerCase();
+                b.classList.remove('active', 'bg-danger', 'bg-warning', 'bg-success', 'bg-dark', 'text-white');
+                b.classList.add('btn-outline-' + (bLevel === 'BLACK' ? 'dark' : bLevel.toLowerCase()));
+            });
+            
+            const colorClass = level === 'BLACK' ? 'dark' : level.toLowerCase();
+            this.classList.remove('btn-outline-' + colorClass);
+            this.classList.add('active', 'bg-' + colorClass, 'text-white');
+
+            // Auto-routing logic
+            if (level === 'RED' || level === 'YELLOW') {
+                // Find and select Emergency Room in dropdown
+                for (let i = 0; i < roomSelect.options.length; i++) {
+                    const opt = roomSelect.options[i];
+                    if (opt.text.toUpperCase().includes('EMERGENCY') || opt.text.toUpperCase().includes('IGD')) {
+                        roomSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            } else if (level === 'GREEN') {
+                // Suggest general doctor if green
+                for (let i = 0; i < roomSelect.options.length; i++) {
+                    const opt = roomSelect.options[i];
+                    if (opt.text.toUpperCase().includes('DOCTOR') || opt.text.toUpperCase().includes('DOKTER')) {
+                        roomSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        });
+
+        // Initialize if value already exists (e.g. on validation error)
+        if (hiddenInput.value === btn.getAttribute('data-level')) {
+            btn.click();
+        }
+    });
+
+    // VAS Scale Logic
+    const vasInput = document.getElementById('id_vas_score');
+    if(vasInput) { vasInput.type = 'hidden'; }
+    const vasOptions = document.querySelectorAll('.vas-option');
+    
+    vasOptions.forEach(opt => {
+        opt.addEventListener('click', function() {
+            const val = this.getAttribute('data-val');
+            vasInput.value = val;
+            
+            // Reset all
+            vasOptions.forEach(o => {
+                o.querySelector('.vas-icon').style.transform = 'scale(1)';
+                o.querySelector('.vas-icon').style.borderColor = 'transparent';
+                o.querySelector('.check-mark').style.display = 'none';
+            });
+            
+            // Activate selected
+            this.querySelector('.vas-icon').style.transform = 'scale(1.15)';
+            this.querySelector('.vas-icon').style.borderColor = '#000';
+            this.querySelector('.check-mark').style.display = 'block';
+        });
+
+        // Init if value exists
+        if (vasInput && vasInput.value === opt.getAttribute('data-val')) {
+            opt.click();
+        }
+    });
+});
+</script>
+<style>
+    .triage-btn { transition: all 0.2s ease-in-out; border-width: 2px; height: 100%; min-height: 80px; }
+    .triage-btn:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    .triage-btn.active { transform: scale(1.02); border-color: transparent !important; }
+    
+    .cursor-pointer { cursor: pointer; }
+    .vas-icon { transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.2s; }
+    .vas-option:hover .vas-icon { transform: scale(1.1); }
+</style>
+{% endblock %}

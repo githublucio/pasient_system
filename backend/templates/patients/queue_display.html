@@ -1,0 +1,562 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "Queue Display" %} - {% trans "Clinic Bairo Pite Lanud" %}</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0d1b2a 0%, #1b2e4a 50%, #0d1b2a 100%);
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* HEADER */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 40px;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 2px solid rgba(93, 45, 145, 0.5);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-logo {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+        }
+
+        .header-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .header-subtitle {
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+
+        .header-time {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #7dd3fc;
+            letter-spacing: 2px;
+        }
+
+        .header-date {
+            font-size: 0.8rem;
+            color: #aaa;
+            text-align: right;
+            margin-top: 2px;
+        }
+
+        /* MAIN CONTENT */
+        .main {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            padding: 24px 40px;
+        }
+
+        /* LEFT: ALL ROOMS */
+        .rooms-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .rooms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+            flex: 1;
+        }
+
+        .room-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .room-card.active {
+            background: rgba(93, 45, 145, 0.15);
+            border-color: rgba(93, 45, 145, 0.5);
+            animation: room-glow 2s ease-in-out infinite;
+        }
+
+        @keyframes room-glow {
+            0%, 100% { box-shadow: 0 0 10px rgba(93, 45, 145, 0.2); }
+            50% { box-shadow: 0 0 30px rgba(93, 45, 145, 0.4); }
+        }
+
+        .room-card.has-waiting {
+            background: rgba(251, 191, 36, 0.06);
+            border-color: rgba(251, 191, 36, 0.3);
+        }
+
+        .room-card.empty {
+            opacity: 0.35;
+        }
+
+        .room-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #7dd3fc;
+            margin-bottom: 6px;
+            text-align: center;
+        }
+
+        .room-card.active .room-label {
+            color: #a78bfa;
+        }
+
+        .room-queue-num {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4.5rem;
+            font-weight: 900;
+            color: white;
+            line-height: 1;
+            text-shadow: 0 0 30px rgba(167, 139, 250, 0.4);
+        }
+
+        .room-card.empty .room-queue-num {
+            font-size: 1.5rem;
+            color: #475569;
+            text-shadow: none;
+        }
+
+        .room-patient-name {
+            font-size: 1rem;
+            font-weight: 400;
+            color: #e2e8f0;
+            margin-top: 8px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        .room-status-badge {
+            margin-top: 10px;
+            padding: 4px 14px;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .badge-serving {
+            background: rgba(167, 139, 250, 0.2);
+            border: 1px solid rgba(167, 139, 250, 0.4);
+            color: #c4b5fd;
+            animation: pulse-badge 1.5s infinite;
+        }
+
+        @keyframes pulse-badge {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .badge-idle {
+            background: rgba(71, 85, 105, 0.3);
+            border: 1px solid rgba(71, 85, 105, 0.4);
+            color: #64748b;
+        }
+
+        .badge-waiting-room {
+            background: rgba(251, 191, 36, 0.2);
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            color: #fbbf24;
+        }
+
+        /* Waiting list under room card */
+        .room-waiting-list {
+            width: 100%;
+            margin-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 8px;
+        }
+
+        .room-waiting-title {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .room-waiting-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 3px 0;
+            font-size: 0.8rem;
+            color: #cbd5e1;
+        }
+
+        .room-waiting-item .wnum {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: #fbbf24;
+            width: 36px;
+        }
+
+        .room-waiting-item .wname {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* NEXT UP BANNER */
+        .next-up-banner {
+            background: rgba(251, 191, 36, 0.1);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 12px;
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .next-up-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: #fbbf24;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .next-up-num {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #fbbf24;
+            text-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+        }
+
+        .next-up-name {
+            font-size: 1rem;
+            color: #e2e8f0;
+            flex: 1;
+        }
+
+        /* QUEUE LIST */
+        .queue-section {
+            width: 340px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .queue-section-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            color: #7dd3fc;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(125, 211, 252, 0.3);
+        }
+
+        .queue-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .queue-item {
+            display: flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 10px 16px;
+            gap: 12px;
+            transition: all 0.3s;
+        }
+
+        .queue-item.serving {
+            background: rgba(93, 45, 145, 0.15);
+            border-color: rgba(167, 139, 250, 0.4);
+        }
+
+        .queue-item-num {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: white;
+            width: 50px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .queue-item.serving .queue-item-num {
+            color: #a78bfa;
+        }
+
+        .queue-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .queue-item-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #e2e8f0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .queue-item-room {
+            font-size: 0.7rem;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .queue-badge {
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .badge-sch {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.3);
+        }
+
+        .badge-ip {
+            background: rgba(52, 211, 153, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+            animation: blink 1.5s infinite;
+        }
+
+        .badge-com {
+            background: rgba(148, 163, 184, 0.2);
+            color: #94a3b8;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            text-align: center;
+            color: #475569;
+            padding: 30px;
+        }
+
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 12px;
+        }
+
+        /* FOOTER */
+        .footer {
+            text-align: center;
+            padding: 10px 40px;
+            background: rgba(0, 0, 0, 0.3);
+            font-size: 0.7rem;
+            color: #475569;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* REFRESH BAR */
+        .refresh-bar {
+            height: 3px;
+            background: rgba(93, 45, 145, 0.3);
+            width: 100%;
+        }
+
+        .refresh-progress {
+            height: 3px;
+            background: linear-gradient(90deg, #5d2d91, #a78bfa);
+            animation: progress 15s linear infinite;
+            width: 0;
+        }
+
+        @keyframes progress {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-left">
+            <img src="/media/Logo.png" class="header-logo" alt="Logo" onerror="this.style.display='none'">
+            <div>
+                <div class="header-title">{% trans "CLINIC BAIRO PITE LANUD" %}</div>
+                <div class="header-subtitle">{% trans "Patient Queue Display" %} &mdash; {% trans "Today" %}: {{ today }}</div>
+            </div>
+        </div>
+        <div>
+            <div class="header-time" id="clock">--:--:--</div>
+            <div class="header-date" id="datedisp"></div>
+        </div>
+    </div>
+
+    <!-- REFRESH BAR -->
+    <div class="refresh-bar">
+        <div class="refresh-progress" id="progressbar"></div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+
+        <!-- LEFT: ALL ROOMS -->
+        <div class="rooms-section">
+
+            <div class="rooms-grid">
+                {% for rd in room_data %}
+                <div class="room-card {% if rd.serving %}active{% elif rd.waiting_count > 0 %}has-waiting{% else %}empty{% endif %}">
+                    <div class="room-label">{{ rd.room.name }}</div>
+
+                    {% if rd.serving %}
+                        <div class="room-queue-num">{{ rd.serving.queue_number }}</div>
+                        <div class="room-patient-name">{{ rd.serving.patient.full_name }}</div>
+                        <div class="room-status-badge badge-serving">{% trans "NOW SERVING" %}</div>
+                    {% elif rd.waiting_count > 0 %}
+                        <div class="room-queue-num" style="font-size:2.5rem; color:#fbbf24;">{{ rd.waiting.0.queue_number }}</div>
+                        <div class="room-patient-name">{{ rd.waiting.0.patient.full_name }}</div>
+                        <div class="room-status-badge badge-waiting-room">{% trans "WAITING" %} ({{ rd.waiting_count }})</div>
+                    {% else %}
+                        <div class="room-queue-num">---</div>
+                        <div class="room-status-badge badge-idle">{% trans "EMPTY" %}</div>
+                    {% endif %}
+
+                    {% if rd.waiting_count > 0 %}
+                    <div class="room-waiting-list">
+                        <div class="room-waiting-title">{% trans "Queue" %}</div>
+                        {% for w in rd.waiting %}
+                        <div class="room-waiting-item">
+                            <span class="wnum">#{{ w.queue_number }}</span>
+                            <span class="wname">{{ w.patient.full_name }}</span>
+                        </div>
+                        {% endfor %}
+                        {% if rd.waiting_count > 5 %}
+                        <div class="room-waiting-item" style="color:#64748b; font-style:italic;">
+                            +{{ rd.waiting_count|add:"-5" }} {% trans "more" %}...
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Next Up Banner -->
+            {% if next_visit %}
+            <div class="next-up-banner">
+                <div class="next-up-label">&#9203; {% trans "NEXT" %}</div>
+                <div class="next-up-num">#{{ next_visit.queue_number }}</div>
+                <div class="next-up-name">{{ next_visit.patient.full_name }}</div>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- RIGHT: QUEUE LIST -->
+        <div class="queue-section">
+            <div class="queue-section-title">&#128203; {% trans "Today's Queue" %} ({{ total_waiting }} {% trans "waiting" %})</div>
+            <div class="queue-list">
+                {% for visit in today_visits %}
+                <div class="queue-item {% if visit.status == 'IP' %}serving{% endif %}">
+                    <div class="queue-item-num">#{{ visit.queue_number }}</div>
+                    <div class="queue-item-info">
+                        <div class="queue-item-name">{{ visit.patient.full_name }}</div>
+                        <div class="queue-item-room">
+                            {{ visit.current_room.name|default:"-" }} &middot; {{ visit.visit_date|date:"H:i" }}
+                        </div>
+                    </div>
+                    {% if visit.status == 'IP' %}
+                    <span class="queue-badge badge-ip">{% trans "Active" %}</span>
+                    {% elif visit.status == 'SCH' %}
+                    <span class="queue-badge badge-sch">{% trans "Waiting" %}</span>
+                    {% elif visit.status == 'COM' %}
+                    <span class="queue-badge badge-com">{% trans "Done" %}</span>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <div class="icon">&#128237;</div>
+                    <p>{% trans "No patients registered today." %}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        {% trans "Page refreshes automatically every 15 seconds." %} &mdash; {% trans "Clinic Bairo Pite Lanud" %} &copy; 2026
+    </div>
+
+    <script>
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleTimeString('en-GB');
+            document.getElementById('datedisp').textContent = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        }
+        updateClock();
+        setInterval(updateClock, 1000);
+        setTimeout(() => location.reload(), 15000);
+        const prog = document.getElementById('progressbar');
+        prog.style.animation = 'none';
+        prog.offsetHeight;
+        prog.style.animation = '';
+    </script>
+</body>
+
+</html>

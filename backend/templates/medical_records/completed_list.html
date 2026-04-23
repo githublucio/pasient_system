@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{{ page_title }} - {% trans "Clinic Lanud" %}{% endblock %}
+
+{% block page_title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card p-4 bg-primary text-white border-0 shadow-sm">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <div class="bg-white bg-opacity-25 rounded-circle p-3 me-3">
+                        <i class="bi bi-card-checklist fs-2"></i>
+                    </div>
+                    <div>
+                        <h2 class="mb-0">{{ page_title }}</h2>
+                        <p class="mb-0 opacity-75">{% trans "Complete history of patients treated in this department" %}</p>
+                    </div>
+                </div>
+                <a href="javascript:history.back()" class="btn btn-outline-light">
+                    <i class="bi bi-arrow-left me-1"></i>{% trans "Back to Dashboard" %}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-12">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>{% trans "Visit History" %}</h5>
+                
+                <div class="d-flex gap-2">
+                    <form method="get" class="d-flex" style="min-width: 250px;">
+                        <input type="hidden" name="dept" value="{{ dept }}">
+                        <div class="input-group input-group-sm">
+                            <input type="text" name="q" class="form-control" placeholder="{% trans 'Search name or ID...' %}" value="{{ query }}">
+                            <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+                            {% if query %}
+                            <a href="?dept={{ dept }}" class="btn btn-outline-secondary"><i class="bi bi-x"></i></a>
+                            {% endif %}
+                        </div>
+                    </form>
+
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-success dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-download me-1"></i> {% trans "Export" %}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li><a class="dropdown-item" href="{% url 'export_visit_history_pdf' %}?dept={{ dept }}&q={{ query }}"><i class="bi bi-file-earmark-pdf me-2 text-danger"></i> {% trans "Export PDF" %}</a></li>
+                            <li><a class="dropdown-item" href="{% url 'export_visit_history_excel' %}?dept={{ dept }}&q={{ query }}"><i class="bi bi-file-earmark-excel me-2 text-success"></i> {% trans "Export Excel" %}</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">{% trans "Date & Time" %}</th>
+                            <th>{% trans "Queue" %}</th>
+                            <th>{% trans "Patient Information" %}</th>
+                            <th>{% trans "Department / Doctor" %}</th>
+                            <th>{% trans "Status" %}</th>
+                            <th class="pe-4 text-end">{% trans "Action" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for visit in page_obj %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold">{{ visit.visit_date|date:"d M Y" }}</div>
+                                <div class="text-muted small">{{ visit.visit_date|time:"H:i" }}</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">#{{ visit.queue_number }}</span>
+                            </td>
+                            <td>
+                                <div class="fw-bold">{{ visit.patient.full_name }}</div>
+                                <div class="text-muted small">
+                                    ID: {{ visit.patient.patient_id }} • 
+                                    {{ visit.patient.get_gender_display }} • 
+                                    {{ visit.patient.age }} {% trans "yrs" %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-bold">{{ visit.current_room.name }}</div>
+                                <div class="text-muted small">
+                                    {% if visit.doctor %}
+                                        {{ visit.doctor.get_full_name|default:visit.doctor.username }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if visit.status == 'COM' %}
+                                <span class="badge bg-success rounded-pill"><i class="bi bi-check-circle me-1"></i>{% trans "Completed" %}</span>
+                                {% elif visit.status == 'IP' %}
+                                <span class="badge bg-warning text-dark rounded-pill"><i class="bi bi-hourglass-split me-1"></i>{% trans "In Progress" %}</span>
+                                {% else %}
+                                <span class="badge bg-secondary rounded-pill">{{ visit.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-4 text-end">
+                                <a href="{% url 'visit_detail' visit.uuid %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> {% trans "View Detail" %}
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="bi bi-folder-x fs-1 d-block mb-3"></i>
+                                {% if query %}
+                                    {% trans "No patients found matching your search." %}
+                                {% else %}
+                                    {% trans "No patient history found for this department." %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if page_obj.has_other_pages %}
+            <div class="card-footer bg-white py-3">
+                <nav aria-label="Pagination">
+                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item"><a class="page-link" href="?dept={{ dept }}&q={{ query }}&page=1">&laquo;</a></li>
+                        <li class="page-item"><a class="page-link" href="?dept={{ dept }}&q={{ query }}&page={{ page_obj.previous_page_number }}">{% trans "Prev" %}</a></li>
+                        {% endif %}
+                        
+                        <li class="page-item active"><a class="page-link" href="#">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</a></li>
+                        
+                        {% if page_obj.has_next %}
+                        <li class="page-item"><a class="page-link" href="?dept={{ dept }}&q={{ query }}&page={{ page_obj.next_page_number }}">{% trans "Next" %}</a></li>
+                        <li class="page-item"><a class="page-link" href="?dept={{ dept }}&q={{ query }}&page={{ page_obj.paginator.num_pages }}">&raquo;</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

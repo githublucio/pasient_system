@@ -1,0 +1,91 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Helvetica, sans-serif; font-size: 10px; color: #333; margin: 20px; }
+        .header { text-align: center; margin-bottom: 15px; border-bottom: 2px solid #5d2d91; padding-bottom: 8px; }
+        .header h2 { color: #5d2d91; margin: 3px 0; font-size: 16px; }
+        .header h3 { font-size: 13px; margin-top: 5px; }
+        .summary { margin: 10px 0; padding: 10px; background: #f5f0ff; }
+        .summary-row { display: inline-block; margin-right: 30px; }
+        .summary-label { font-size: 9px; text-transform: uppercase; color: #666; }
+        .summary-value { font-size: 16px; font-weight: bold; color: #5d2d91; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th { background: #f0e6ff; padding: 5px 6px; text-align: left; font-size: 9px; border: 1px solid #ddd; }
+        td { padding: 4px 6px; border: 1px solid #ddd; font-size: 9px; }
+        .col-items { max-width: 220px; word-wrap: break-word; }
+        .text-right { text-align: right; }
+        .footer { margin-top: 20px; text-align: center; font-size: 8px; color: #999; }
+        .status-paid { color: #198754; }
+        .status-unpaid { color: #dc3545; }
+        .status-partial { color: #ffc107; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Clinic Bairo Pite Lanud</h2>
+        <h3>{% trans "Billing Report" %}</h3>
+        <p>{{ date_from }} {% trans "to" %} {{ date_to }}</p>
+    </div>
+
+    <div class="summary">
+        <span class="summary-row">
+            <span class="summary-label">{% trans "Total Invoices" %}</span><br>
+            <span class="summary-value">{{ invoice_count }}</span>
+        </span>
+        <span class="summary-row">
+            <span class="summary-label">{% trans "Total Billed" %}</span><br>
+            <span class="summary-value">${{ total_billed|floatformat:2 }}</span>
+        </span>
+        <span class="summary-row">
+            <span class="summary-label">{% trans "Total Paid" %}</span><br>
+            <span class="summary-value">${{ total_paid|floatformat:2 }}</span>
+        </span>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>{% trans "Invoice #" %}</th>
+                <th>{% trans "Date" %}</th>
+                <th>{% trans "Patient" %}</th>
+                <th>{% trans "Diagnosis" %}</th>
+                <th>{% trans "Services / items" %}</th>
+                <th class="text-right">{% trans "Total" %}</th>
+                <th class="text-right">{% trans "Paid" %}</th>
+                <th>{% trans "Status" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for inv in invoices %}
+            <tr>
+                <td>{{ inv.invoice_number }}</td>
+                <td>{{ inv.created_at|date:"d/m/Y" }}</td>
+                <td>{{ inv.patient.full_name }}</td>
+                <td>
+                    {% if inv.visit.diagnosis %}
+                        {{ inv.visit.diagnosis.code }} - {{ inv.visit.diagnosis.name|truncatechars:30 }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td class="col-items">{% if inv.get_items_summary %}{{ inv.get_items_summary }}{% else %}—{% endif %}</td>
+                <td class="text-right">${{ inv.total_amount|floatformat:2 }}</td>
+                <td class="text-right">${{ inv.amount_paid|floatformat:2 }}</td>
+                <td>
+                    {% if inv.status == 'PAID' %}<span class="status-paid">{% trans "Paid" %}</span>
+                    {% elif inv.status == 'PARTIAL' %}<span class="status-partial">{% trans "Partial" %}</span>
+                    {% else %}<span class="status-unpaid">{% trans "Unpaid" %}</span>{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>{% trans "Generated on" %} {% now "d/m/Y H:i" %} &bull; Clinic Bairo Pite Lanud</p>
+    </div>
+</body>
+</html>

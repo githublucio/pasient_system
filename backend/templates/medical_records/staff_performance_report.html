@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Staff Performance & Outcome Report" %} - {% trans "Clinic Lanud" %}{% endblock %}
+
+{% block page_title %}{% trans "Staff & Outcome Report" %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Filters -->
+    <div class="col-md-12 mb-4">
+        <div class="card p-4 shadow-sm border-0">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">{% trans "From Date" %}</label>
+                    <input type="date" name="date_from" class="form-control" value="{{ date_from }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">{% trans "To Date" %}</label>
+                    <input type="date" name="date_to" class="form-control" value="{{ date_to }}">
+                </div>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-filter me-2"></i>{% trans "Filter Report" %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="col-md-3 mb-4">
+        <div class="card p-4 text-center border-0 shadow-sm bg-primary text-white">
+            <div class="small opacity-75 mb-1">{% trans "Total Visits" %}</div>
+            <div class="display-6 fw-bold">{{ total_count }}</div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card p-4 text-center border-0 shadow-sm bg-success text-white">
+            <div class="small opacity-75 mb-1">{% trans "Clinic Success" %}</div>
+            <div class="display-6 fw-bold">{{ completed_clinic }}</div>
+            <div class="small mt-1">
+                {% if total_count > 0 %}
+                    {% widthratio completed_clinic total_count 100 %}%
+                {% else %}
+                    0%
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card p-4 text-center border-0 shadow-sm bg-warning text-dark">
+            <div class="small opacity-75 mb-1">{% trans "Referrals (Central)" %}</div>
+            <div class="display-6 fw-bold">{{ referred_count }}</div>
+            <div class="small mt-1">
+                {% if total_count > 0 %}
+                    {% widthratio referred_count total_count 100 %}%
+                {% else %}
+                    0%
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card p-4 text-center border-0 shadow-sm bg-info text-white">
+            <div class="small opacity-75 mb-1">{% trans "Outstanding" %}</div>
+            <div class="display-6 fw-bold">
+                {{ total_count }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Doctor Metrics -->
+    <div class="col-md-12 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold text-primary"><i class="bi bi-person-badge me-2"></i>{% trans "Doctor Performance" %}</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>{% trans "Doctor Name" %}</th>
+                            <th class="text-center">{% trans "Total Handled" %}</th>
+                            <th class="text-center text-success">{% trans "Success" %}</th>
+                            <th class="text-center text-warning">{% trans "Referred" %}</th>
+                            <th class="text-center text-info">{% trans "In Progress" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for st in doctor_stats %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ st.doctor__first_name }} {{ st.doctor__last_name }}</div>
+                                <div class="small text-muted">@{{ st.doctor__username }}</div>
+                            </td>
+                            <td class="text-center fw-bold">{{ st.total }}</td>
+                            <td class="text-center text-success">{{ st.completed }}</td>
+                            <td class="text-center text-warning">{{ st.referred }}</td>
+                            <td class="text-center text-info">{{ st.in_progress }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center py-4 text-muted">{% trans "No doctor activity recorded in this range." %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nurse & Reception Metrics -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold text-info"><i class="bi bi-heart-pulse me-2"></i>{% trans "Triage Nurse Activity" %}</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>{% trans "Nurse Name" %}</th>
+                            <th class="text-center">{% trans "Total Triage" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for st in nurse_stats %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ st.triage_nurse__first_name }} {{ st.triage_nurse__last_name }}</div>
+                                <div class="small text-muted">@{{ st.triage_nurse__username }}</div>
+                            </td>
+                            <td class="text-center fw-bold">{{ st.total }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="2" class="text-center py-4 text-muted">{% trans "No nurse activity." %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold text-secondary"><i class="bi bi-door-open me-2"></i>{% trans "Reception Activity" %}</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>{% trans "Staff Name" %}</th>
+                            <th class="text-center">{% trans "Total Check-ins" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for st in reception_stats %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ st.checked_in_by__first_name }} {{ st.checked_in_by__last_name }}</div>
+                                <div class="small text-muted">@{{ st.checked_in_by__username }}</div>
+                            </td>
+                            <td class="text-center fw-bold">{{ st.total }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="2" class="text-center py-4 text-muted">{% trans "No reception activity." %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Visit log -->
+    <div class="col-md-12 mb-4">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-dark text-white py-3">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-list-columns-reverse me-2"></i>{% trans "Detailed Visit Audit Log" %}</h5>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.9rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th>{% trans "Date & Time" %}</th>
+                            <th>{% trans "Patient" %}</th>
+                            <th>{% trans "Triage Nurse" %}</th>
+                            <th>{% trans "Doctor" %}</th>
+                            <th>{% trans "Outcome" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for v in recent_visits %}
+                        <tr>
+                            <td>
+                                <div class="fw-bold">{{ v.visit_date|date:"d M Y" }}</div>
+                                <div class="small text-muted">{{ v.visit_date|date:"H:i" }}</div>
+                            </td>
+                            <td>
+                                <div class="fw-bold">{{ v.patient.full_name }}</div>
+                                <div class="small text-muted">{{ v.patient.patient_id }}</div>
+                            </td>
+                            <td>
+                                {% if v.triage_nurse %}
+                                    {{ v.triage_nurse.get_full_name|default:v.triage_nurse.username }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if v.doctor %}
+                                    {{ v.doctor.get_full_name|default:v.doctor.username }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if v.refer_to_central %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-hospital me-1"></i>{% trans "Referred" %}</span>
+                                {% elif v.status == 'COM' %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>{% trans "Treated" %}</span>
+                                {% else %}
+                                <span class="badge bg-info text-dark">{{ v.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center py-4 text-muted">{% trans "No visits found." %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

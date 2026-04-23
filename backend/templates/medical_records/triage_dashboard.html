@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Triage Dashboard" %} - {% trans "Room 2" %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card p-4 text-white border-0 shadow-sm" style="background: linear-gradient(135deg, #0dcaf0 0%, #0aa2c0 100%);">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <h2 class="mb-0 fw-bold">{% trans "Room 2: Triage (Vital Signs)" %}</h2>
+                </div>
+                <div>
+                    <a href="{% url 'department_completed_list' %}?dept=triage" class="btn btn-outline-light px-3 shadow-sm border-2">
+                        <i class="bi bi-clock-history me-2"></i> {% trans "Visit History" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Triage Premium Stats Row -->
+    <div class="col-md-12 mb-4">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100" style="border-left: 5px solid #0dcaf0 !important;">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase small fw-bold">{% trans "Currently Waiting" %}</h6>
+                        <h2 class="mb-0 fw-bold text-info">{{ stats.waiting }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100" style="border-left: 5px solid #198754 !important;">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase small fw-bold">{% trans "Processed Today" %}</h6>
+                        <h2 class="mb-0 fw-bold text-success">{{ stats.completed }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Search -->
+    <div class="col-md-12 mb-4">
+        <div class="card p-3 shadow-sm">
+            <form method="get" class="row g-2 align-items-center">
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" class="form-control border-start-0" 
+                               placeholder="{% trans 'Search patient name or ID...' %}" value="{{ query }}">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">{% trans "Search" %}</button>
+                </div>
+                {% if query %}
+                <div class="col-md-2">
+                    <a href="{% url 'triage_dashboard' %}" class="btn btn-outline-secondary w-100">{% trans "Clear" %}</a>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    {% if search_results is not None %}
+    <!-- Search Results -->
+    <div class="col-md-12 mb-4">
+        <div class="card p-4 border-primary border-top border-4 shadow-sm">
+            <h4 class="mb-3 text-primary"><i class="bi bi-search me-2"></i>{% trans "Search Results" %}</h4>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>{% trans "No" %}</th>
+                            <th>{% trans "Patient" %}</th>
+                            <th>{% trans "Date & Room" %}</th>
+                            <th>{% trans "Action" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for visit in search_results %}
+                        <tr>
+                            <td class="fw-bold h5">#{{ visit.queue_number }}</td>
+                            <td>
+                                <div class="fw-bold">{{ visit.patient.full_name }}</div>
+                                <small class="text-muted">{{ visit.patient.patient_id }}</small>
+                            </td>
+                            <td>
+                                <div>{{ visit.visit_date|date:"d M Y H:i" }}</div>
+                                <span class="badge bg-light text-dark border">{{ visit.current_room.name }}</span>
+                            </td>
+                            <td>
+                                <a href="{% url 'triage_input' visit.uuid %}" class="btn btn-info text-white btn-sm">
+                                    <i class="bi bi-thermometer-half"></i> {% trans "Check Vitals" %}
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">
+                                {% trans "No visits found for this patient today." %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <hr class="mb-4">
+    {% endif %}
+
+    <!-- Waiting for Triage -->
+    <div class="col-md-8">
+        <div class="card p-4 h-100 shadow-sm">
+            <h4 class="mb-3">{% trans "Patients for Testing" %}</h4>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>{% trans "No" %}</th>
+                            <th>{% trans "Patient" %}</th>
+                            <th>{% trans "Checked-in" %}</th>
+                            <th>{% trans "Action" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for visit in waiting_visits %}
+                        <tr>
+                            <td class="fw-bold h4">#{{ visit.queue_number }}</td>
+                            <td>
+                                <div class="fw-bold">{{ visit.patient.full_name }}</div>
+                                <small class="text-muted">{{ visit.patient.patient_id }}</small>
+                            </td>
+                            <td>{{ visit.visit_date|time:"H:i" }}</td>
+                            <td>
+                                <a href="{% url 'triage_input' visit.uuid %}" class="btn btn-info text-white btn-sm">
+                                    <i class="bi bi-thermometer-half"></i> {% trans "Check Vitals" %}
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">
+                                {% trans "No patients waiting for triage." %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recently Moved -->
+    <div class="col-md-4">
+        <div class="card p-4 h-100 border-start border-info border-4 shadow-sm">
+            <h4 class="mb-3 text-info">{% trans "Sent to Doctor" %}</h4>
+            <div class="list-group list-group-flush">
+                {% for visit in completed_today %}
+                <div class="list-group-item px-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">{{ visit.patient.full_name }}</span>
+                        <span class="badge bg-light text-info">#{{ visit.queue_number }}</span>
+                    </div>
+                    <small class="text-muted">{% trans "To" %}: {{ visit.current_room.name }}</small>
+                </div>
+                {% empty %}
+                <p class="text-muted small">{% trans "None today yet." %}</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

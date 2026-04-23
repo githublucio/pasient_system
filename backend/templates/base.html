@@ -1,0 +1,505 @@
+{% load i18n %}{% load static %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% trans "Clinic Bairo Pite Lanud" %}{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <style>
+        :root {
+            --sb-w: 260px;
+            --sb-bg: #1e1e2d;
+            --sb-h: #2a2a3d;
+            --sb-a: #5d2d91;
+            --sb-t: #9899ac;
+            --sb-ta: #ffffff;
+            --tb-h: 60px;
+            --prm: #5d2d91;
+        }
+
+        body {
+            background: #f5f6fa;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            margin: 0;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: var(--sb-w);
+            background: var(--sb-bg);
+            overflow-y: auto;
+            z-index: 1040;
+            transition: transform 0.3s;
+        }
+
+        .sb-brand {
+            height: var(--tb-h);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .sb-brand img {
+            width: 32px;
+            height: 32px;
+            margin-right: 12px;
+        }
+
+        .sb-brand span {
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .sb-sec {
+            padding: 16px 20px 8px;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #565674;
+            font-weight: 700;
+        }
+
+        .sb-nav {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sb-nav li a,
+        .sb-nav li button {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            color: var(--sb-t);
+            text-decoration: none;
+            font-size: 0.85rem;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            transition: 0.2s;
+        }
+
+        .sb-nav li a:hover,
+        .sb-nav li button:hover {
+            background: var(--sb-h);
+            color: var(--sb-ta);
+        }
+
+        .sb-nav li a.active {
+            background: var(--sb-a);
+            color: #fff;
+        }
+
+        .sb-nav i {
+            width: 24px;
+            font-size: 1.1rem;
+            margin-right: 10px;
+        }
+
+        .sb-sub {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: none;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .sb-sub.show {
+            display: block;
+        }
+
+        .sb-sub li a {
+            padding-left: 54px;
+            font-size: 0.8rem;
+        }
+
+        .wrapper {
+            margin-left: var(--sb-w);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .topbar {
+            height: var(--tb-h);
+            background: #fff;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+        }
+
+        .content {
+            padding: 24px;
+            flex: 1;
+        }
+
+        /* Modern UI Animations */
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); transform: scale(1); }
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); transform: scale(1.02); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); transform: scale(1); }
+        }
+        .animate-pulse-slow {
+            animation: pulse-red 2s infinite;
+        }
+        .badge { font-weight: 600; letter-spacing: 0.3px; }
+
+        @media (max-width: 991px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .wrapper {
+                margin-left: 0;
+            }
+        }
+
+        /* Mobile improvements */
+        @media (max-width: 767px) {
+            .content { padding: 12px; }
+            .topbar { padding: 0 12px; }
+            .topbar h6 { font-size: 0.85rem; }
+            .card { margin-bottom: 12px; }
+            .table-responsive { font-size: 0.8rem; }
+            .btn-group-sm .btn { padding: 0.2rem 0.4rem; font-size: 0.75rem; }
+            .badge { font-size: 0.7rem; }
+        }
+
+        @media (max-width: 575px) {
+            .content { padding: 8px; }
+            .card-body { padding: 0.75rem; }
+            h1, .h1 { font-size: 1.3rem; }
+            h2, .h2 { font-size: 1.1rem; }
+            h3, .h3 { font-size: 1rem; }
+        }
+
+        /* Sidebar overlay on mobile */
+        @media (max-width: 991px) {
+            .sidebar.show {
+                box-shadow: 0 0 50px rgba(0,0,0,0.5);
+            }
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0,0,0,0.4);
+                z-index: 1035;
+            }
+            .sidebar-overlay.show {
+                display: block;
+            }
+        }
+
+        /* Touch-friendly targets */
+        .sb-nav li a, .sb-nav li button {
+            min-height: 44px;
+        }
+
+        /* Better table on mobile */
+        .table-mobile-stack {
+            border: 0;
+        }
+        @media (max-width: 767px) {
+            .table-mobile-stack thead { display: none; }
+            .table-mobile-stack tbody tr {
+                display: block;
+                margin-bottom: 10px;
+                border: 1px solid #dee2e6;
+                border-radius: 8px;
+                padding: 8px;
+                background: #fff;
+            }
+            .table-mobile-stack tbody td {
+                display: flex;
+                justify-content: space-between;
+                padding: 4px 8px;
+                border: none;
+                border-bottom: 1px solid #f0f0f0;
+            }
+            .table-mobile-stack tbody td:last-child {
+                border-bottom: none;
+            }
+            .table-mobile-stack tbody td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: #666;
+                margin-right: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    {% with profile=user.staff_profile %}
+    {% with dept=profile.department.code.upper %}
+    {% with cat=profile.category.name.upper %}
+    {% with is_admin=user.is_superuser %}
+    <aside class="sidebar" id="sidebar">
+        <div class="sb-brand"><img src="/media/Logo.png" alt="Logo"><span>Bairo Pite CMS</span></div>
+        <ul class="sb-nav mt-2">
+            <li><a href="{% url 'main_dashboard' %}"><i class="bi bi-grid-fill"></i> {% trans "Dashboard" %}</a></li>
+        </ul>
+
+        <!-- 1. FRONT OFFICE -->
+        {% if is_admin or dept == 'ADM' or dept == 'RJ' or perms.appointments.view_menu_appointments or perms.patients.view_menu_patients %}
+        <div class="sb-sec">{% trans "FRONT OFFICE" %}</div>
+        <ul class="sb-nav">
+            {% if perms.appointments.view_menu_appointments or is_admin or dept == 'ADM' or dept == 'RJ' %}
+            <li><a href="{% url 'appointment_calendar' %}"><i class="bi bi-calendar-event"></i> {% trans "Appointments / Schedule" %}</a></li>
+            {% endif %}
+            
+            
+            {% if perms.patients.view_menu_patients %}
+            <li><a href="{% url 'reception' %}"><i class="bi bi-search"></i> {% trans "Reception & Registration" %}</a></li>
+            <li><a href="{% url 'patient_list' %}"><i class="bi bi-people"></i> {% trans "Patients List" %}</a></li>
+            {% endif %}
+            
+            {% if is_admin or dept == 'ADM' %}
+            <li><a href="{% url 'queue_display' %}" target="_blank"><i class="bi bi-tv"></i> {% trans "Queue Monitor (TV)" %}</a></li>
+            {% endif %}
+        </ul>
+        {% endif %}
+
+        <!-- 2. CLINICAL CARE -->
+        {% if perms.medical_records.view_menu_medical_records or is_admin %}
+        <div class="sb-sec">{% trans "CLINICAL CARE" %}</div>
+        <ul class="sb-nav">
+            {% if is_admin or dept == 'TRIAGE' %}
+            <li><a href="{% url 'triage_dashboard' %}"><i class="bi bi-heart-pulse"></i> {% trans "Triage (Vitals)" %}</a></li>
+            {% endif %}
+            
+            {% if is_admin or dept == 'IGD' or dept == 'EMERGENCY' %}
+            <li><a href="{% url 'emergency_direct_registration' %}" class="text-info"><i class="bi bi-person-plus-fill"></i> {% trans "Emergency Registration" %}</a></li>
+            <li><a href="{% url 'emergency_triage_dashboard' %}" class="text-warning"><i class="bi bi-clipboard-check"></i> {% trans "Emergency Triage" %}</a></li>
+            <li><a href="{% url 'emergency_dashboard' %}" class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> {% trans "Emergency Room (ER)" %}</a></li>
+            {% endif %}
+            
+            {% if is_admin or dept == 'RJ' %}
+            <li><a href="{% url 'doctor_dashboard' %}"><i class="bi bi-clipboard2-pulse"></i> {% trans "Doctor Dashboard" %}</a></li>
+            {% endif %}
+
+            <!-- Specialist Sub-menu (Conditional) -->
+            {% if perms.medical_records.view_menu_specialist_kia or perms.medical_records.view_menu_specialist_hiv or perms.medical_records.view_menu_specialist_tb or perms.medical_records.view_menu_specialist_dental or perms.medical_records.view_menu_specialist_nutrition or is_admin %}
+                {% if is_admin or dept == 'KIA' or perms.medical_records.view_menu_specialist_kia %}
+                <li><a href="{% url 'doctor_dashboard' %}?room=KIA"><i class="bi bi-gender-female"></i> {% trans "Specialist: MCH" %}</a></li>
+                <li><a href="{% url 'department_completed_list' %}?dept=KIA" class="ps-5 small text-muted"><i class="bi bi-clock-history"></i> {% trans "MCH Visit History" %}</a></li>
+                {% endif %}
+                {% if is_admin or dept == 'HIV' or perms.medical_records.view_menu_specialist_hiv %}
+                <li><a href="{% url 'doctor_dashboard' %}?room=HIV"><i class="bi bi-virus"></i> {% trans "Specialist: HIV / AIDS" %}</a></li>
+                <li><a href="{% url 'hiv_appointment_calendar' %}" class="ps-5 small" style="color: #d63a5a;"><i class="bi bi-calendar-heart"></i> {% trans "HIV Appointments" %}</a></li>
+                <li><a href="{% url 'department_completed_list' %}?dept=HIV" class="ps-5 small text-muted"><i class="bi bi-clock-history"></i> {% trans "HIV Visit History" %}</a></li>
+                {% endif %}
+                {% if is_admin or dept == 'TB' or perms.medical_records.view_menu_specialist_tb %}
+                <li><a href="{% url 'doctor_dashboard' %}?room=TB"><i class="bi bi-lungs"></i> {% trans "Specialist: TB" %}</a></li>
+                <li><a href="{% url 'department_completed_list' %}?dept=TB" class="ps-5 small text-muted"><i class="bi bi-clock-history"></i> {% trans "TB Visit History" %}</a></li>
+                {% endif %}
+                {% if is_admin or dept == 'DENTAL' or perms.medical_records.view_menu_specialist_dental %}
+                <li><a href="{% url 'doctor_dashboard' %}?room=DENTAL"><i class="bi bi-emoji-smile"></i> {% trans "Specialist: Dental" %}</a></li>
+                <li><a href="{% url 'department_completed_list' %}?dept=DENTAL" class="ps-5 small text-muted"><i class="bi bi-clock-history"></i> {% trans "Dental Visit History" %}</a></li>
+                {% endif %}
+                {% if is_admin or dept == 'NUTRISI' or perms.medical_records.view_menu_specialist_nutrition %}
+                <li><a href="{% url 'doctor_dashboard' %}?room=NUTRISI"><i class="bi bi-egg-fried"></i> {% trans "Specialist: Nutrition" %}</a></li>
+                <li><a href="{% url 'department_completed_list' %}?dept=NUTRISI" class="ps-5 small text-muted"><i class="bi bi-clock-history"></i> {% trans "Nutrition Visit History" %}</a></li>
+                {% endif %}
+                {% if is_admin or dept == 'USG' or perms.medical_records.view_menu_specialist_usg %}
+                <li><a href="{% url 'doctor_dashboard' %}?room=USG"><i class="bi bi-broadcast-pin"></i> {% trans "Specialist: USG" %}</a></li>
+                <li><a href="{% url 'department_completed_list' %}?dept=USG" class="ps-5 small text-muted"><i class="bi bi-clock-history"></i> {% trans "USG Visit History" %}</a></li>
+                {% endif %}
+            {% endif %}
+        </ul>
+        {% endif %}
+
+        <!-- 3. ANCILLARY SERVICES -->
+        {% if is_admin or dept in 'LAB LABORATORY FAR PHA PHARMACY RAD RADIOLOGY' %}
+        <div class="sb-sec">{% trans "ANCILLARY SERVICES" %}</div>
+        <ul class="sb-nav">
+            {% if is_admin or dept == 'LAB' or dept == 'LABORATORY' %}
+            <li><a href="{% url 'lab_dashboard' %}"><i class="bi bi-eyedropper"></i> {% trans "Laboratory" %}</a></li>
+            <li><a href="{% url 'pathology_dashboard' %}"><i class="bi bi-droplet-half"></i> {% trans "Pathology" %}</a></li>
+            {% endif %}
+
+            {% if is_admin or dept == 'FAR' or dept == 'PHA' or dept == 'PHARMACY' %}
+            <li><a href="{% url 'pharmacy_dashboard' %}"><i class="bi bi-capsule-pill"></i> {% trans "Pharmacy" %}</a></li>
+            {% endif %}
+
+            {% if is_admin or dept == 'RAD' or dept == 'RADIOLOGY' %}
+            <li><a href="{% url 'radiology_dashboard' %}"><i class="bi bi-radioactive"></i> {% trans "Radiology" %}</a></li>
+            {% endif %}
+        </ul>
+        {% endif %}
+
+        <!-- 4. REPORTS & ANALYTICS -->
+        {% if perms.medical_records.view_visit or is_admin or dept == 'ADM' %}
+        <div class="sb-sec">{% trans "REPORTS & ANALYTICS" %}</div>
+        <ul class="sb-nav">
+            <li><a href="{% url 'department_completed_list' %}{% if profile.is_hiv_staff %}?dept=HIV{% endif %}"><i class="bi bi-clock-history"></i> {% trans "Visit History" %}</a></li>
+            {% if is_admin or dept == 'RJ' or dept == 'ADM' %}
+            <li><a href="{% url 'disease_statistics_report' %}"><i class="bi bi-bar-chart-line"></i> {% trans "Disease Statistics" %}</a></li>
+            {% endif %}
+            {% if perms.billing.view_menu_billing or is_admin or dept == 'PJ' %}
+            <li><a href="{% url 'billing_report' %}"><i class="bi bi-graph-up"></i> {% trans "Billing Reports" %}</a></li>
+            {% endif %}
+        </ul>
+        {% endif %}
+
+        <!-- 5. LOGISTICS & FINANCE -->
+        {% if perms.billing.view_menu_billing or perms.pharmacy.view_medicine or is_admin %}
+        <div class="sb-sec">{% trans "LOGISTICS & FINANCE" %}</div>
+        <ul class="sb-nav">
+            {% if perms.billing.view_menu_billing or is_admin or dept == 'PJ' %}
+            <li><a href="{% url 'billing_dashboard' %}"><i class="bi bi-cash-stack"></i> {% trans "Billing Dashboard" %}</a></li>
+            <li><a href="{% url 'invoice_create' %}"><i class="bi bi-plus-circle"></i> {% trans "New Invoice" %}</a></li>
+            {% endif %}
+
+            {% if perms.pharmacy.view_medicine or is_admin %}
+            <li><a href="{% url 'medicine_list' %}"><i class="bi bi-box-seam"></i> {% trans "Medicine Catalog" %}</a></li>
+            <li><a href="{% url 'stock_entry_list' %}"><i class="bi bi-plus-square"></i> {% trans "Stock Entry" %}</a></li>
+            <li><a href="{% url 'service_category_list' %}"><i class="bi bi-tags"></i> {% trans "Service Pricing" %}</a></li>
+            {% endif %}
+        </ul>
+        {% endif %}
+
+        <!-- 6. SYSTEM ADMIN -->
+        {% if is_admin or dept == 'ADM' or dept == 'IT' or dept == 'HR' %}
+        <div class="sb-sec">{% trans "SYSTEM ADMIN" %}</div>
+        <ul class="sb-nav">
+            {% if perms.staff.view_menu_staff or is_admin %}
+            <li><a href="{% url 'staff_list' %}"><i class="bi bi-person-badge"></i> {% trans "Staff Directory" %}</a></li>
+            {% endif %}
+            
+            {% if perms.staff.view_menu_master_data or is_admin %}
+            <li><button onclick="tglSub('sub-master')"><i class="bi bi-database-fill-gear"></i> {% trans "Master Data" %} <i class="bi bi-chevron-down ms-auto small"></i></button>
+                <ul class="sb-sub" id="sub-master">
+                    <li><a href="{% url 'room_list' %}">{% trans "Clinic Rooms" %}</a></li>
+                    <li><a href="{% url 'diagnosis_list' %}">{% trans "Diagnosis Catalog" %}</a></li>
+                    <li><a href="/admin/laboratory/labtest/">{% trans "Lab Test Catalog" %}</a></li>
+                    <li><a href="/admin/pathology/pathologytest/">{% trans "Pathology Catalog" %}</a></li>
+                </ul>
+            </li>
+            {% endif %}
+
+            {% if is_admin %}
+            <li><button onclick="tglSub('sub-cfg')"><i class="bi bi-gear-fill"></i> {% trans "Configuration" %} <i class="bi bi-chevron-down ms-auto small"></i></button>
+                <ul class="sb-sub" id="sub-cfg">
+                    <li><a href="{% url 'role_list' %}">{% trans "User Roles" %}</a></li>
+                    <li><a href="{% url 'role_permissions' %}">{% trans "Permissions Mapping" %}</a></li>
+                    <li><a href="{% url 'backup_restore' %}">{% trans "Backup & Restore" %}</a></li>
+                    <li><a href="/admin/" target="_blank">{% trans "Django Admin" %}</a></li>
+                </ul>
+            </li>
+            {% endif %}
+        </ul>
+        {% endif %}
+
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+    <div class="wrapper">
+        <header class="topbar">
+            <div class="d-flex align-items-center"><button class="btn d-lg-none me-2"
+                    onclick="toggleSidebar()"><i
+                        class="bi bi-list fs-4"></i></button>
+                <h6 class="mb-0 fw-bold">{% block page_title %}{% endblock %}</h6>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                {% if user.is_authenticated %}
+                <div class="dropdown">
+                    <button class="btn btn-link link-dark text-decoration-none dropdown-toggle p-0"
+                        data-bs-toggle="dropdown"><i class="bi bi-person-circle fs-5 me-1"></i><span
+                            class="small d-none d-md-inline">{{ user.username }}</span></button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                        <li>
+                            <div class="px-3 py-2 small fw-bold text-muted border-bottom">{{ user.get_full_name|default:user.username }}</div>
+                        </li>
+                        <li><a class="dropdown-item" href="{% if user.staff_profile %}{% url 'staff_edit' user.staff_profile.id %}{% else %}#{% endif %}"><i class="bi bi-person me-2"></i> {% trans "My Profile" %}</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li>
+                            <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i> {% trans "Logout" %}</button></form>
+                        </li>
+                    </ul>
+                </div>
+                {% else %}
+                <a href="{% url 'login' %}" class="btn btn-sm btn-primary">{% trans "Login" %}</a>
+                {% endif %}
+            </div>
+        </header>
+        <main class="content">{% block content %}{% endblock %}</main>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>function tglSub(id) { const el = document.getElementById(id); el.classList.toggle('show'); el.previousElementSibling.querySelector('.bi-chevron-down').classList.toggle('bi-rotate-180'); }
+        document.addEventListener('DOMContentLoaded', () => { const path = window.location.pathname; document.querySelectorAll('.sb-nav a').forEach(a => { if (a.getAttribute('href') === path) { a.classList.add('active'); let p = a.closest('.sb-sub'); if (p) { p.classList.add('show'); } } }); });
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('show'); document.getElementById('sidebarOverlay').classList.toggle('show'); }
+function closeSidebar() { document.getElementById('sidebar').classList.remove('show'); document.getElementById('sidebarOverlay').classList.remove('show'); }</script>
+    {% block extra_js %}{% endblock %}
+
+    <!-- Global Select2 Initialization for Diagnosis -->
+    <script>
+        $(document).ready(function() {
+            $('.select2-diagnosis').each(function() {
+                var ajaxUrl = $(this).data('ajax-url');
+                $(this).select2({
+                    theme: 'bootstrap-5',
+                    placeholder: '{% trans "Search by Code or Name..." %}',
+                    allowClear: true,
+                    minimumInputLength: 2,
+                    ajax: {
+                        url: ajaxUrl,
+                        dataType: 'json',
+                        delay: 250,
+                        data: function (params) {
+                            return {
+                                q: params.term,
+                                page: params.page
+                            };
+                        },
+                        processResults: function (data, params) {
+                            params.page = params.page || 1;
+                            return {
+                                results: data.results,
+                                pagination: {
+                                    more: (params.page * 30) < data.total_count
+                                }
+                            };
+                        },
+                        cache: true
+                    }
+                });
+            });
+
+            // For medication list if needed in the future
+            $('.select2-meds').select2({
+                theme: 'bootstrap-5',
+                placeholder: '{% trans "Select medicine..." %}'
+            });
+        });
+    </script>
+    {% endwith %}
+    {% endwith %}
+    {% endwith %}
+    {% endwith %}
+</body>
+
+</html>

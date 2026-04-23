@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold mb-0"><i class="bi bi-box-seam text-primary me-2"></i>{{ title }}</h3>
+            <a href="{% url 'stock_entry_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>{% trans "Back" %}
+            </a>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{% trans "Medicine" %} *</label>
+                        {% if entry %}
+                            <input type="text" class="form-control" value="{{ entry.medicine.name }}" disabled>
+                            <input type="hidden" name="medicine" value="{{ entry.medicine.pk }}">
+                        {% else %}
+                            <select name="medicine" class="form-select" required>
+                                <option value="">-- {% trans "Select Medicine" %} --</option>
+                                {% for med in all_medicines %}
+                                <option value="{{ med.id }}" {% if request.GET.medicine == med.id|stringformat:"d" %}selected{% endif %}>
+                                    {{ med.display_name }} - {% trans "Stock" %}: {{ med.stock }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        {% endif %}
+                    </div>
+
+                    <!-- Source Type -->
+                    <div class="card bg-light mb-3">
+                        <div class="card-body pb-2">
+                            <label class="form-label fw-bold">{% trans "Source / Origem" %} *</label>
+                            <div class="row g-2">
+                                {% for val, label in source_choices %}
+                                <div class="col-md-4">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="source_type" value="{{ val }}" id="src_{{ val }}"
+                                            {% if entry.source_type == val %}checked{% elif not entry and val == 'PURCHASE' %}checked{% endif %}
+                                            onchange="toggleDonorFields(this.value)">
+                                        <label class="form-check-label" for="src_{{ val }}">{{ label }}</label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Donor Name (shown for donations) -->
+                    <div class="mb-3" id="donorField" style="{% if not entry or entry.source_type == 'PURCHASE' %}display:none{% endif %}">
+                        <label class="form-label fw-bold">{% trans "Donor / Organization Name" %}</label>
+                        <input type="text" name="donor_name" class="form-control" value="{{ entry.donor_name|default:'' }}" placeholder="{% trans 'e.g. WHO, MSF, Cruz Vermelha, Ministerio Saude' %}">
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{% trans "Quantity Received" %} *</label>
+                            <input type="number" name="quantity" class="form-control" min="1" value="{{ entry.quantity|default:'' }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{% trans "Received Date" %} *</label>
+                            <input type="date" name="purchase_date" class="form-control" value="{{ entry.purchase_date|date:'Y-m-d'|default:'' }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{% trans "Expiry Date" %}</label>
+                            <input type="date" name="expiry_date" class="form-control" value="{{ entry.expiry_date|date:'Y-m-d'|default:'' }}">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{% trans "Batch Number" %}</label>
+                            <input type="text" name="batch_number" class="form-control" value="{{ entry.batch_number|default:'' }}" placeholder="e.g. BT20260301">
+                        </div>
+                        <div class="col-md-4" id="supplierField">
+                            <label class="form-label fw-bold">{% trans "Supplier / Vendor" %}</label>
+                            <input type="text" name="supplier" class="form-control" value="{{ entry.supplier|default:'' }}" placeholder="e.g. PT. Kimia Farma">
+                        </div>
+                        <div class="col-md-4" id="priceField">
+                            <label class="form-label fw-bold">{% trans "Unit Price (USD)" %}</label>
+                            <input type="number" name="unit_price" id="unitPriceInput" class="form-control" step="0.01" min="0" value="{{ entry.unit_price|default:'0' }}">
+                            <small class="text-muted" id="priceHint" style="display:none">{% trans "Set to 0 for donations" %}</small>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{% trans "Notes" %}</label>
+                        <textarea name="notes" class="form-control" rows="2">{{ entry.notes|default:'' }}</textarea>
+                    </div>
+
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'stock_entry_list' %}" class="btn btn-outline-secondary">{% trans "Cancel" %}</a>
+                        <button type="submit" class="btn btn-primary px-5">
+                            <i class="bi bi-save me-1"></i>{% trans "Save" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleDonorFields(sourceType) {
+    const donorField = document.getElementById('donorField');
+    const priceHint = document.getElementById('priceHint');
+
+    if (sourceType === 'PURCHASE') {
+        donorField.style.display = 'none';
+        priceHint.style.display = 'none';
+    } else {
+        donorField.style.display = 'block';
+        priceHint.style.display = 'block';
+    }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    const checked = document.querySelector('input[name="source_type"]:checked');
+    if (checked) toggleDonorFields(checked.value);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Input Radiology Result" %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h3 class="fw-bold mb-0"><i class="bi bi-heart-pulse text-warning me-2"></i>{% trans "Input Radiology Result" %}</h3>
+                <p class="text-muted small mb-0">{% trans "Enter X-Ray / radiology results" %}</p>
+            </div>
+            <a href="{% url 'radiology_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>{% trans "Back to Dashboard" %}
+            </a>
+        </div>
+
+        <!-- Patient Info Card -->
+        <div class="card mb-4 border-start border-warning border-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>{% trans "Patient" %}:</strong> {{ radiology_request.visit.patient.full_name }}<br>
+                        <strong>{% trans "Patient ID" %}:</strong> {{ radiology_request.visit.patient.patient_id }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>{% trans "Doctor" %}:</strong> 
+                        {% if radiology_request.requesting_physician %}
+                            {{ radiology_request.requesting_physician.get_full_name|default:radiology_request.requesting_physician.username }}
+                        {% else %}
+                            ---
+                        {% endif %}<br>
+                        <strong>{% trans "Date" %}:</strong> {{ radiology_request.date_of_request|date:"d M Y H:i" }}
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <strong>{% trans "Tests Requested" %}:</strong>
+                    {% for test in radiology_request.tests.all %}
+                        <span class="badge bg-secondary me-1">{{ test.name }}</span>
+                    {% empty %}
+                        <span class="text-muted">-</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Result Input Form -->
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">{% trans "Status" %}</label>
+                        <select name="status" class="form-select">
+                            <option value="PENDING" {% if radiology_request.status == 'PENDING' %}selected{% endif %}>{% trans "Pending" %}</option>
+                            <option value="IN_PROGRESS" {% if radiology_request.status == 'IN_PROGRESS' %}selected{% endif %}>{% trans "In Progress" %}</option>
+                            <option value="COMPLETED" {% if radiology_request.status == 'COMPLETED' %}selected{% endif %}>{% trans "Completed" %}</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">{% trans "Findings" %}</label>
+                        <textarea name="findings" class="form-control" rows="6" placeholder="{% trans 'Enter radiology findings...' %}">{{ existing_result.findings|default:'' }}</textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">{% trans "Impression" %}</label>
+                        <textarea name="impression" class="form-control" rows="4" placeholder="{% trans 'Enter radiologist impression...' %}">{{ existing_result.impression|default:'' }}</textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">{% trans "Notes" %}</label>
+                        <textarea name="notes" class="form-control" rows="3" placeholder="{% trans 'Additional notes...' %}">{{ existing_result.notes|default:'' }}</textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">{% trans "Attachments (Images / PDF)" %}</label>
+                        <input type="file" name="attachments" class="form-control" accept=".pdf,.jpg,.jpeg,.png,.dcm" multiple>
+                        <small class="text-muted">{% trans "Select multiple files at once" %}</small>
+                        {% if existing_result and existing_result.attachments.all %}
+                            <div class="mt-3">
+                                <strong class="small text-muted">{% trans "Uploaded Files" %}:</strong>
+                                <div class="row g-2 mt-1">
+                                    {% for att in existing_result.attachments.all %}
+                                    <div class="col-auto">
+                                        <a href="{{ att.file.url }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                            <i class="bi bi-file-earmark me-1"></i>{{ att.file.name|cut:"radiology_results/" }}
+                                        </a>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endif %}
+                        {% if existing_result.attachment %}
+                            <div class="mt-2">
+                                <strong class="small text-muted">{% trans "Legacy Attachment" %}:</strong>
+                                <a href="{{ existing_result.attachment.url }}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-file-earmark me-1"></i>{% trans "View" %}
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {% if existing_result.completed_at %}
+                    <div class="alert alert-success">
+                        <i class="bi bi-check-circle me-2"></i>
+                        {% trans "Completed at" %}: {{ existing_result.completed_at|date:"d M Y H:i" }}
+                        {% trans "by" %} 
+                        {% if existing_result.verified_by %}
+                            {{ existing_result.verified_by.get_full_name|default:existing_result.verified_by.username }}
+                        {% else %}
+                            ---
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'radiology_dashboard' %}" class="btn btn-outline-secondary px-4">{% trans "Cancel" %}</a>
+                        <button type="submit" class="btn btn-warning btn-lg px-5">
+                            <i class="bi bi-save me-2"></i>{% trans "Save Result" %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

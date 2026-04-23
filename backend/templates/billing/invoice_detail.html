@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Invoice" %} {{ invoice.invoice_number }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="bi bi-receipt me-2"></i>{{ invoice.invoice_number }}</h4>
+    <div class="d-flex gap-2">
+        {% if invoice.status != 'PAID' and invoice.status != 'CANCELLED' %}
+        <a href="{% url 'payment_create' invoice_uuid=invoice.uuid %}" class="btn btn-success btn-sm"><i class="bi bi-cash-coin me-1"></i>{% trans "Record Payment" %}</a>
+        {% endif %}
+        <a href="{% url 'invoice_print' uuid=invoice.uuid %}" class="btn btn-outline-dark btn-sm" target="_blank"><i class="bi bi-printer me-1"></i>{% trans "Print" %}</a>
+        <a href="{% url 'invoice_pdf' uuid=invoice.uuid %}" class="btn btn-outline-danger btn-sm" target="_blank"><i class="bi bi-file-pdf me-1"></i>{% trans "PDF" %}</a>
+        <a href="{% url 'billing_dashboard' %}" class="btn btn-outline-secondary btn-sm">{% trans "Back" %}</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between">
+                <strong>{% trans "Invoice Details" %}</strong>
+                {% if invoice.status == 'PAID' %}
+                    <span class="badge bg-success fs-6">{% trans "PAID" %}</span>
+                {% elif invoice.status == 'PARTIAL' %}
+                    <span class="badge bg-warning text-dark fs-6">{% trans "PARTIALLY PAID" %}</span>
+                {% elif invoice.status == 'CANCELLED' %}
+                    <span class="badge bg-secondary fs-6">{% trans "CANCELLED" %}</span>
+                {% else %}
+                    <span class="badge bg-danger fs-6">{% trans "UNPAID" %}</span>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-bordered mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>{% trans "Description" %}</th>
+                            <th>{% trans "Qty" %}</th>
+                            <th>{% trans "Unit Price" %}</th>
+                            <th>{% trans "Total" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in invoice.items.all %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                {{ item.description }}
+                                {% if item.service and item.service.category %}
+                                <br><small class="text-muted"><i class="bi bi-tag me-1"></i>{{ item.service.category.name }}</small>
+                                {% endif %}
+                            </td>
+                            <td>{{ item.quantity }}</td>
+                            <td>${{ item.unit_price|floatformat:2 }}</td>
+                            <td>${{ item.line_total|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" class="text-end"><strong>{% trans "Subtotal" %}:</strong></td>
+                            <td><strong>${{ invoice.subtotal|floatformat:2 }}</strong></td>
+                        </tr>
+                        {% if invoice.discount > 0 %}
+                        <tr>
+                            <td colspan="4" class="text-end text-danger">{% trans "Discount" %}:</td>
+                            <td class="text-danger">-${{ invoice.discount|floatformat:2 }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr class="table-primary">
+                            <td colspan="4" class="text-end"><strong>{% trans "Total Amount" %}:</strong></td>
+                            <td><strong>${{ invoice.total_amount|floatformat:2 }}</strong></td>
+                        </tr>
+                        <tr class="table-success">
+                            <td colspan="4" class="text-end"><strong>{% trans "Amount Paid" %}:</strong></td>
+                            <td><strong>${{ invoice.amount_paid|floatformat:2 }}</strong></td>
+                        </tr>
+                        {% if invoice.balance_due > 0 %}
+                        <tr class="table-danger">
+                            <td colspan="4" class="text-end"><strong>{% trans "Balance Due" %}:</strong></td>
+                            <td><strong>${{ invoice.balance_due|floatformat:2 }}</strong></td>
+                        </tr>
+                        {% endif %}
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        {% if invoice.payments.exists %}
+        {% with pay_for=invoice.get_items_summary %}
+        <div class="card mb-3">
+            <div class="card-header"><strong>{% trans "Payment History" %}</strong></div>
+            <div class="card-body border-bottom">
+                <p class="small mb-0">
+                    <strong>{% trans "Payment for (services / items)" %}:</strong>
+                    {% if pay_for %}
+                    {{ pay_for }}
+                    {% else %}
+                    <span class="text-muted">{% trans "No line items on this invoice." %}</span>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>{% trans "Date" %}</th>
+                            <th>{% trans "Amount" %}</th>
+                            <th>{% trans "Method" %}</th>
+                            <th>{% trans "Reference" %}</th>
+                            <th>{% trans "Received By" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pmt in invoice.payments.all %}
+                        <tr>
+                            <td>{{ pmt.created_at|date:"d/m/Y H:i" }}</td>
+                            <td class="text-success"><strong>${{ pmt.amount|floatformat:2 }}</strong></td>
+                            <td>{{ pmt.get_payment_method_display }}</td>
+                            <td>{{ pmt.reference|default:"-" }}</td>
+                            <td>{{ pmt.received_by.get_full_name|default:pmt.received_by.username }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endwith %}
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header"><strong>{% trans "Patient" %}</strong></div>
+            <div class="card-body">
+                <h6>{{ invoice.patient.full_name }}</h6>
+                <p class="text-muted mb-1">{{ invoice.patient.patient_id }}</p>
+                <p class="mb-1">{{ invoice.patient.full_address }}</p>
+                {% if invoice.patient.phone_number %}
+                <p class="mb-0"><i class="bi bi-telephone me-1"></i>{{ invoice.patient.phone_number }}</p>
+                {% endif %}
+                <hr>
+                <a href="{% url 'patient_billing_history' patient_uuid=invoice.patient.uuid %}" class="btn btn-outline-primary btn-sm w-100">
+                    <i class="bi bi-clock-history me-1"></i>{% trans "Billing History" %}
+                </a>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header"><strong>{% trans "Invoice Info" %}</strong></div>
+            <div class="card-body">
+                <p class="mb-1"><strong>{% trans "Created" %}:</strong> {{ invoice.created_at|date:"d/m/Y H:i" }}</p>
+                <p class="mb-1"><strong>{% trans "Created By" %}:</strong> {{ invoice.created_by.get_full_name|default:invoice.created_by.username }}</p>
+                {% if invoice.visit %}
+                <p class="mb-1"><strong>{% trans "Visit" %}:</strong> {{ invoice.visit.visit_date|date:"d/m/Y" }} (Q#{{ invoice.visit.queue_number }})</p>
+                {% endif %}
+                {% if invoice.paid_at %}
+                <p class="mb-1"><strong>{% trans "Paid At" %}:</strong> {{ invoice.paid_at|date:"d/m/Y H:i" }}</p>
+                {% endif %}
+                {% if invoice.notes %}
+                <hr>
+                <p class="mb-0"><small>{{ invoice.notes }}</small></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,628 @@
+{
+  "Aileu": {
+    "Aileu Vila": {
+      "Aissirimou": ["Aituhularan", "Bercati", "Bessilau", "Erkoatun", "Hudilaran"],
+      "Bandudato": ["Dailor", "Raelete", "Taiblor"],
+      "Fahiria": ["Daulala", "Fahiria", "Fatubuti", "Manulete"],
+      "Fatubossa": ["Erhetu", "Fatubossa", "Kaikasa", "Mane-Atu", "Uman-Tuco"],
+      "Hoholau": ["Aitoin", "Asu-Lau", "Hoholau", "Mau-Lutu", "Uman-Talau"],
+      "Lahae": ["Lahae", "Lequitura", "Rimori"],
+      "Lauisi": ["Lauisi", "Lidatopa", "Uatu-Kebu"],
+      "Saboria": ["Saboria", "Vila-Maumeta"],
+      "Seloi Craic": ["Aicamate", "Bessimala", "Dare", "Maulau", "Mauleres", "Raipes"],
+      "Seloi Malere": ["Casamou", "Dailor", "Manulai", "Mauhohi", "Riahori", "Uranana"],
+      "Liurai": ["Araumatan", "Laulalara", "Liurai", "Manulete", "Manumera", "Uahulan"],
+      "Lequitura": ["Lequitura", "Riheun"],
+      "Hurai-Raco": ["Maurusa", "Taratihi", "Hatuhei", "Raço"]
+    },
+    "Laulara": {
+      "Cotolau": ["Binona", "Cotolau", "Lebucucu", "Ornai", "Ramerlau"],
+      "Fatisi": ["Banro", "Maubouc", "Umanlau"],
+      "Madabeno": ["Belumhatu", "Desmanhata", "Lismori", "Manehalo", "Manufoni", "Remapati"],
+      "Talitu": ["Talitu", "Casmantutu", "Quelae", "Fatuc-Hun"],
+      "Tohumeta": ["Tohumeta", "Acadiro", "Berlihu-Meta"],
+      "Bocalelo": ["Donfonamo", "Mauberhatan", "Ermequi", "Kuncin"]
+    },
+    "Lequidoe": {
+      "Acubilitoho": ["Acubilitoho", "Fatubuti", "Raimatua"],
+      "Bereleu": ["Bereleu", "Malere", "Namolesso"],
+      "Betulau": ["Betulau", "Erelia", "Mau-Lete"],
+      "Fahisoi": ["Fahisoi", "Namaste"],
+      "Faturilau": ["Faturilau", "Manucassa"],
+      "Manucassa": ["Manucassa", "Raimori"],
+      "Namolesso": ["Namolesso", "Bereleu"]
+    },
+    "Remexio": {
+      "Acumau": ["Acumau Villa", "Fadabloco"],
+      "Fadabloco": ["Fadabloco Villa", "Maumeta"],
+      "Fahisoi": ["Fahisoi Villa", "Hautoho"],
+      "Faturasa": ["Faturasa", "Liurai"],
+      "Hautoho": ["Hautoho Villa", "Liurai"],
+      "Maumeta": ["Maumeta Villa", "Remexio"],
+      "Liurai": ["Liurai Villa", "Tulataqueo"],
+      "Tulataqueo": ["Tulataqueo Villa", "Liurai"],
+      "Karahili": ["Aimerahun", "Fahilebun", "Sumir", "Karimon"]
+    }
+  },
+  "Ainaro": {
+    "Ainaro Vila": {
+      "Ainaro": ["Builico", "Ainaro", "Hato mera", "Lugatu", "Nugufu", "Sebagulau", "Teliga"],
+      "Cassa": ["Boltama", "Civil", "Lailima", "Mau-Suca/be'e Moris", "Queça-Mau"],
+      "Manutassi": ["Bau-Hati-Lau", "Canudo", "Hato-Meta-Udo", "Rae-Buti-Udo"],
+      "Mau-Nunu": ["Aileu", "Mamalau", "Mau-Suca"],
+      "Mau-Ulo": ["Dagamesa", "Hato lau", "Hato lelo", "Maulu pu", "Maulu lau"],
+      "Soro": ["Guer-Udo", "Leolala", "Poelau", "Terlora"],
+      "Suro-Craic": ["Ailau", "Bazar", "Nó-Ulo", "Ria-Mori"]
+    },
+    "Hato-Udo": {
+      "Foho-Ai-Lico": ["Ailora", "Ainaro-Quic", "Baha", "Lebo-Mera", "Lesso", "Raimerlau"],
+      "Leolima": ["Aimerleu", "Dausur", "Goulau", "Groto", "Hutseo", "Lesse", "Luro", "Nuno-Boco", "Rae-Soro", "Suro-Craic"]
+    },
+    "Hatu-Builico": {
+      "Mauchiga": ["Goulora", "Hato-Quero", "Leotelo I", "Leotelo II", "Mauchiga"],
+      "Mulo": ["Aituto", "Bleheto", "Hautio", "Mano-Mera", "Maulahulo", "Mulo", "Queorudo", "Tatiri"],
+      "Nuno-Mogue": ["Hatu-Builico", "Tual-Rem", "Morocati", "Mausoromata", "Tucaro", "Lebulau", "Laqueco", "Nuno-Mogue", "Nuno-Mogue-Lau", "Hato-Seraquei"]
+    },
+    "Maubisse": {
+      "Aituto": ["Aituto", "Blehito", "Hautio", "Mano-Mera"],
+      "Edi": ["Demutete", "Hebau", "Lobibo", "Rai-Mera", "Talale", "Tali-Felo"],
+      "Fatubessi": ["Audeli", "Caicasaico", "Daru-Uato", "Hato-Luli", "Luludere", "Rotutu", "Samalete", "Simao"],
+      "Hohu-Naro": ["Audian", "Fata-Hada", "Hatu-Metan", "Lulogara", "Nuno-Hudi"],
+      "Liurai": ["Cotomori", "Laraluha", "Manutane"],
+      "Manelobas": ["Hali-Mesak", "Hatu-Lia", "Lia-Nai", "Maulalau", "Ua-Holi", "Ulo-Pala"],
+      "Manetu": ["Hatu-Kerbau", "Hohulo", "Huba-Roque", "Iptu-Lili", "Lequibato", "Luludere"],
+      "Maubisse": ["Cano-Rema", "Goulala", "Hato-Fae", "Hato-Luli", "Hautado", "Lequi-Tei", "Ria-Leco", "Ria-Mori", "Sarlala", "Teli-Tuco", "Ura-Hou", "Vila"],
+      "Maulau": ["Besite", "Caraubalo", "Hatu-Liurai", "Laca-Liurai", "Lau-Hatu", "Mauli-Fahe", "Ussisa-Cati"]
+    }
+  },
+  "Ataúro": {
+    "Ataúro": {
+      "Beloi": ["Beloi", "Usubemasu"],
+      "Biqueli": ["Biqueli", "Pala", "Uaroana"],
+      "Macadade": ["Macadade", "Bite", "Arlo", "Adara", "Berau"],
+      "Maquili": ["Fatulela", "Macelihu", "Mau-Laku", "Mau-Meta"],
+      "Vila Maumeta": ["Eclae", "Ilimanu", "Ilitecaraquia"]
+    }
+  },
+  "Baucau": {
+    "Baguia": {
+      "Afaloicai": ["Buibela", "Lena", "Oqui-Lari", "Uai-Mata"],
+      "Alaua Kraik": ["Afaguia", "Alaua", "Ne-Olidae", "Sorucama", "Ua-Sufa"],
+      "Alaua Leten": ["Ae-Afa", "Alaua", "Bibilalari", "Maurubi-Assa", "Selibere"],
+      "Defauassi": ["Lari", "Liae", "Uaribere", "Uro-Ho"],
+      "Haekoni": ["Laco-Uma", "Liosira", "Uatu-Tua"],
+      "Larisula": ["Ua-Bubu", "Ua-Dai", "Uro-Lei"],
+      "Lavateri": ["Lialira", "Uaibore-Mata", "Uai-Tali"],
+      "Ossu-Huna": ["Buibuti", "Luro", "Uato-Lari"],
+      "Samalari": ["Uatu-Lari", "Ua-Uli", "Uro-Cai"],
+      "Uacala": ["Uacala"]
+    },
+    "Baucau": {
+      "Bahu": ["Ana-Ulo", "Boi-Le", "Lamegua", "Macadai", "Ro-Ulo"],
+      "Bucoli": ["Lequi Loi Uato", "Aubaca", "Diati", "Lulicai", "Uro-Ana", "Uro-Wata"],
+      "Builai": ["Alala", "Builai", "Manulai", "Samalaculiba"],
+      "Buruma": ["Casmuto", "Ono-Sere", "Soli-Ua", "Taci"],
+      "Caibada Macasa'e": ["Boru-Baha", "Caiobilale", "Data-Ua", "Maulame"],
+      "Gariuai": ["Maucale", "Uaibehanan", "Uatu-Ua", "Uatura", "Darsula"],
+      "Laclale": ["Laclale", "Uatu-Lari"],
+      "Samalari": ["Samalari", "Uailoa"],
+      "Tirilolo": ["Betulale", "Caicido", "Lialai-Lessu", "Lutumuto", "Osso-Ua", "Parlamento"],
+      "Seiçal": ["Ague", "Hene-Uabubo", "Lacoda", "Loiborouai", "Umaquerek"],
+      "Uailili": ["Afacaimau", "Afagua", "Alala", "Ledatame", "Manulai", "Samalaculiba", "Uaimanu", "Uatubala", "Uatura De Baixo", "Uatura De Cima"]
+    },
+    "Laga": {
+      "Atelari": ["Atelari", "Auraba", "Lauadae", "Liarafa", "Loilari", "Nelu Uai", "Samagata", "Siguilaba", "Sirimana", "Uatalofo"],
+      "Libagua": ["Buibata", "Larimuta", "Larino", "Libagua", "Tirilolo"],
+      "Nunira": ["Buscaulari", "Nunira"],
+      "Saelari": ["Saelari", "Uatabo"],
+      "Sagadate": ["Abuti", "Alasafa", "Auraba", "Beliuali", "Ia Sula", "Naha-Afa", "One-Bu'u", "Samagata", "Selegua", "Sire-Bu'u", "Ulabuti"],
+      "Samalari": ["Desagua", "Lalu Uai", "Lualari", "Sae Uata Issi", "Sorugua", "Samalari"],
+      "Soba": ["Soba", "Uailis"],
+      "Tequinaumata": ["Tequinaumata", "Uata-Ua"]
+    },
+    "Quelicai": {
+      "Abafala": ["Assa-Loqui", "Caranu", "Mumana", "Telaha"],
+      "Abo": ["Abo Cairedo", "Abo-Da'e-Mena", "Abo-Lir", "Abo-Matebian"],
+      "Afaçá": ["Boralai", "Uligata", "Vecubuti"],
+      "Baguia": ["Butileo", "Laua-Liu", "Saraida"],
+      "Bualale": ["Lialura", "Osso-Messa"],
+      "Guruça": ["Eu-Afa", "Fae-Ua", "Laculela", "Saebere", "Uadaboru"],
+      "Lacoliu": ["Lacodala", "Mucububo", "Uaule"],
+      "Lelalai": ["Dauaduca", "Dessa", "Maluro", "Ossoliro"],
+      "Letemumo": ["Lau-Mana", "Lebenei", "Manome", "Ruta", "Uaidora"],
+      "Macalaco": ["Bocilai", "Defadae", "Macalira"],
+      "Maluro": ["Loilubo-Uagua", "Namanei", "Samafalo", "Ua-Robo"],
+      "Namanei": ["Cirilaco", "Daicou", "Loirae", "Ua-Sufa"],
+      "Uaitame": ["Caranu", "Gamana", "Gugulai", "Sialimo"],
+      "Laisorulai de Baixo": ["Afa-Ruta", "Daisoli", "Laisorulai"],
+      "Laisorulai de Cima": ["Darulari"]
+    },
+    "Vemasse": {
+      "Caicua": ["Bahamori", "Caicua"],
+      "Caitaranau": ["Nunoti", "Uaidau"],
+      "Loilubo": ["Loilubo Vila"],
+      "Ossouala": ["Caidenulale", "Hoineuai", "Lolinuno", "Uaicnassa", "Uma Ana Ico"],
+      "Ostico": ["Bahamori", "Haunau", "Ostico"],
+      "Uaigae": ["Lari", "Mota"],
+      "Vemasse": ["Vemasse Vila", "Lorosaba"],
+      "Uatu-Lari": ["Uatu-Lari Vila"]
+    },
+    "Venilale": {
+      "Bado-Ho'o": ["Uaibobo", "Uaicana", "Uataula", "Uatubela-Oli"],
+      "Baha Mori": ["Caimale Ho'o", "Comu-Oli", "Lacu-Uma", "Lia-Oli", "Neo-Ho'o", "Uai-Toqui"],
+      "Fatulia": ["Loihuno", "Baha Datu"],
+      "Uailaha": ["Caihurilale de Baixo", "Caihurilale de Cima", "Caubai", "Luha-Oli"],
+      "Uai Oli": ["Aca-Uata", "Luli-Bau", "Ualae", "Uatumissa"],
+      "Uatu Haco": ["Liabala", "Ossogori", "Uatali-Bu'u", "Uato-Assa"],
+      "Uma Ana Ico": ["Betunau", "Queleboruai", "Uai-Te", "Uato-Nau"],
+      "Uma Ana Ulo": ["Goa 7"]
+    }
+  },
+  "Bobonaro": {
+    "Atabae": {
+      "Aidabaleten": ["Aidabaleten", "Biacou", "Harame", "Meguir", "Sulilaran", "Tasi Mean", "Tutubaba"],
+      "Atabae": ["Fatubesi", "Helesu", "Lolocolo", "Made Bau", "Saburapo", "Hataz"],
+      "Fatubesi": ["Helesu", "Lolocolo", "Made Bau", "Saburapo"],
+      "Rairobo": ["Faturase", "Limanaro", "Rairobo"],
+      "Hataz": ["Amandato", "Atara"]
+    },
+    "Balibo": {
+      "Balibo Vila": ["Vila Belola", "Builekun", "Fatuk Laran", "Fatululik"],
+      "Batugade": ["Batugade", "Lotan", "Nu Badac"],
+      "Cowa": ["Bawai", "Futatas", "Lalis", "Manehat", "Rai Luli"],
+      "Leohito": ["Aiasa", "Faloai", "Ferik Katuas", "Mohak", "Rai Ulun"],
+      "Leolima": ["Bour", "Duaderoc", "Faturui", "Raifatuk"],
+      "Sanirin": ["Sanirin Vila", "Biacou"]
+    },
+    "Bobonaro": {
+      "Ai-Assa": ["Mazop", "Oalgomo", "Aisalgusun", "Laho", "Odelgomo"],
+      "Atu-Aben": ["Atuaben", "Talite"],
+      "Bobonaro": ["Bobonaro Vila", "Guro", "Lourba", "Maliana", "Oetapo", "Tismalau"],
+      "Carabau": ["Atumnaro", "Carabau", "Nunubuti", "Tasibalu", "Udu-Ai"],
+      "Colimau": ["Atublogo", "Beamoas", "Lo'o Dasi", "Manunia", "Tegoabe"],
+      "Cota Bo'ot": ["Oboe", "Cota Bo'ot"],
+      "Ilat-Laun": ["Ilat-Laun", "Tunero", "Purugoa", "Atuegas", "Borluli"],
+      "Leber": ["Mabelis", "Leber-Taz"],
+      "Lour": ["Galitaz", "Heliquei", "Olo-Olo", "Tazgolo"],
+      "Lourba": ["Gumer", "Lourba Leten", "Sordoli", "Zo-Belis"],
+      "Maliubu": ["Atu Lara", "Hatu-Udu", "Licaubu", "Maliubu", "Nunupa"],
+      "Malilait": ["Malilu", "Malilait", "Taimea"],
+      "Molop": ["Taz", "Omelai", "Mologuen"],
+      "Oeleo": ["Taz", "Holmesel"],
+      "Sibuni": ["Mapeop", "Ai-Aras"],
+      "Soileco": ["Oe-Po"],
+      "Tapo": ["Oe-po", "Tapo Tas"],
+      "Tebabui": ["Bugas", "Atupae", "Atubuti", "Biateho"]
+    },
+    "Cailaco": {
+      "Atudara": ["Atubuti", "Biateho", "Nuapu", "Tuturema"],
+      "Dau Udo": ["Cauloco Lete", "Sah-Heu"],
+      "Goulolo": ["Ilat-Bote", "Malilia", "Poetete", "Suri-Ubu"],
+      "Guenu Lai": ["Biaboro", "Melemaga", "Tirimiso"],
+      "Manapa": ["Lugululi"],
+      "Meligo": ["Berleu", "Daulelo", "Liabote", "Mude"],
+      "Purugua": ["Heda", "Lesupu"],
+      "Raiheu": ["Daru Asa", "Lete Aituto", "Ohoana"]
+    },
+    "Lolotoe": {
+      "Deudet": ["Bou-Tal", "Gole", "Oe-Laca"],
+      "Gildapil": ["Atos", "Gildapil"],
+      "Guda": ["Anon", "Gudataz", "Oceli", "Zoilpo"],
+      "Lebos": ["Mabelis", "Mapelai"],
+      "Lontas": ["Ozo", "Piron", "Tasmil"],
+      "Lupal": ["Dilai", "Lupaltaz", "Silagolo"],
+      "Opa": ["Mape", "Raimea", "Tepa"]
+    },
+    "Maliana": {
+      "Holsa": ["Secar", "Solugolo"],
+      "Lahomea": ["Aculaca", "Galusapulu", "Guenuha'an", "Lahomea", "Maliana"],
+      "Odomau": ["Anahun", "Guenuha'an", "Rai Maten", "Rocon"],
+      "Raifun": ["Nunutana", "Raifun Foho", "Raifun Vila"],
+      "Ritabou": ["Cor Luli", "Dai Tete", "Diruaben", "Halecou", "Ma'a Hui", "Maganutu", "Moleana", "Ritabou", "Ritiudu", "Samelaun", "Timatan", "Uat"],
+      "Saburai": ["Cossal", "Mabiloa", "Tazmasac"],
+      "Tapo/Memo": ["Lepuguen", "Manu Aman", "Pip Galag 1", "Pip Galag 2", "Tunu Bibi", "Uluatin"]
+    }
+  },
+  "Covalima": {
+    "Suai": {
+      "Debos": ["Asumata", "Bonuc Foun", "Datok Foun", "Mota-ulun", "Tearo", "Tabak Lot"],
+      "Labarai": ["Bonuc", "Meop", "Mucbelis", "Holba", "Roec"],
+      "Matai": ["Ailao", "Asumata", "Lasan-Fou", "Tasi-Feto", "Mausai"],
+      "Suai Loro": ["Akar Laran", "Lo'o", "Mane Icun", "Sucabe Laran", "Suco Loro"],
+      "Camenaça": ["Bela-Ba", "Bua-Mali", "Fatu-Ahi", "Fatu-Cama", "Fi-Lau", "Holol", "Laconoc", "Lasiana", "Mata-Liban", "Mau-Jawa", "Memo", "Sulian", "Taipo"]
+    },
+    "Fatululic": {
+      "Fatululic": ["Aitoun", "Beco", "Beidasi"],
+      "Taroman": ["Fatuloro", "Holba", "Lia-Nain", "Macous", "Taroman"]
+    },
+    "Fatumea": {
+      "Fatumea": ["Fatumea", "Belulic Leten", "Nanu"],
+      "Belulic Leten": ["Baleo Quic", "Belulic Craic", "Clau-Halek", "Mane Quic"],
+      "Dato Rua": ["Aitos", "Fatulidun", "Hali-Laran"]
+    },
+    "Fohorem": {
+      "Fohoren": ["Fatuc Bitic Laran", "Fatuc Laran", "Lo'o Hali", "Loroquida", "Sadahur"],
+      "Dato Tolu": ["Fatuk Kabuar Kraik", "Fatuk Kabuar Leten", "Natardik"],
+      "Lactos": ["Au-Lulic", "Cacaut", "Calobor", "Fatuc Laran"]
+    },
+    "Maucatar": {
+      "Belecasac": ["Busado", "Dais", "Du'ut", "Gazolo", "Ila", "Loloba", "Lolowa"],
+      "Holpilat": ["Fatuc Oan", "Hatu", "Lela", "Leogore", "Manulor", "Nainare"],
+      "Mata Ain": ["Lohorai", "Maior/Cunain", "Matai", "Quiar"],
+      "Ogues": ["Baulela", "Foho"],
+      "Beilaco": ["Loro", "Uma Claran", "Webaba"]
+    },
+    "Tilomar": {
+      "Beiseuc": ["Baer", "Fatuc Metan", "Foholulic", "Maubesi", "Niquiir", "Wala", "Wetaba"],
+      "Casabauc": ["Cawauman", "Coloama", "Tabolo"],
+      "Lalawa": ["Ai Oan", "Bitis", "Halemea", "Kota Foun", "Salele Bot", "Tulaeduc"],
+      "Maudemo": ["Ai-Taman", "Besac Oan"]
+    },
+    "Zumalai": {
+      "Fatuleto": ["Aidok Lalora", "Babulo", "Cota Nian", "Mape"],
+      "Lepo": ["Aitoun", "Cawa", "Mali", "Sude"],
+      "Lour": ["Cawa", "Leo Hatu", "Loro", "Macous"],
+      "Mape": ["Holgeda", "Mata Ain", "Oebalaria"],
+      "Raimea": ["Cumu", "Raimea", "Salasa", "Zobro"],
+      "Tazhilin": ["Aimeta", "Curo", "Mau Foun", "Ulo"],
+      "Uçecai": ["Holgeda", "Laculuk", "Malahara", "Uçecai"],
+      "Zulo": ["Lale Hali", "Leo Hali", "Maneikun", "Trocoluli"]
+    }
+  },
+  "Dili": {
+    "Cristo Rei": {
+      "Ailok": ["Carau Mate", "Culau Laletec", "Malboro/Maliqueo", "Quituto"],
+      "Balibar": ["Fatu Loda", "Lacoto", "Lorico", "Tancae"],
+      "Becora": ["Au-Hun", "Becusi Kraik", "Becusi Leten", "Mota Ulun"],
+      "Bidau Santana": ["Bidau Mota Claran", "Manu Mata", "Sagrada Familia", "Toko Baru"],
+      "Camea": ["Aidac Bihare", "Ailele Hun", "Ailoc Laran", "Bedois", "Bubur Lau", "Caisabe", "Fatuc Francisco", "Has Laran", "Lases", "Lenuc Hun", "Namalai", "Suco Laran", "Terminal"],
+      "Culuhun": ["Culuhun de Baixo", "Culuhun de Cima"],
+      "Hera": ["Acanuno", "Ailoc Laran", "Hali Dolar", "Moris Foun", "Mota Quic", "Sucaer Laran"],
+      "Meti Aut": ["Meti Aut Vila"]
+    },
+    "Dom Aleixo": {
+      "Bairo Pite": ["5 de Outubro", "Andevil", "Avança", "Bita-Ba", "Buca Fini", "Fatumeta", "Frecat", "Fuslam", "Haburas", "Hale Mutin", "Laloran", "Licarapoma", "Moris Ba Dame", "Niken", "Rainain", "Ribeira Maloa", "Rio de Janeiro", "Ruin Naclecar", "São José Nazaré", "Tane Timor", "Teki-Teki", "Terus Nanis", "Timor Cmanec", "Transporte Air Timor/TAT", "We Dalac", "Xamatama"],
+      "Comoro": ["12 de Outubro", "30 de Agosto", "4 de Setembro", "Aimutin", "Bayaleste", "Fomento I", "Fomento II", "Fomento III", "Golgota", "Moris Dame", "Moris Foun", "Posto Penal", "Ramelau Delta", "São José", "São Miguel"],
+      "Bebonuk": ["20 de Setembro", "Metin I", "Metin II", "Metin III", "Metin IV", "Faularan"],
+      "Fatuhada": ["Zero I", "Zero II", "Zero III", "Zero IV", "Zero V"],
+      "Kampung Alor": ["Kampung Alor Vila"],
+      "Madohi": ["7 Dezembro", "Anin Fuik", "Beto Leste", "Beto-Tasi", "Loro Matan BT", "Naroman BT", "Rosário", "Terra Santa"],
+      "Manleuana": ["Manleuana Vila"]
+    },
+    "Metinaro": {
+      "Mantelolão": ["Besahe", "Birahu Matan", "Has Laran", "Lebutun", "Mantelolão", "Manularan"],
+      "Sabuli": ["Sabuli Vila"],
+      "Wenunuc": ["Wenunuc Vila"]
+    },
+    "Nain Feto": {
+      "Acadiru Hun": ["Bedic", "Culuhun de Baixo", "Nu'u Badac"],
+      "Bemori": ["Ailele Hun", "Baba Liu Rai Leste", "Baba Liu Rai Oeste", "Bemori Central", "Centro", "Has Laran", "My Friend"],
+      "Bidau Lecidere": ["Bidau Vila"],
+      "Gricenfor": ["Bairo Central", "Bairo dos"],
+      "Lahane Oriental": ["Lahane Vila"],
+      "Santa Cruz": ["Santa Cruz Vila"]
+    },
+    "Vera Cruz": {
+      "Caicoli": ["Centro da Unidade", "De 12 Divino", "Sacoco", "Tahu Laran", "Foho Rai Boot"],
+      "Colmera": ["Manu Fuic", "Rai Nain"],
+      "Dare": ["Dare Vila"],
+      "Lahane Ocidental": ["Paiol", "Teca Hudi Laran", "Care Laran", "Bedois", "Correio", "Bela Vista", "Gomes Araujo", "Hospital Militar", "Ainitas Hun", "Rai Cuac", "Mota Ulun"],
+      "Mascarenhas": ["Mascarenhas Vila"],
+      "Motael": ["Motael Vila"],
+      "Vila Verde": ["Manu Kokorekho", "Zero Trez"]
+    }
+  },
+  "Ermera": {
+    "Atsabe": {
+      "Atara": ["Airae", "Batubala", "Dadubere", "Malimea / Uabe", "Mania", "Tapoabe", "Uabe-NC"],
+      "Baboi Craic": ["Atudose", "Cailulik", "Colimali", "Lauabe", "Lelobere", "Raibuti"],
+      "Baboi Leten": ["Baboi Leten Vila"],
+      "Batu Mano": ["Batu Mano Vila"],
+      "Lacao": ["Lacao Vila"],
+      "Laclo": ["Laclo Vila"],
+      "Laubono": ["Laubono Vila"],
+      "Leimea Leten": ["Leimea Leten Vila"],
+      "Malabe": ["Boboleta", "Malabe Vila"],
+      "Obulo": ["Obulo Vila"],
+      "Parami": ["Parami Vila"],
+      "Tiarlelo": ["Tiarlelo Vila"]
+    },
+    "Ermera": {
+      "Estado": ["Estado Vila"],
+      "Humboe": ["Borohei", "Dirlau", "Hatali", "Poeana"],
+      "Lauala": ["Ervilhat", "Nona Bite", "Sari"],
+      "Leguimea": ["Hatuleta", "Leguimea", "Pohei", "Sinlelo", "Tidir", "Titihar"],
+      "Mertuto": ["Apido", "Hotino", "Railori", "Atabauria"],
+      "Poetete": ["Aldeia Vila", "Biluli", "Gueguemara", "Lequisi", "Loblala", "Poepun", "Rematu", "Samatrae", "Taklela", "Tidibessi", "Urletoho", "Urluli"],
+      "Ponilala": ["Cota Heu", "Eroho", "Hatuposi", "Nunupu", "Sakoko"],
+      "Raimerhei": ["Lohmo", "Mate Resto", "Moris Foun", "Nazare", "Rai Maran", "Timlele Buras"],
+      "Riheu": ["Gomhei", "Hatlour", "Mangero", "Raebliri", "Sasoher"],
+      "Talimoro": ["Bura", "Leberti", "Lima Mesak", "Moris Foun", "Nunusua"]
+    },
+    "Hatulia": {
+      "Aiteas": ["Huluba", "Nairete"],
+      "Aitutun": ["Boho", "Ercoli", "Laucari", "Sasai"],
+      "Ategue": ["Claek", "Samalete"],
+      "Coliau": ["Eraulo", "Noleo", "Tuileso", "Urileso"],
+      "Hatulia Vila": ["Ailoc", "Erhaba", "Fohorai", "Raemia", "Raibuti", "Raitutu"],
+      "Matua": ["Colimea", "Fatouli", "Lerolae"],
+      "Maulau": ["Assumanu", "Erali", "Rautalau"],
+      "Ailelo": ["Betopu", "Leirema", "Santa Cruz", "Tata"],
+      "Samara": ["Petalara", "Railuli"],
+      "Fatubessi": ["Assulau Hautete", "Fatubessi Vila"]
+    },
+    "Letefoho": {
+      "Catraileten": ["Hobra", "Manumu", "Rileu"],
+      "Dukufun": ["Dadu", "Haouli", "Laumado", "Nunubriti"],
+      "Ermude": ["Atutu", "Manuco", "Samalete"],
+      "Gurucai": ["Ailut", "Leguian", "Manguitu", "Pindelas"],
+      "Hatua": ["Legian", "Raibere", "Raitutu"],
+      "Lauihou": ["Atupu", "Gudu", "Lorotu", "Raihou", "Rileu"],
+      "Leimea-Leten": ["Bileo", "Fatubesu", "Raibuti", "Rihilu"],
+      "Terejana": ["Colicnai", "Ertutu", "Gudu", "Leguian"],
+      "Ducurai": ["Laclo", "Lebudu", "Lebululi", "Manusae", "Raerema", "Renomata", "Rotutu", "Sabelo"],
+      "Goulolo": ["Beturema", "Cailiti", "Goulala", "Goulolo"],
+      "Hatugau": ["Cailiti", "Hatugau", "Hunda", "Riaheu", "Rialau", "Sauria"]
+    },
+    "Railaco": {
+      "Datai": ["Bohu", "Fatin", "Sicoa"],
+      "Delimanas": ["Caibo", "Erauli", "Leomesac", "Sinael"],
+      "Fatukero": ["Bileo", "Darolea", "Eraulo", "Leomata", "Raekadu"],
+      "Leomesac": ["Datalu", "Lakuba", "Riahiku"],
+      "Lihu": ["Kamal Pun", "Raiudo", "Kamal Rahi"],
+      "Railaco Craic": ["Cucoa", "Fatucado", "Riamori", "Sobrequeque"],
+      "Railaco Leten": ["Colhuinamo", "Darema", "Manuponihei", "Tuileso", "Tunlero"],
+      "Samalete": ["Aiurlala", "Eraulo", "Leburema"],
+      "Taraco": ["Datoleo", "Laqueco"]
+    }
+  },
+  "Lautém": {
+    "Iliomar": {
+      "Aelebere": ["Heitali", "Lalumato", "Leilor", "Marafal"],
+      "Caenlio": ["Caidavalarin", "Larimi", "Liufalun", "Maluhira", "Titiravein"],
+      "Fuat": ["Acadírulo", "Rumutau", "Vataomar"],
+      "Iliomar I": ["Ara'ara", "Caentau", "Iliomar", "Ossohira", "Vatamatar"],
+      "Iliomar II": ["Acara", "Boquila", "Caidabu"],
+      "Tirilolo": ["Etevata", "Tirilolo", "Tatalalarin"]
+    },
+    "Lautém": {
+      "Baduro": ["Irapala", "Laculo Mano", "Luadau", "Malailada", "Tamaro"],
+      "Com": ["Etepiti", "Ira'ono", "Lohomato", "Muapusso", "Pitileti", "Vailovaia"],
+      "Daudere": ["Aelafa", "Anarua", "Macalodo", "Nassuloi", "Sagueli", "Samalari", "Uanambere", "Vassatoi"],
+      "Euquisi": ["Barlio", "Barubato", "Vaniria"],
+      "Ililai": ["Samalari", "Titilari"],
+      "Maina I": ["Daulutoro", "Mauvedara", "Narunteiro", "Paiahara", "Soloresi"],
+      "Maina II": ["Codo", "Lereado", "Lereira", "Oirata", "Quedoloro"],
+      "Pairara": ["Caporo", "Ira-Tehau", "Lenovo", "Puno"],
+      "Parlamento": ["Iaiara", "Iparira", "Ira'Ara", "Moro", "Soiquili"],
+      "Serelau": ["Serelau Vila"]
+    },
+    "Lospalos": {
+      "Bauro": ["Bauro", "Iralafai", "Sepelata", "Somotcho", "Luarai"],
+      "Cacavei": ["Laiara", "Paihira", "Solepara", "Tcharano"],
+      "Fuiloro": ["30 de Agosto", "Assalaino", "Bemoris", "Central", "Ira'ara", "Kuluhun", "Lereloho", "Lospala", "Nakroman", "Tchauluturo", "Titilari"],
+      "Home": ["Builai", "Fuiloro", "Iraone", "Lacolimana", "Liara", "Maluro", "Sagate", "Samalari", "Tepe"],
+      "Leuro": ["Leuro", "Luturula", "Sorumoco", "Tcharano"],
+      "Muapitine": ["Malahara", "Maupitine", "Lopuloho", "Pehefitu", "Vailoro"],
+      "Raça": ["Maulo'o", "Raça", "Tchailoro"],
+      "Souro": ["Foema'a", "Louro", "Nairete", "Nanacuro", "Omocano", "Sorulua", "Tchaivatcha"]
+    },
+    "Loré": {
+      "Loré I": ["Horolata", "Maloru", "Otcho-Tchau", "Tchai", "Vailana"],
+      "Loré II": ["Ililapa", "Loré II Vila"]
+    },
+    "Luro": {
+      "Afabubo": ["Cai-Laca", "Dalari", "Laculutun", "Titilari"],
+      "Baricafa": ["Afabubo", "Eohana", "Lacawa", "Lacawa-Lia"],
+      "Cotamutu": ["Buanomar", "Etanice", "Ouroma"],
+      "Laclo": ["Quirilelo", "Raimanso", "Rairema"],
+      "Luro": ["Afabubu", "Dalari", "Jefaliu"],
+      "Wairoce": ["Liarafa", "Luturo", "Soba"]
+    },
+    "Tutuala": {
+      "Mehara": ["Loiquero", "Porlamano", "Poros"],
+      "Tutuala": ["Ioro", "Pitileti", "Tchailoro", "Vero"]
+    }
+  },
+  "Liquiçá": {
+    "Bazartete": {
+      "Fahilebo": ["Fatuneso", "Tuhilo Craic", "Tuhilo Leten"],
+      "Fatumasi": ["Bazartete", "Durubasa", "Legumea", "Metir"],
+      "Lauhata": ["Caimegulo", "Camalehou", "Pissu Craic", "Pissu Lete", "Raucassa"],
+      "Leorema": ["Baura", "Bucumera", "Cutulau", "Ergoa", "Fatunero", "Hatu-Hou", "Manu-Lete", "Railuli", "Urema", "Urluli"],
+      "Maumeta": ["Caimegohou", "Darmudapu", "Maumetalau", "Nartutu"],
+      "Metagou": ["Assorlema", "Caleulema", "Metiluli"],
+      "Motaulun": ["Classo", "Mau-Luto", "Mota Icun"],
+      "Tibar": ["Fatunia", "Libaulelo", "Mau-Soi", "Turleu"],
+      "Ulmera": ["Ermeta", "Essirat", "Fatubesilolo", "Mane-Mori", "Mane-Muno", "Nauner", "Neran", "Terlau", "Tetsari"]
+    },
+    "Liquiçá": {
+      "Açumanu": ["Caicasaico", "Hatumatilu", "Quirilelo", "Siscoelema"],
+      "Darulete": ["Caileli", "Carulema", "Lebu-Ae", "Manupatia"],
+      "Dato": ["Cabuilimo", "Camalehohoru", "Camalelara", "Hecar", "Laclolema"],
+      "Hatuquessi": ["Caicoletohoho", "Caidico", "Hatulema", "Hatuquessilete", "Lebusalara", "Nunubrihati", "Nunuhou", "Tautalo"],
+      "Leotala": ["Caimegoluli", "Hatumasi", "Lepa", "Manati", "Tolema"],
+      "Loidahar": ["Cotalara", "Hatululi", "Manucolohata", "Soatala"],
+      "Luculai": ["Hunehei", "Lebuana", "Metagou", "Natarae"]
+    },
+    "Maubara": {
+      "Guguleur": ["Cai-Cassa", "Dair Erito", "Lautecas", "Lauvou", "Lebulugor", "Lissa-Lara", "Palistla", "Puquelete", "Raenaba", "Vatumori"],
+      "Maubaralisa": ["Baiquenulau", "Darulema", "Lissalara", "Nunulete", "Vatuguili"],
+      "Vatuvou": ["Bouraevei", "Gariana", "Lebucailiti", "Lissa-Ico", "Lissalara", "Manuquibia", "Mau-Ubu", "Raeme", "Samanaru", "Vatu-Nau"],
+      "Vaviquinia": ["Darulara", "Delesuvati", "Lebumeta", "Morae", "Nunuana", "Pametapu", "Vila"]
+    },
+    "Loes": {
+      "Guico": ["Caicassavou", "Irlelo", "Mau-Uno", "Pandevou", "Vatu-Vei"],
+      "Lisadilia": ["Bautalo", "Cai-Cassa", "Darulema", "Glai", "Lebuhae", "Manuquibia", "Nunulisa"],
+      "Vatuboro": ["Cai-Bair", "Raeglelu", "Sabulau", "Tatamolobu", "Vaupu"]
+    }
+  },
+  "Manatuto": {
+    "Barique": {
+      "Aubeon": ["Buburlara", "Wecadi"],
+      "Barique": ["Caunua", "Weubani"],
+      "Camedar": ["Buicair", "Camedar"],
+      "Fatuwaque": ["Ranac", "Camedar"],
+      "Manchana": ["Dambua Hun", "Isadan", "Nu-Ahuc"],
+      "Uma Boco": ["Fehuc Rin", "Halibur"]
+    },
+    "Laclo": {
+      "Hohorai": ["Anekulau", "Hatanaun", "Miri Huhun", "Hatu Conan", "Labubu"],
+      "Lacumesac": ["Nacaleo", "Readodoc", "Tahagamu", "Uaibuti"],
+      "Berema": ["Beremana", "Dalubo", "Fahilebo"],
+      "Caimauc": ["Bussacoa", "Fohua", "Lemano", "Railete", "Risso"],
+      "Fatucalo": ["Darufu", "Ermori"],
+      "Uma Caduac": ["Builo", "Heni-Uta", "Uma Caduac Vila"]
+    },
+    "Laclubar": {
+      "Batara": ["Bauleu", "Funar", "Orlalan", "Batara Vila"],
+      "Fatumakerek": ["Lesuata", "Malus Hun", "Fatumakerek Vila"],
+      "Lacludala": ["Hatarau", "Laku-Ahi", "Lau-Meta"],
+      "Manelima": ["Lafulau", "Manelima Vila"],
+      "Orlalan": ["Darulari", "Hautana", "Orlalan"],
+      "Sananain": ["Sananain Vila"],
+      "Funar": ["Fatuahi", "Funar", "Manuleu"],
+      "Uma-Tolu": ["Uma-Tolu Vila"]
+    },
+    "Laleia": {
+      "Cairui": ["Bia-Ba'e", "Corohoco", "Hatu-Karau", "Rai-Bu", "Rai-Mea", "Wai-Nunu", "Watu-Sili"],
+      "Haturalan": ["Ralan", "Uma-Iuc", "Weboro"],
+      "Lifau": ["Lenao", "Uma-Clalan", "Uma-Rentau"]
+    },
+    "Manatuto": {
+      "Cribas": ["Iodahare", "Uatu-Sabu", "Weberec", "Maubai", "Cribas Vila"],
+      "Ma'abat": ["Ma'abat", "Soraha", "Uatulete", "Lete-Felo"],
+      "Aiteas": ["Uairia", "Uatu-Sua", "Uatu-Lari", "Laleia", "Maer", "Uato-Bona"],
+      "Ailili": ["Bua-Li", "Laleno", "Uatu-Bua"],
+      "Sauana": ["Cribas", "Manatuto"],
+      "Caicai": ["Ai-Lia", "Caicai Uato", "Liarafu"]
+    },
+    "Soibada": {
+      "Fatumakerek": ["Lesuata", "Sasahi"],
+      "Leo-Hat": ["Leo-Hat", "Malus Hun"],
+      "Manlala": ["Dauloroc", "Manlala"],
+      "Maun-Fahe": ["Maun-Fahe", "Teras"],
+      "Samoro": ["Uma Querec Leten", "Uma Querec Lor"]
+    }
+  },
+  "Manufahi": {
+    "Alas": {
+      "Aituha": ["Leodato", "Raikesa"],
+      "Dotik": ["Lacluan", "Sarin", "Weberek"],
+      "Mahaquidan": ["Beremanek", "Debuwa'en", "Knua-Alas", "Tahubein", "Uma-Mean"],
+      "Taitudac": ["Ailora", "Kakeuk Laletek", "Lurin", "Manus", "Mahaklusin"],
+      "Uma Berloic": ["Baria Laran", "Colocao", "Culuhun", "Umaferik", "Weda", "Beiuda", "Uma Tali Boot"],
+      "Tahu-Bein": ["Tahu-Bein"]
+    },
+    "Fatuberliu": {
+      "Bubussuso": ["Aituha", "Bubulora", "Bubussusso", "Lihu Lau", "Orlora"],
+      "Caicassa": ["Ailalec", "Bubur Laletec", "Caicassa", "Sucaer Oan"],
+      "Clacuc": ["Mane Hat", "Nalolo", "Saluquim", "Tiro", "Webicas"],
+      "Fahinehan": ["Ainese", "Daurata", "Riamori", "Daramatan"],
+      "Fatukahi": ["Fatukahi", "Fatubesi", "Fatuboe", "Fatumutin", "Fuquiran", "Cledik"]
+    },
+    "Same": {
+      "Babulo": ["Babulo", "Lapuro", "Lia-Nai", "Maibuti", "Manikun", "Nunu-Fu", "Raimera", "Searema", "Turon", "Uma-Liurai", "Uma-Luli"],
+      "Betano": ["Bemetan", "Lalica", "Leo-Ai", "Loro", "Rai-Fussa", "Selihassan", "Sessurai"],
+      "Daisula": ["Daisula", "Leço", "Leço-Ai"],
+      "Grotu": ["Coli-Dasi", "Dato-Rae", "Leo-Dato"],
+      "Holarua": ["Anilumo", "Blaro", "Carbulau", "Datina", "Deunai", "Fahiluhan", "Falitehu", "Fatuco", "Hatu-Rae", "Orema", "Russo", "Tirilolo", "Uru Fu"],
+      "Letefoho": ["Akadiruhun", "Cotalala", "Rialau Manico 1", "Rialau Manico 2", "Rai-Ubo"],
+      "Rotuto": ["Bere-Teni", "Foe-Hei", "Hatu-Hei", "Leo-Fat", "Sabou"],
+      "Tutuluru": ["Ailau", "Batas", "Bubolau", "Dalun", "Hastetuk", "Roin", "Sosemera"]
+    },
+    "Turiscai": {
+      "Aitemua": ["Ailora", "Kakeuk", "Laletek", "Lurin", "Taitudac"],
+      "Beremana": ["Beremana", "Dalubo", "Fahilebo"],
+      "Caimauc": ["Bussacoa", "Fohua", "Lemano", "Railete", "Risso"],
+      "Fatucalo": ["Darufu", "Ermori", "Leubuti"],
+      "Foholau": ["Lutarmata", "Tarabula"],
+      "Lessuata": ["Ailulimau", "Bitibo", "Lebucoa", "Namoluli"],
+      "Liurai": ["Bilimano", "Fanolelo", "Fohonaru", "Liurai", "Markoluli", "Titilawai"],
+      "Manumera": ["Assumata", "Cotalalaulara", "Faturedala", "Toilero", "Turiscai Lau"],
+      "Matorec": ["Fatu Hei", "Foho Tu", "Orluli", "Rimori"],
+      "Mindelo": ["Aidila", "Binani", "Maubissi", "Orcenaco"],
+      "Orana": ["Fatulelo", "Orana", "Teberai"]
+    }
+  },
+  "Oecusse": {
+    "Pante Macassar": {
+      "Costa": ["Oesono", "Sanane", "Costa Vila"],
+      "Cunha": ["Maunaben", "Noafafo", "Noapai", "Noeninen", "Umenoah"],
+      "Lalisuc": ["Banoco", "Manuinpena", "Padiae", "Usapibela"],
+      "Lifau": ["Nefobai", "Oemolo", "Tulaica"],
+      "Nipane": ["Bausiu", "Sacato"],
+      "Taiboco": ["Hauboni", "Maquelab", "Nemun", "Ulas"],
+      "Bobocasse": ["Bihala", "Fatubijae"],
+      "Naimeco": ["Baqui", "Bonemese", "Noque", "Teinae"],
+      "Mone-Meco": ["Oetpo", "Lacufoan"],
+      "Cutete": ["Cutete", "Mahata"]
+    },
+    "Nitibe": {
+      "Banafi": ["Cuanobe", "Hautefo", "Nefometan"],
+      "Bene-Ufe": ["Citrana", "Lamasi", "Manan"],
+      "Lela-Ufe": ["Bebo", "Cuatenes", "Haoufe", "Mahata"],
+      "Suni-Ufe": ["Fuabano"],
+      "Usi-Taco": ["Cuantua", "Fatunababos", "Oelnanoe"]
+    },
+    "Oesilo": {
+      "Bobometo": ["Nonquican", "Oebaha", "Oenoah", "Quiubiselo", "Saben", "Tumin"],
+      "Usitakeno": ["Niban", "Usapicolen"],
+      "Usitasae": ["Buqui", "Pune"]
+    },
+    "Passabe": {
+      "Abani": ["Haemnanu", "Naetuna", "Passabe"],
+      "Malelat": ["Malelat"]
+    }
+  },
+  "Viqueque": {
+    "Lacluta": {
+      "Ahic": ["Ai Lo Oc", "Cai Uan", "Crarec Bocu", "Hali Mean", "Hali Oan"],
+      "Dilor": ["Acadiru Hun", "Aidac Laran", "Boruc", "Rade Uman", "Tula Oli"],
+      "Laline": ["Aimeta Hun", "Fatu Cado", "Mau Ama", "Micradec", "Santo Antonio"],
+      "Uma Tolu": ["Ai Sucu Nuc", "Crarec Maruc", "Data Metan", "Fahi Lain", "Tali Oan"]
+    },
+    "Ossu": {
+      "Builale": ["Cai Tara Hu", "Heni Uta", "Liaro", "Buareca", "Ossolira", "Uaitau"],
+      "Builo": ["Derulo", "Lutuguia", "Baha-Neo", "Cai-Ua", "Baha-Mano", "Liarufa"],
+      "Liaruca": ["Liacuda", "Selele", "Cai Latu", "Lale", "Lia Uai Oli", "Baha-Giri"],
+      "Loi-Huno": ["Samaliu", "Wai-Heda", "Wala", "Wau", "Darenau", "Macabu", "U"],
+      "Nahareca": ["Maurate", "Raila A", "Samarogo", "Fatu Dere", "Laisorule", "Raimuti", "Sama-Lari"],
+      "Ossorua": ["Uai-Bobo", "Uatu-Lawa", "Umabere", "Umatamene", "Baca", "Lore Sae"],
+      "Ossu de Cima": ["Baca-Isi", "Belas", "Borala", "Cai Uai Ho O", "Liamida", "Lugabuti", "Uairio", "Uma Ana Ico"],
+      "Uabubo": ["Aisoco", "Buicai", "Cai-Ua", "Liarufa", "Uabubo Vila"],
+      "Uaguia": ["Dasarai", "Dolibuti", "Luhabere", "Manulari", "Uaitutumata", "Uatumanutuco"],
+      "Uaibobo": ["Baha-Neo", "Uai-Luta", "Uaibobo Vila", "Manulari", "Ossolira", "Liarufa"]
+    },
+    "Uato-Lari": {
+      "Afaloicai": ["Buibela", "Cailaque", "Caitau", "Daco Ate", "Lari", "Lena", "Loro Sa E", "Ossocaiua", "Uaicai", "Uato Ita"],
+      "Babulo": ["Abadere", "Aha B Uu", "Asa Muta", "Beli", "Cota Nisi", "Daralari", "Lia Sidi", "Roma"],
+      "Macadique de Baixo": ["Betulari", "Gomioru", "Kokilaku", "Makadiki", "Lau-Uma", "Luruboru", "Lutuguia"],
+      "Macadique de Cima": ["Bobolaco", "Caidaualari", "Caidaulata", "Daralari", "Edemumo", "Liacaiua", "Macadique"],
+      "Macadique Uaitame": ["Bobulita", "Borobai", "Digamasi", "Luroboro", "Mata Dalan", "Quetorai"],
+      "Matahoi": ["Aele", "Buca Dalan-Matahoi", "Calohan-Uatulo", "Dalan Los-Uanama", "Iraler", "Loco Loco", "Mau Ciac", "Mauseloc", "Tatilari", "Uani Uma", "Uasufa", "Ulusu"],
+      "Vessoru": ["Balabasiba", "Mau-Boru", "Culu-Dere", "Baha-o", "Uani-Uma", "Baha-Buga", "Matau"],
+      "Waitame": ["Waitame Vila", "Darasula", "Liarufa", "Uasufa"]
+    },
+    "Uatucarbau": {
+      "Afaloicai": ["Cai Uailita", "Daralari", "Lacuhu", "Lequiuala", "Baha-Oan"],
+      "Bahatata": ["Builakurae", "Uai-Mare", "Tata Dere", "Nelu-Uai", "Bahatata Vila"],
+      "Irabin Loro": ["Irabin Loro Vila", "Baha-Giri", "Uatumanu", "Buas", "Darasula"],
+      "Irabin Wato": ["Irabin Wato Vila", "Darasula", "Liarufa", "Manuleu", "Baha-Buga"],
+      "Loi Ulu": ["Loi Ulu Vila", "Baha-Buga", "Uani-Uma", "Balabasiba", "Lutuguia"],
+      "Uani Uma": ["Ala Oli", "Borobohae", "Uani Uma Vila", "Baha-Mano", "Liarufa"]
+    },
+    "Viqueque": {
+      "Bahalarauain": ["Aidac", "Aisahe", "Camelitur", "Caninuc", "Welaco", "Wetalitua"],
+      "Bibileo": ["Aisahe", "Amarleza", "Balide Oan", "Fato Hosan", "Hare Oan", "Laco Uai", "Mane Claran", "Webae"],
+      "Caraubalo": ["Cabira Oan", "Has Abut", "Lamaclaran", "Mamulac", "Manehat", "Siralari", "Wessa"],
+      "Fatu Dere": ["Aidilalita", "Barabeto", "Culale", "Fatudere Vila"],
+      "Luca": ["Canlor", "Uma-Boot", "Iramer", "Umalor", "Luca Vila"],
+      "Maluru": ["Loho Oan", "Macalosso", "Maluru Vila", "Baha-Neo", "Uai-Luta"],
+      "Uaimori": ["Lulei", "Mea-Uai", "Uaibubo", "Uatulesu", "Uma-Bo O", "Uma-Liurai"],
+      "Uma Qui'ic": ["Aidac Bein", "Aina Uain", "Bahabunac", "Bahafou", "Lua", "Macadean", "Maroman", "Raihun"],
+      "Uma Uain Craic": ["Uma Uain Craic Vila", "Aidac", "Aisahe", "Bemoris", "Nakroman"],
+      "Uma Uain Leten": ["Uma Uain Leten Vila", "Bua-Li", "Laleno", "Central", "Kuluhun"]
+    }
+  }
+}

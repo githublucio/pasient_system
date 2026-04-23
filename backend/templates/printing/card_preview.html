@@ -1,0 +1,353 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "Patient Card" %} - {{ patient.full_name }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Normalized CR80 Card Size at 96 DPI (Standard Browser Resolution) */
+            --card-width: 324px;   /* 85.6mm */
+            --card-height: 204px;  /* 54mm */
+            --primary-purple: #5d2291;
+            --text-dark: #121212;
+            --text-muted: #555555;
+        }
+
+        body {
+            margin: 0;
+            padding: 40px;
+            background-color: #e9ecef;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: 'Inter', sans-serif;
+            -webkit-print-color-adjust: exact;
+        }
+
+        /* No screen zoom - using standard viewport */
+
+        .no-print-area {
+            margin-bottom: 40px;
+            text-align: center;
+            background: white;
+            padding: 20px 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .cards-container {
+            display: flex;
+            flex-direction: column;
+            gap: 60px;
+        }
+
+        .id-card {
+            width: var(--card-width);
+            height: var(--card-height);
+            position: relative;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            box-shadow: 0 15px 45px rgba(0,0,0,0.2);
+            overflow: hidden;
+            background-color: white;
+            border-radius: 20px;
+            -ms-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* RESET BOOTSTRAP DEFAULTS INSIDE CARD */
+        .id-card * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        .front-card { background-image: url('{{ front_bg_url }}'); }
+        .back-card { background-image: url('{{ back_bg_url }}'); }
+
+        .logo-center {
+            position: absolute;
+            top: 10px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            line-height: 1;
+        }
+        .logo-img { height: 26px; display: block; margin: 0 auto 4px; }
+        .clinic-header { 
+            font-weight: 800; 
+            font-size: 11px; 
+            color: #000; 
+            line-height: 1;
+        }
+        .clinic-sub { 
+            font-size: 7px; 
+            color: #444; 
+            font-weight: 600;
+            line-height: 1;
+            margin-top: 2px;
+        }
+
+        .label-id {
+            position: absolute;
+            top: 85px; 
+            left: 20px;
+            color: var(--primary-purple);
+            font-weight: 800;
+            font-size: 8px;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+
+        .value-id {
+            position: absolute;
+            top: 100px;
+            left: 18px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: #000;
+            letter-spacing: 0.5px;
+            line-height: 1;
+        }
+
+        .value-name {
+            position: absolute;
+            top: 135px;
+            left: 20px;
+            font-size: 13px;
+            font-weight: 800;
+            color: #000;
+            text-transform: uppercase;
+            line-height: 1;
+            width: 220px; 
+        }
+
+        .info-grid {
+            position: absolute;
+            bottom: 12px;
+            left: 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .info-item .lbl { 
+            font-size: 7px; 
+            font-weight: 800; 
+            color: #555; 
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .info-item .val { 
+            font-size: 10px; 
+            font-weight: 700; 
+            color: #000; 
+        }
+
+        .address-box {
+            position: absolute;
+            bottom: 12px;
+            left: 170px;
+            width: 100px;
+        }
+        .address-box .lbl { font-size: 7px; font-weight: 800; color: #555; text-transform: uppercase; display: block; margin-bottom: 2px; }
+        .address-box .val { font-size: 9px; font-weight: 600; color: #000; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+        .qr-box-front {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            background: white;
+            padding: 4px;
+            border-radius: 4px;
+            text-align: center;
+            border: 1px solid #eee;
+        }
+        .qr-img-front { width: 45px; height: 45px; }
+        .qr-label-front { font-size: 7px; font-weight: 800; color: #333; margin-top: 2px; display: block; }
+
+        /* BACK SIDE POSITIONING */
+        .back-logo-box {
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .back-logo-img { height: 24px; }
+        .back-header-txt { font-weight: 800; font-size: 10px; color: #111; line-height: 1; }
+        .back-sub-txt { font-size: 7px; color: #555; font-weight: 600; line-height: 1; margin-top: 2px; }
+
+        .mission-box {
+            position: absolute;
+            top: 45px;
+            left: 20px;
+            right: 20px;
+            font-size: 8.5px;
+            line-height: 1.3;
+            color: #111;
+            text-align: justify;
+        }
+        .mission-box b { font-weight: 800; color: #000; }
+
+        .terms-box {
+            position: absolute;
+            top: 90px;
+            left: 20px;
+            right: 80px;
+            font-size: 7.5px;
+            line-height: 1.3;
+        }
+        .terms-box b { font-weight: 800; font-size: 8.5px; color: #000; display: block; margin-bottom: 2px; }
+        .terms-box ul { padding-left: 15px; list-style-type: disc; }
+        .terms-box li { margin-bottom: 2px; }
+
+        .barcode-box-back {
+            position: absolute;
+            bottom: 8px; 
+            right: 15px;
+            background: white;
+            padding: 4px;
+            border-radius: 4px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        .barcode-img-back { height: 35px; width: auto; }
+        .barcode-txt-back { display: none; }
+
+        .footer-motto {
+            position: absolute;
+            bottom: 8px;
+            left: 20px;
+            font-style: italic;
+            font-size: 8.5px;
+            color: #555;
+            font-weight: 700;
+        }
+
+        @media print {
+            @page {
+                size: 85.6mm 54mm;
+                margin: 0;
+            }
+            html, body {
+                width: 85.6mm !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: visible !important;
+                background-color: white !important;
+            }
+            .no-print-area { 
+                display: none !important; 
+            }
+            .cards-container { 
+                display: block !important; 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                gap: 0 !important; 
+            }
+            .id-card {
+                width: 85.6mm !important;
+                height: 54mm !important;
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                page-break-after: always !important;
+                page-break-inside: avoid !important;
+                zoom: 1 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="no-print-area">
+        <h3>{% trans "Clinic Professional ID Card Preview" %}</h3>
+        <p class="text-muted">{% trans "Ready for Pointman Card Printer (CR80)" %}</p>
+        <div class="d-flex gap-3 justify-content-center mt-3">
+            <button class="btn btn-primary btn-lg px-5 shadow" onclick="window.print()">
+                <i class="bi bi-printer-fill me-2"></i> {% trans "Print Now" %}
+            </button>
+            <a href="{% url 'patient_dashboard' patient.uuid %}" class="btn btn-outline-secondary btn-lg">{% trans "Back" %}</a>
+        </div>
+    </div>
+
+    <div class="cards-container">
+        <!-- FRONT SIDE -->
+        <div class="id-card front-card">
+            <div class="logo-center">
+                <img src="{{ logo_url }}" class="logo-img" alt="Logo">
+                <div class="clinic-header">Clinic BairoPite Lanud</div>
+                <div class="clinic-sub">Community Health Care East Timor</div>
+            </div>
+
+            <div class="label-id">PATIENT IDENTIFICATION</div>
+            <div class="value-id">{{ patient.patient_id }}</div>
+            <div class="value-name">{{ patient.full_name }}</div>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="lbl">DATE OF BIRTH</span>
+                    <span class="val">{{ patient.date_of_birth|date:"d / M / Y" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="lbl">GENDER</span>
+                    <span class="val">{{ patient.get_gender_display }}</span>
+                </div>
+            </div>
+
+            <div class="address-box">
+                <span class="lbl">NARAN PASIENT / ADDRESS</span>
+                <span class="val">{{ patient.full_address|default:patient.address }}</span>
+            </div>
+
+            <div class="qr-box-front">
+                <img src="{{ patient.qr_code_image.url }}" class="qr-img-front">
+                <div class="qr-label-front">VERIFY</div>
+            </div>
+        </div>
+
+        <!-- BACK SIDE -->
+        <div class="id-card back-card">
+            <div class="back-logo-box">
+                <img src="{{ logo_url }}" class="back-logo-img">
+                <div>
+                   <div class="back-header-txt">Clinic BairoPite Lanud</div>
+                   <div class="back-sub-txt">Community Health Care East Timor</div>
+                </div>
+            </div>
+
+            <div class="mission-box">
+                <b>Mission:</b> In Spirit of Dr. Daniel Murphy, Bairo Pite Clinic is dedicated to high quality care for the poor and unfortunate people of Timor-Leste. We serve with deep respect for the dignity and value of all beings.
+            </div>
+
+            <div class="terms-box">
+                <b>Terms & Conditions:</b>
+                <ul>
+                    <li>Kartaun ne'e vale ba kada pasiente (Labele troka / impresta ba malu).</li>
+                    <li>Tenke hodi kartaun ne'e bainhira halo konsulta iha Clinica Bairo Pite Lanud.</li>
+                    <li>Rai kartaun ne'e ho didiak nudar ID Pasiente Clinica Bairo Pite Lanud.</li>
+                    <li>Labele uza kartaun ne'e hodi ba konsulta iha facilidade seluk.</li>
+                </ul>
+            </div>
+
+            <div class="footer-motto">Saude iha ita nia liman rasik.</div>
+
+            <div class="barcode-box-back">
+                <img src="{{ patient.barcode_image.url }}" class="barcode-img-back">
+                {# Removed redundant ID text as it is already in the barcode image #}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

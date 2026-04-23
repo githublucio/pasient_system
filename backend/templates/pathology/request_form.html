@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Pathology Request Form" %}{% endblock %}
+
+{% block content %}
+<style>
+    .pathology-form {
+        max-width: 900px;
+        margin: 0 auto;
+        background: #fff;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+        color: #000;
+        border: 1px solid #333;
+    }
+    
+    .path-row {
+        display: flex;
+        border-bottom: 1px solid #333;
+    }
+    
+    .path-box {
+        border-right: 1px solid #333;
+        padding: 5px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .path-box:last-child {
+        border-right: none;
+    }
+    
+    .box-label {
+        font-size: 11px;
+        color: #555;
+        margin-bottom: 2px;
+    }
+    
+    .box-value {
+        font-size: 14px;
+        font-weight: bold;
+        min-height: 20px;
+    }
+    
+    /* Input Styling */
+    .path-input {
+        border: none;
+        border-bottom: 1px dotted #888;
+        width: 100%;
+        outline: none;
+        font-size: 14px;
+        background: transparent;
+    }
+    
+    /* Specific row sizing */
+    .header-box { background: #f9f9f9; text-align: center; }
+    
+    /* Tube List */
+    .tube-list {
+        display: flex;
+        flex-direction: column;
+    }
+    .tube-item {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        margin-bottom: 3px;
+    }
+    .tube-input {
+        border: none;
+        border-bottom: 1px dotted #888;
+        width: 60px;
+        outline: none;
+    }
+    
+    /* Chemistry Grid */
+    .chem-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 10px;
+        font-size: 12px;
+    }
+    .chem-item {
+        display: flex;
+        align-items: center;
+        width: 150px;
+    }
+    .chem-checkbox {
+        width: 14px;
+        height: 14px;
+        margin-right: 5px;
+    }
+
+    /* Print styles */
+    @media print {
+        @page { size: A4 portrait; margin: 1cm; }
+        body { background: white; padding: 0; }
+        .pathology-form { box-shadow: none; padding: 0; width: 100%; max-width: none; border: 2px solid #000; }
+        .path-box { padding: 3px; border-right: 1px solid #000; }
+        .box-label { font-size: 10px; margin-bottom: 0px; }
+        .box-value { min-height: 15px; font-size: 12px; }
+        .chem-grid { padding: 5px; gap: 5px; }
+        .chem-item { width: 130px; font-size: 11px; }
+        .tube-item { font-size: 11px; margin-bottom: 1px; }
+        .path-row { border-bottom: 1px solid #000; }
+        .no-print { display: none !important; }
+        .sidebar, .navbar { display: none !important; }
+        main { margin: 0 !important; padding: 0 !important; }
+    }
+</style>
+
+<div class="row justify-content-center mb-4 no-print">
+    <div class="col-md-9 d-flex justify-content-between">
+        {% if request.GET.from == 'pathology' %}
+            <a href="{% url 'pathology_dashboard' %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> {% trans "Back to Pathology List" %}</a>
+        {% else %}
+            <a href="{% url 'perform_examination' visit.uuid %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> {% trans "Back to Examination" %}</a>
+        {% endif %}
+        <button onclick="window.print()" class="btn btn-outline-primary"><i class="bi bi-printer"></i> {% trans "Print Pathology Form" %}</button>
+    </div>
+</div>
+
+<form method="post" action="{% url 'pathology_request_create' visit.uuid %}">
+    {% csrf_token %}
+    <div class="pathology-form">
+        
+        <!-- LOGO + HEADER INFO (like physical form) -->
+        <div style="display: flex; align-items: center; justify-content: center; padding: 14px 10px 10px 10px; border-bottom: 2px solid #333; gap: 16px;">
+            <img src="{% static 'assets/Logo.png' %}" alt="Clinic Logo" style="height: 70px; object-fit: contain;" onerror="this.onerror=null; this.src='/static/assets/Logo.png'">
+            <div style="text-align: center;">
+                <div style="font-weight: bold; font-size: 15px;">Rua de palacio presidente Lanud Bairo Pite, Dom Aleixo, Dili Timor-Leste</div>
+                <div style="font-size: 13px; color: #444;">+670 78179379, bairopitecliniclanud@gmail.com</div>
+                <div style="font-size: 13px; color: #444;">web http://bairopitecliniclanud.org</div>
+            </div>
+        </div>
+
+        <!-- ROW 1 -->
+        <div class="path-row header-box bg-light" style="border-bottom: 2px solid #333;">
+            <div class="path-box" style="flex: 2; text-align: left;">
+                <div class="fw-bold fs-6">Pathology Request Form / Formulario Patologia</div>
+                <div style="font-size: 12px;">PLEASE WRITTEN BLOCK CAPITAL LETTRES</div>
+                <div style="font-size: 12px;">FAVOR ESCREVE LETRA CAPITAL</div>
+            </div>
+            <div class="path-box" style="flex: 1; text-align: left;">
+                <div class="fw-bold" style="font-size: 12px;">LABORATORY ONLY USE</div>
+                <div style="font-size: 12px;">SO UZA EM LABORATORIO</div>
+                <div class="text-muted mt-2" style="font-size: 11px;">Piece Laboratory Number/Barcode Here</div>
+            </div>
+        </div>
+
+        <!-- ROW 2 -->
+        <div class="path-row">
+            <div class="path-box" style="flex: 1;">
+                <div class="box-label">Medical Record Num</div>
+                <div class="box-value">{{ visit.patient.patient_id }}</div>
+            </div>
+            <div class="path-box" style="flex: 1.5;">
+                <div class="box-label">Family Names-Nome da Familia-A</div>
+                <div class="box-value"></div>
+            </div>
+            <div class="path-box" style="flex: 2;">
+                <div class="box-label">Given Names-Nome Chamada-Naran</div>
+                <div class="box-value">{{ visit.patient.full_name }}</div>
+            </div>
+        </div>
+
+        <!-- ROW 3 -->
+        <div class="path-row">
+            <div class="path-box">
+                <div class="box-label">DOB(dd/mm/yyyy)</div>
+                <div class="box-value">{{ visit.patient.date_of_birth|date:"d/m/Y" }}</div>
+            </div>
+            <div class="path-box">
+                <div class="box-label">Age/Idade</div>
+                <div class="box-value">{{ visit.patient.date_of_birth|timesince }}</div>
+            </div>
+            <div class="path-box">
+                <div class="box-label">Sexu: M/F</div>
+                <div class="box-value">{{ visit.patient.gender }}</div>
+            </div>
+            <div class="path-box" style="flex: 1.5;">
+                <div class="box-label">Telephone</div>
+                <div class="box-value">{{ visit.patient.phone_number }}</div>
+            </div>
+            <div class="path-box" style="flex: 1.5;">
+                <div class="box-label">Pregnant/i Gest (Yes/No)</div>
+                <select name="pregnant" class="path-input">
+                    <option value="">--</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+            <div class="path-box">
+                <div class="box-label">Week</div>
+                <input type="text" class="path-input">
+            </div>
+        </div>
+
+        <!-- ROW 4 -->
+        <div class="path-row">
+            <div class="path-box">
+                <div class="box-label">Suco/Aldeia</div>
+                <div class="box-value">{{ visit.patient.address }}</div>
+            </div>
+            <div class="path-box">
+                <div class="box-label">Subdistrict-Sub distrito</div>
+                <div class="box-value">{{ visit.patient.posto_administrativo }}</div>
+            </div>
+            <div class="path-box">
+                <div class="box-label">District-Distrito</div>
+                <div class="box-value">{{ visit.patient.municipio }}</div>
+            </div>
+        </div>
+
+        <!-- ROW 5 -->
+        <div class="path-row">
+            <div class="path-box" style="flex: 1.5;">
+                <div class="box-label">Requesting Dr-Requezito de Dr</div>
+                <div class="box-value">
+                    {% if existing_request %}
+                        {% if existing_request.requesting_physician %}
+                            {{ existing_request.requesting_physician.get_full_name|default:existing_request.requesting_physician.username }}
+                        {% else %}
+                            <span class="text-muted">{% trans "Unknown" %}</span>
+                        {% endif %}
+                    {% else %}
+                        {{ request.user.get_full_name|default:request.user.username }}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="path-box" style="flex: 1.5;">
+                <div class="box-label">Patient Location/Ward-Localizaca</div>
+                <div class="box-value">{{ visit.current_room.get_code_display }}</div>
+            </div>
+            <div class="path-box">
+                <div class="box-label">Fasting: Yes-sim / No-Nao (Jejum)</div>
+                <div class="mt-1">
+                    <label><input type="radio" name="fasting" value="True" {% if existing_request.fasting %}checked{% endif %}> Yes</label>&nbsp;&nbsp;
+                    <label><input type="radio" name="fasting" value="False" {% if not existing_request.fasting %}checked{% endif %}> No</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROW 6 -->
+        <div class="path-row">
+            <div class="path-box">
+                <div class="box-label">Collection Date</div>
+                <input class="path-input" type="text" placeholder=".../.../....">
+            </div>
+            <div class="path-box">
+                <div class="box-label">Collection Time</div>
+                <input class="path-input" type="text" placeholder="... : ...">
+            </div>
+            <div class="path-box">
+                <div class="box-label">Received Date</div>
+                <div class="box-value" style="color:#aaa;">Lab Use</div>
+            </div>
+            <div class="path-box">
+                <div class="box-label">Received Time</div>
+                <div class="box-value" style="color:#aaa;">Lab Use</div>
+            </div>
+            <div class="path-box">
+                <div class="box-label">Staff ID</div>
+                <div class="box-value" style="color:#aaa;">Lab Use</div>
+            </div>
+        </div>
+
+        <!-- ROW 7 -->
+        <div class="path-row" style="border-bottom: 2px solid #333;">
+            <div class="path-box" style="flex: 2;">
+                <div class="box-label">Clinica History (Istoria de Clinica)</div>
+                <textarea name="clinica_history" class="w-100 border-0 outline-0 mt-1" style="resize:none; min-height: 150px; outline:none;">{{ existing_request.clinica_history|default:'' }}</textarea>
+            </div>
+            <div class="path-box" style="flex: 1;">
+                <div class="box-label">Billing</div>
+                <div class="mt-2 ms-2">
+                    <div><label><input type="radio" name="billing_type" value="O" {% if not existing_request or existing_request.billing_type == 'O' %}checked{% endif %}> (O) Outpatient</label></div>
+                    <div><label><input type="radio" name="billing_type" value="I" {% if existing_request.billing_type == 'I' %}checked{% endif %}> (I) Inpatient</label></div>
+                    <div><label><input type="radio" name="billing_type" value="P" {% if existing_request.billing_type == 'P' %}checked{% endif %}> (P) Private</label></div>
+                    <div><label><input type="radio" name="billing_type" value="G" {% if existing_request.billing_type == 'G' %}checked{% endif %}> (G) Government</label></div>
+                </div>
+            </div>
+            <div class="path-box" style="flex: 1;">
+                <div class="tube-list mt-1">
+                    <div class="tube-item"><span>SST</span><input type="text" class="tube-input" name="tube_sst" value="{{ existing_request.tube_sst|default:'' }}"></div>
+                    <div class="tube-item"><span>EDTA</span><input type="text" class="tube-input" name="tube_edta" value="{{ existing_request.tube_edta|default:'' }}"></div>
+                    <div class="tube-item"><span>ESR</span><input type="text" class="tube-input" name="tube_esr" value="{{ existing_request.tube_esr|default:'' }}"></div>
+                    <div class="tube-item"><span>Plain</span><input type="text" class="tube-input" name="tube_plain" value="{{ existing_request.tube_plain|default:'' }}"></div>
+                    <div class="tube-item"><span>CIT</span><input type="text" class="tube-input" name="tube_cit" value="{{ existing_request.tube_cit|default:'' }}"></div>
+                    <div class="tube-item"><span>FLOK</span><input type="text" class="tube-input" name="tube_flok" value="{{ existing_request.tube_flok|default:'' }}"></div>
+                    <div class="tube-item"><span>MSU</span><input type="text" class="tube-input" name="tube_msu" value="{{ existing_request.tube_msu|default:'' }}"></div>
+                    <div class="tube-item"><span>Swabs</span><input type="text" class="tube-input" name="tube_swabs" value="{{ existing_request.tube_swabs|default:'' }}"></div>
+                    <div class="tube-item"><span>PAP</span><input type="text" class="tube-input" name="tube_pap" value="{{ existing_request.tube_pap|default:'' }}"></div>
+                    <div class="tube-item"><span>Other</span><input type="text" class="tube-input" name="tube_other" value="{{ existing_request.tube_other|default:'' }}"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROW 8 (CHEMISTRY) -->
+        <div class="path-box border-0 pb-0">
+            <div class="chem-grid">
+                {% for test in all_tests %}
+                <div class="chem-item">
+                    <input type="checkbox" name="tests" value="{{ test.id }}" id="test_{{ test.id }}" class="chem-checkbox"
+                    {% if existing_request and test in existing_request.tests.all %}checked{% endif %}>
+                    <label for="test_{{ test.id }}" style="cursor:pointer;">{{ test.name }}</label>
+                </div>
+                {% empty %}
+                <div class="text-muted text-center w-100 py-3">{% trans "No chemistry tests configured in database. Run python manage.py seed_pathology_tests." %}</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- SUBMIT BUTTON -->
+        <div class="text-end mt-4 no-print">
+            <button type="submit" class="btn btn-success btn-lg px-5"><i class="bi bi-save me-2"></i>{% trans "Save Pathology Request" %}</button>
+        </div>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Reception Dashboard" %} - {% trans "Clinic Lanud" %}{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var startScannerBtn = document.getElementById('start-scanner-btn');
+        var stopScannerBtn = document.getElementById('stop-scanner-btn');
+        var scannerWrapper = document.getElementById('scanner-wrapper');
+        var searchInput = document.getElementById('search-input');
+        var searchForm = document.getElementById('search-form');
+        var scannerStatus = document.getElementById('scanner-status');
+        var html5QrCode;
+
+        function techLog(msg, type) {
+            var consoleEl = document.getElementById('tech-console');
+            if (!consoleEl) return;
+            var entry = document.createElement('div');
+            entry.className = "small py-1 border-bottom " + (type === 'err' ? 'text-danger' : 'text-muted');
+            entry.innerHTML = "<code>[" + new Date().toLocaleTimeString() + "]</code> " + msg;
+            consoleEl.prepend(entry);
+        }
+
+        function updateStatus(msg, type) {
+            if (!scannerStatus) return;
+            scannerStatus.textContent = msg;
+            scannerStatus.className = "small " + (type === 'err' ? 'text-danger fw-bold' : (type === 'ok' ? 'text-success fw-bold' : 'text-muted'));
+        }
+
+        function loadCameras() {
+            techLog("Checking hardware...");
+            Html5Qrcode.getCameras().then(function (cameras) {
+                var select = document.getElementById('camera-select');
+                if (!select) return;
+                select.innerHTML = "";
+                if (cameras && cameras.length > 0) {
+                    techLog("Cameras found: " + cameras.length);
+                    cameras.forEach(function (camera) {
+                        var opt = document.createElement('option');
+                        opt.value = camera.id;
+                        opt.text = camera.label || "Camera " + (select.length + 1);
+                        select.appendChild(opt);
+                    });
+                    select.classList.remove('d-none');
+                } else {
+                    techLog("No camera hardware found.", "err");
+                }
+            }).catch(function (err) {
+                techLog("Hardware error: " + err, "err");
+            });
+        }
+
+        function onScanSuccess(decodedText) {
+            if (html5QrCode) {
+                html5QrCode.stop().then(function () {
+                    scannerWrapper.classList.add('d-none');
+                    if (searchInput) searchInput.value = decodedText;
+                    if (searchForm) searchForm.submit();
+                });
+            }
+        }
+
+        function startScanner(cameraId) {
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(function() { 
+                    initScanner(cameraId); 
+                }).catch(function(err) {
+                    techLog("Stop error: " + err, "err");
+                    initScanner(cameraId);
+                });
+            } else {
+                if (html5QrCode) { html5QrCode.clear(); }
+                html5QrCode = new Html5Qrcode("reader");
+                initScanner(cameraId);
+            }
+        }
+
+        function initScanner(cameraId) {
+            // Support both QR Codes and common Barcodes
+            var config = {
+                fps: 15,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0,
+                formatsToSupport: [ 
+                    Html5QrcodeSupportedFormats.QR_CODE,
+                    Html5QrcodeSupportedFormats.CODE_128,
+                    Html5QrcodeSupportedFormats.CODE_39,
+                    Html5QrcodeSupportedFormats.EAN_13,
+                    Html5QrcodeSupportedFormats.EAN_8
+                ]
+            };
+
+            updateStatus("{% trans 'Starting camera...' %}", "ok");
+
+            html5QrCode.start(cameraId, config, onScanSuccess)
+                .then(function () {
+                    techLog("Camera active and scanning.");
+                    updateStatus("{% trans 'Scanner Ready! Tip: Hold the card 30cm away so it is NOT BLURRY.' %}", "ok");
+                })
+                .catch(function (err) {
+                    techLog("Camera Error: " + err, "err");
+                    if (err.toString().indexOf("NotAllowedError") !== -1) {
+                        updateStatus("{% trans 'Permission Denied! Allow camera access in browser.' %}", "err");
+                    } else {
+                        updateStatus("{% trans 'Camera Error. Try restarting browser.' %}", "err");
+                    }
+                });
+        }
+
+
+        if (startScannerBtn) {
+            startScannerBtn.addEventListener('click', function () {
+                if (scannerWrapper) scannerWrapper.classList.remove('d-none');
+                loadCameras();
+                setTimeout(function () {
+                    var select = document.getElementById('camera-select');
+                    if (select && select.value) startScanner(select.value);
+                }, 1200);
+            });
+        }
+
+        var camSelect = document.getElementById('camera-select');
+        if (camSelect) {
+            camSelect.addEventListener('change', function () {
+                if (html5QrCode && html5QrCode.isScanning) {
+                    html5QrCode.stop().then(function () { startScanner(camSelect.value); });
+                } else {
+                    startScanner(this.value);
+                }
+            });
+        }
+
+        if (stopScannerBtn) {
+            stopScannerBtn.addEventListener('click', function () {
+                if (html5QrCode) {
+                    html5QrCode.stop().then(function () { if (scannerWrapper) scannerWrapper.classList.add('d-none'); });
+                } else {
+                    if (scannerWrapper) scannerWrapper.classList.add('d-none');
+                }
+            });
+        }
+
+        var urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('autostart') === '1' && startScannerBtn) {
+            setTimeout(function () { startScannerBtn.click(); }, 1000);
+        }
+    });
+</script>
+<style>
+    #tech-console {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        height: 120px;
+        overflow-y: auto;
+        font-family: monospace;
+        padding: 8px;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card p-4 bg-primary text-white">
+            <h2 class="mb-0">{% trans "Reception & Check-in" %}</h2>
+            <p class="mb-0">{% trans "Search patients or scan barcode to issue daily queue number" %}</p>
+        </div>
+    </div>
+
+    <!-- Search & Scan Section -->
+    <div class="col-12 col-md-6 mb-4">
+        <div class="card p-4 h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0">{% trans "Search Patient" %}</h4>
+                <button class="btn btn-sm btn-outline-primary" id="start-scanner-btn">
+                    <i class="bi bi-camera me-1"></i> {% trans "Scan Card" %}
+                </button>
+            </div>
+
+            <!-- Scanner Container (Hidden by default) -->
+            <div id="scanner-wrapper" class="mb-3 d-none">
+                <div class="mb-2">
+                    <select id="camera-select" class="form-select form-select-sm d-none mb-2"></select>
+                    <div id="scanner-status" class="small text-muted mb-1">{% trans "Ready." %}</div>
+                </div>
+
+                <div id="reader" style="width: 100%; border-radius: 8px; overflow: hidden; background: #000;"></div>
+
+                <div class="mt-3">
+                    <div class="small fw-bold text-muted mb-1">{% trans "Technical Diagnostics" %}:</div>
+                    <div id="tech-console"></div>
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn btn-sm btn-danger flex-grow-1" id="stop-scanner-btn">{% trans "Close Scanner" %}</button>
+                </div>
+            </div>
+
+            <form method="get" class="mb-4" id="search-form">
+                <div class="input-group">
+                    <input type="text" name="q" id="search-input" class="form-control form-control-lg"
+                        placeholder="{% trans 'Name or Patient ID...' %}" value="{{ query }}" autofocus>
+                    <button class="btn btn-primary" type="submit">{% trans "Search" %}</button>
+                </div>
+            </form>
+
+            <div class="list-group">
+                {% for p in patients %}
+                <div
+                    class="list-group-item d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+                    <div>
+                        <h6 class="mb-0">{{ p.full_name }}</h6>
+                        <div class="small">
+                            <span class="text-muted">{{ p.patient_id }}</span>
+                            {% for id in p.identities.all %}
+                            <span class="badge bg-light text-dark border ms-1">{{ id.get_id_type_display }}: {{ id.id_number }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex gap-2">
+                            <a href="{% url 'patient_dashboard' p.uuid %}" class="btn btn-sm btn-outline-secondary">{% trans "Dashboard" %}</a>
+
+                            {% if p.pending_visit %}
+                            <!-- Continuation Form (Fee = 0) -->
+                            <form action="{% url 'check_in_patient' p.uuid %}" method="post"
+                                class="m-0 d-flex gap-2 align-items-center">
+                                {% csrf_token %}
+                                <input type="hidden" name="is_continuation" value="true">
+                                <input type="hidden" name="continuation_of_uuid" value="{{ p.pending_visit.uuid }}">
+                                <input type="hidden" name="patient_type" value="TUAN">
+                                <input type="hidden" name="visit_fee" value="0.00">
+                                <button type="submit" class="btn btn-sm btn-warning">
+                                    <i class="bi bi-arrow-repeat"></i> {% trans "Continue Visit" %}
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+
+                        <!-- Standard Check-in Form -->
+                        <form action="{% url 'check_in_patient' p.uuid %}" method="post"
+                            class="m-0 d-flex gap-2 align-items-center">
+                            {% csrf_token %}
+                            <span class="small text-muted">{% trans "New Check-in" %}:</span>
+                            <select name="patient_type" class="form-select form-select-sm" style="width: 85px;">
+                                <option value="TUAN" selected>{% trans "Old" %}</option>
+                                <option value="FOUN">{% trans "New" %}</option>
+                            </select>
+                            <div class="input-group input-group-sm" style="width: 100px;">
+                                <span class="input-group-text">$</span>
+                                <input type="number" name="visit_fee" class="form-control" value="0.00" step="0.01">
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-success">{% trans "Check-in" %}</button>
+                        </form>
+                    </div>
+                </div>
+                {% empty %}
+                {% if query %}
+                <p class="text-center text-muted">{% trans "No patients found." %}</p>
+                <a href="{% url 'register_patient' %}" class="btn btn-outline-primary">{% trans "Register New Patient" %}</a>
+                {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Today's Queue Section -->
+    <div class="col-12 col-md-6 mb-4">
+        <div class="card p-4 h-100">
+            <h4 class="mb-3">{% trans "Today's Queue" %}</h4>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>{% trans "No" %}</th>
+                            <th>{% trans "Patient" %}</th>
+                            <th>{% trans "Status" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for visit in today_visits %}
+                        <tr>
+                            <td class="fw-bold">#{{ visit.queue_number }}</td>
+                            <td>{{ visit.patient.full_name }}</td>
+                            <td><span class="badge bg-info">{{ visit.get_status_display }}</span></td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">{% trans "No one in queue yet." %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

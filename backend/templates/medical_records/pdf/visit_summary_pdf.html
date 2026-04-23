@@ -1,0 +1,162 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: Helvetica, sans-serif; font-size: 11px; color: #333; margin: 20px; }
+        .header { text-align: center; margin-bottom: 15px; border-bottom: 2px solid #1a6b3c; padding-bottom: 8px; }
+        .header h2 { color: #1a6b3c; margin: 3px 0; font-size: 16px; }
+        .header h3 { font-size: 13px; margin-top: 5px; }
+        .section { margin: 12px 0; }
+        .section h4 { font-size: 12px; color: #1a6b3c; border-bottom: 1px solid #ccc; padding-bottom: 3px; margin-bottom: 6px; }
+        .info-grid { width: 100%; }
+        .info-grid td { padding: 3px 8px; vertical-align: top; }
+        .label { font-weight: bold; color: #555; width: 140px; }
+        table.data { width: 100%; border-collapse: collapse; margin: 5px 0; }
+        table.data th { background: #e8f5e9; padding: 5px 8px; text-align: left; font-size: 10px; border: 1px solid #ddd; }
+        table.data td { padding: 4px 8px; border: 1px solid #ddd; }
+        .vital-row td { text-align: center; }
+        .footer { margin-top: 30px; text-align: center; font-size: 9px; color: #999; border-top: 1px solid #ddd; padding-top: 8px; }
+        .notes-box { background: #f9f9f9; padding: 8px; border: 1px solid #eee; margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Clinic Bairo Pite Lanud</h2>
+        <p style="font-size: 10px; color: #666;">Community Health Care East Timor</p>
+        <h3>{% trans "Visit Summary" %} / Rezumu Vizita</h3>
+    </div>
+
+    <div class="section">
+        <h4>{% trans "Patient Information" %}</h4>
+        <table class="info-grid">
+            <tr><td class="label">{% trans "Name" %}:</td><td>{{ visit.patient.full_name }}</td><td class="label">{% trans "Patient ID" %}:</td><td>{{ visit.patient.patient_id }}</td></tr>
+            <tr><td class="label">{% trans "Date of Birth" %}:</td><td>{{ visit.patient.date_of_birth|date:"d/m/Y" }} ({{ visit.patient.age }} {% trans "years" %})</td><td class="label">{% trans "Gender" %}:</td><td>{{ visit.patient.get_gender_display }}</td></tr>
+            <tr><td class="label">{% trans "Address" %}:</td><td colspan="3">{{ visit.patient.full_address }}</td></tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h4>{% trans "Visit Details" %}</h4>
+        <table class="info-grid">
+            <tr><td class="label">{% trans "Date" %}:</td><td>{{ visit.visit_date|date:"d/m/Y H:i" }}</td><td class="label">{% trans "Queue #" %}:</td><td>{{ visit.queue_number }}</td></tr>
+            <tr><td class="label">{% trans "Status" %}:</td><td>{{ visit.get_status_display }}</td><td class="label">{% trans "Room" %}:</td><td>{{ visit.current_room|default:"-" }}</td></tr>
+            <tr>
+                <td class="label">{% trans "Doctor" %}:</td>
+                <td>
+                    {% if visit.doctor %}
+                        {{ visit.doctor.get_full_name|default:visit.doctor.username }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="label">{% trans "Triage Nurse" %}:</td>
+                <td>{{ visit.triage_nurse.get_full_name|default:"-" }}</td>
+            </tr>
+        </table>
+    </div>
+
+    {% if visit.bp_sys or visit.pulse or visit.temp or visit.spo2 %}
+    <div class="section">
+        <h4>{% trans "Vital Signs" %}</h4>
+        <table class="data">
+            <thead>
+                <tr>
+                    <th>{% trans "BP (mmHg)" %}</th>
+                    <th>{% trans "SPO2 (%)" %}</th>
+                    <th>{% trans "Pulse (bpm)" %}</th>
+                    <th>{% trans "RR (bpm)" %}</th>
+                    <th>{% trans "Temp (°C)" %}</th>
+                    <th>{% trans "Weight (kg)" %}</th>
+                    <th>{% trans "MUAC (cm)" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="vital-row">
+                    <td>{% if visit.bp_sys %}{{ visit.bp_sys }}/{{ visit.bp_dia }}{% else %}-{% endif %}</td>
+                    <td>{{ visit.spo2|default:"-" }}</td>
+                    <td>{{ visit.pulse|default:"-" }}</td>
+                    <td>{{ visit.rr|default:"-" }}</td>
+                    <td>{{ visit.temp|default:"-" }}</td>
+                    <td>{{ visit.weight|default:"-" }}</td>
+                    <td>{{ visit.muac|default:"-" }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if visit.complaint %}
+    <div class="section">
+        <h4>{% trans "Chief Complaint" %}</h4>
+        <div class="notes-box">{{ visit.complaint }}</div>
+    </div>
+    {% endif %}
+
+    {% if visit.diagnosis %}
+    <div class="section">
+        <h4>{% trans "Diagnosis" %}</h4>
+        <p><strong>{% trans "Primary" %}:</strong> {{ visit.diagnosis.code }} - {{ visit.diagnosis.name }}</p>
+        {% if visit.secondary_diagnoses.exists %}
+        <p><strong>{% trans "Secondary" %}:</strong>
+            {% for d in visit.secondary_diagnoses.all %}{{ d.code }} - {{ d.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+        </p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if visit.clinical_notes %}
+    <div class="section">
+        <h4>{% trans "Clinical Notes" %}</h4>
+        <div class="notes-box">{{ visit.clinical_notes }}</div>
+    </div>
+    {% endif %}
+
+    {% if visit.refer_to_central %}
+    <div class="section">
+        <p style="color: #dc3545; font-weight: bold;">{% trans "REFERRED TO CENTRAL FACILITY" %}</p>
+    </div>
+    {% endif %}
+
+    {% if visit.discharge_summary %}
+    <div class="section">
+        <h4>{% trans "Discharge Summary" %}</h4>
+        <div class="notes-box">{{ visit.discharge_summary }}</div>
+        {% if visit.discharge_datetime %}
+        <p><small>{% trans "Discharged" %}: {{ visit.discharge_datetime|date:"d/m/Y H:i" }}</small></p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if visit.logs.exists %}
+    <div class="section">
+        <h4>{% trans "Visit Timeline" %}</h4>
+        <table class="data">
+            <thead><tr><th>{% trans "Time" %}</th><th>{% trans "Action" %}</th><th>{% trans "By" %}</th><th>{% trans "Room" %}</th></tr></thead>
+            <tbody>
+                {% for log in visit.logs.all %}
+                <tr>
+                    <td>{{ log.timestamp|date:"H:i" }}</td>
+                    <td>{{ log.get_action_display }}</td>
+                    <td>
+                        {% if log.performed_by %}
+                            {{ log.performed_by.get_full_name|default:log.performed_by.username }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>{{ log.room|default:"-" }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        <p>{% trans "Generated on" %} {% now "d/m/Y H:i" %} &bull; Clinic Bairo Pite Lanud</p>
+        <p>{% trans "This is a computer-generated document." %}</p>
+    </div>
+</body>
+</html>

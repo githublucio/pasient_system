@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Dispense Prescription" %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h3 class="fw-bold mb-0"><i class="bi bi-capsule-pill text-success me-2"></i>{% trans "Dispense Prescription" %}</h3>
+                <p class="text-muted small mb-0">{% trans "Select medicines, set quantities, and update dispensing status" %}</p>
+            </div>
+            <a href="{% url 'pharmacy_dashboard' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>{% trans "Back to Dashboard" %}
+            </a>
+        </div>
+
+        <!-- Patient Info Card -->
+        <div class="card mb-4 border-start border-success border-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>{% trans "Patient" %}:</strong> {{ prescription.visit.patient.full_name }}<br>
+                        <strong>{% trans "Patient ID" %}:</strong> {{ prescription.visit.patient.patient_id }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>{% trans "Doctor" %}:</strong> 
+                        {% if prescription.doctor %}
+                            {{ prescription.doctor.get_full_name|default:prescription.doctor.username }}
+                        {% else %}
+                            ---
+                        {% endif %}<br>
+                        <strong>{% trans "Allergy" %}:</strong>
+                        {% if prescription.has_allergy == 'IHA' %}
+                            <span class="badge bg-danger">{% trans "Yes" %} - {{ prescription.allergy_medicine }}</span>
+                        {% else %}
+                            <span class="badge bg-success">{% trans "No Allergy" %}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prescription Details -->
+        <div class="card mb-4">
+            <div class="card-header bg-light fw-bold">
+                <i class="bi bi-file-earmark-text me-2"></i>{% trans "Prescription from Doctor (R/)" %}
+            </div>
+            <div class="card-body">
+                <pre style="white-space: pre-wrap; font-family: 'Courier New', monospace; font-size: 16px;">{{ prescription.prescription_text }}</pre>
+            </div>
+        </div>
+
+        <!-- Dispensing Form -->
+        <form method="post">
+            {% csrf_token %}
+
+            <!-- Medicines Table -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-success text-white fw-bold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-capsule me-2"></i>{% trans "Medicines Dispensed" %}</span>
+                    <button type="button" class="btn btn-sm btn-light" id="addRowBtn">
+                        <i class="bi bi-plus-circle me-1"></i>{% trans "Add Medicine" %}
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-bordered align-middle mb-0" id="medicineTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:5%">#</th>
+                                <th style="width:35%">{% trans "Medicine" %}</th>
+                                <th style="width:10%">{% trans "Stock" %}</th>
+                                <th style="width:12%">{% trans "Qty" %}</th>
+                                <th style="width:28%">{% trans "Dosage Instructions" %}</th>
+                                <th style="width:10%" class="text-center">{% trans "Action" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="medicineBody">
+                            {% for item in existing_items %}
+                            <tr class="medicine-row">
+                                <td class="row-number">{{ forloop.counter }}</td>
+                                <td>
+                                    <select name="medicine_id" class="form-select medicine-select" required>
+                                        <option value="">-- {% trans "Select Medicine" %} --</option>
+                                        {% for med in all_medicines %}
+                                        <option value="{{ med.id }}" data-stock="{{ med.stock }}" data-unit="{{ med.get_unit_display }}"
+                                            {% if med.id == item.medicine.id %}selected{% endif %}
+                                            {% if med.is_low_stock %}class="text-danger"{% endif %}>
+                                            {{ med.display_name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td class="stock-display text-center">
+                                    <span class="badge {% if item.medicine.is_low_stock %}bg-danger{% else %}bg-info text-dark{% endif %}">{{ item.medicine.stock }}</span>
+                                </td>
+                                <td>
+                                    <input type="number" name="quantity" class="form-control" min="1" value="{{ item.quantity }}" required>
+                                </td>
+                                <td>
+                                    <input type="text" name="dosage_instructions" class="form-control" placeholder="e.g. 3x1 selepas makan" value="{{ item.dosage_instructions|default:'' }}">
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr class="medicine-row">
+                                <td class="row-number">1</td>
+                                <td>
+                                    <select name="medicine_id" class="form-select medicine-select" required>
+                                        <option value="">-- {% trans "Select Medicine" %} --</option>
+                                        {% for med in all_medicines %}
+                                        <option value="{{ med.id }}" data-stock="{{ med.stock }}" data-unit="{{ med.get_unit_display }}"
+                                            {% if med.is_low_stock %}class="text-danger"{% endif %}>
+                                            {{ med.display_name }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td class="stock-display text-center"><span class="badge bg-secondary">-</span></td>
+                                <td>
+                                    <input type="number" name="quantity" class="form-control" min="1" value="" required>
+                                </td>
+                                <td>
+                                    <input type="text" name="dosage_instructions" class="form-control" placeholder="e.g. 3x1 selepas makan">
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Status & Notes -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{% trans "Dispensing Status" %}</label>
+                            <select name="dispensing_status" class="form-select">
+                                <option value="PENDING" {% if prescription.dispensing_status == 'PENDING' %}selected{% endif %}>{% trans "Pending" %}</option>
+                                <option value="DISPENSING" {% if prescription.dispensing_status == 'DISPENSING' %}selected{% endif %}>{% trans "Dispensing (Preparing)" %}</option>
+                                <option value="DISPENSED" {% if prescription.dispensing_status == 'DISPENSED' %}selected{% endif %}>{% trans "Dispensed (Ready)" %}</option>
+                                <option value="COLLECTED" {% if prescription.dispensing_status == 'COLLECTED' %}selected{% endif %}>{% trans "Collected by Patient" %}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{% trans "Dispensing Notes" %}</label>
+                            <textarea name="dispensing_notes" class="form-control" rows="3" placeholder="{% trans 'Substitutions, special instructions...' %}">{{ prescription.dispensing_notes|default:'' }}</textarea>
+                        </div>
+                    </div>
+
+                    {% if prescription.dispensed_at %}
+                    <div class="alert alert-success mt-3">
+                        <i class="bi bi-check-circle me-2"></i>
+                        {% trans "Dispensed at" %}: {{ prescription.dispensed_at|date:"d M Y H:i" }}
+                        {% trans "by" %} 
+                        {% if prescription.dispensed_by %}
+                            {{ prescription.dispensed_by.get_full_name|default:prescription.dispensed_by.username }}
+                        {% else %}
+                            ---
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between mt-4 pt-3 border-top">
+                        <a href="{% url 'pharmacy_dashboard' %}" class="btn btn-outline-secondary px-4">{% trans "Cancel" %}</a>
+                        <button type="submit" class="btn btn-success btn-lg px-5">
+                            <i class="bi bi-save me-2"></i>{% trans "Save & Update" %}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Hidden template row for JS -->
+<template id="medicineRowTemplate">
+    <tr class="medicine-row">
+        <td class="row-number"></td>
+        <td>
+            <select name="medicine_id" class="form-select medicine-select" required>
+                <option value="">-- {% trans "Select Medicine" %} --</option>
+                {% for med in all_medicines %}
+                <option value="{{ med.id }}" data-stock="{{ med.stock }}" data-unit="{{ med.get_unit_display }}"
+                    {% if med.is_low_stock %}class="text-danger"{% endif %}>
+                    {{ med.display_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </td>
+        <td class="stock-display text-center"><span class="badge bg-secondary">-</span></td>
+        <td>
+            <input type="number" name="quantity" class="form-control" min="1" value="" required>
+        </td>
+        <td>
+                            <input type="text" name="dosage_instructions" class="form-control" placeholder="{% trans 'e.g. 3x1 after meal' %}">
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn"><i class="bi bi-trash"></i></button>
+        </td>
+    </tr>
+</template>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tbody = document.getElementById('medicineBody');
+    const addBtn = document.getElementById('addRowBtn');
+    const template = document.getElementById('medicineRowTemplate');
+
+    function renumberRows() {
+        const rows = tbody.querySelectorAll('.medicine-row');
+        rows.forEach((row, idx) => {
+            row.querySelector('.row-number').textContent = idx + 1;
+        });
+    }
+
+    function updateStockDisplay(selectEl) {
+        const row = selectEl.closest('tr');
+        const stockTd = row.querySelector('.stock-display');
+        const selected = selectEl.options[selectEl.selectedIndex];
+        if (selected && selected.value) {
+            const stock = selected.getAttribute('data-stock');
+            const stockInt = parseInt(stock);
+            const badgeClass = stockInt <= 10 ? 'bg-danger' : 'bg-info text-dark';
+            stockTd.innerHTML = '<span class="badge ' + badgeClass + '">' + stock + '</span>';
+        } else {
+            stockTd.innerHTML = '<span class="badge bg-secondary">-</span>';
+        }
+    }
+
+    function bindRow(row) {
+        const select = row.querySelector('.medicine-select');
+        if (select) {
+            select.addEventListener('change', function() { updateStockDisplay(this); });
+        }
+        const removeBtn = row.querySelector('.remove-row-btn');
+        if (removeBtn) {
+            removeBtn.addEventListener('click', function() {
+                if (tbody.querySelectorAll('.medicine-row').length > 1) {
+                    row.remove();
+                    renumberRows();
+                }
+            });
+        }
+    }
+
+    // Bind existing rows
+    tbody.querySelectorAll('.medicine-row').forEach(bindRow);
+
+    // Add new row
+    addBtn.addEventListener('click', function() {
+        const clone = template.content.cloneNode(true);
+        const newRow = clone.querySelector('tr');
+        tbody.appendChild(clone);
+        bindRow(newRow);
+        renumberRows();
+    });
+});
+</script>
+{% endblock %}

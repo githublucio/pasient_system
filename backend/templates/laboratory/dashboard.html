@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Laboratory Dashboard" %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-0"><i class="bi bi-eyedropper text-primary me-2"></i>{% trans "Laboratory Dashboard" %}</h3>
+        <p class="text-muted small mb-0">{% trans "List of lab test requests from doctors" %}</p>
+    </div>
+    <form method="get" class="d-flex gap-2">
+        <input type="date" name="date" class="form-control" value="{{ filter_date|date:'Y-m-d' }}">
+        <button type="submit" class="btn btn-primary">{% trans "Filter" %}</button>
+    </form>
+</div>
+
+<!-- Lab Premium Stats Row -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm" style="border-left: 5px solid #ffc107 !important;">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase small fw-bold">{% trans "Pending Samples" %}</h6>
+                <h2 class="mb-0 fw-bold">{{ stats.pending }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm" style="border-left: 5px solid #198754 !important;">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase small fw-bold">{% trans "Results Completed" %}</h6>
+                <h2 class="mb-0 fw-bold">{{ stats.completed }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm" style="border-left: 5px solid #0d6efd !important;">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase small fw-bold">{% trans "Total Requests" %}</h6>
+                <h2 class="mb-0 fw-bold">{{ stats.total }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>{% trans "Patient" %}</th>
+                    <th>{% trans "Source" %}</th>
+                    <th>{% trans "Doctor" %}</th>
+                    <th>{% trans "Urgency" %}</th>
+                    <th>{% trans "Patient Type" %}</th>
+                    <th>{% trans "Tests" %}</th>
+                    <th>{% trans "Time" %}</th>
+                    <th>{% trans "Status" %}</th>
+                    <th class="text-center">{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in requests %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>
+                        <div class="fw-bold">{{ req.visit.patient.full_name }}</div>
+                        <small class="text-muted">ID: {{ req.visit.patient.patient_id }}</small>
+                    </td>
+                    <td>
+                        {% if req.source == 'IGD' %}
+                            <span class="badge bg-danger">IGD</span>
+                        {% else %}
+                            <span class="badge bg-primary">OPD</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if req.requesting_physician %}
+                            {{ req.requesting_physician.get_full_name|default:req.requesting_physician.username }}
+                        {% else %}
+                            ---
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if req.urgency == 'URGENT' %}
+                            <span class="badge bg-danger">🚨 {% trans "URGENT" %}</span>
+                        {% else %}
+                            <span class="badge bg-success">{% trans "Normal" %}</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge bg-secondary">{{ req.get_patient_type_display }}</span></td>
+                    <td>
+                        {% for test in req.tests.all %}
+                            <span class="badge bg-primary me-1" style="font-size:10px;">{{ test.name }}</span>
+                        {% endfor %}
+                        
+                        {% if req.others_note %}
+                            <div class="mt-1">
+                                <span class="badge bg-info text-dark" style="font-size:10px;">
+                                    <i class="bi bi-plus-circle me-1"></i>{{ req.others_note }}
+                                </span>
+                            </div>
+                        {% endif %}
+
+                        {% if not req.tests.all and not req.others_note %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td><small>{{ req.date_of_request|date:"H:i" }}</small></td>
+                    <td>
+                        {% if req.status == 'COMPLETED' %}
+                            <span class="badge bg-success">{% trans "Completed" %}</span>
+                        {% elif req.status == 'IN_PROGRESS' %}
+                            <span class="badge bg-warning text-dark">{% trans "In Progress" %}</span>
+                        {% elif req.status == 'SAMPLE_COLLECTED' %}
+                            <span class="badge bg-info text-dark">{% trans "Sample Collected" %}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{% trans "Pending" %}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <a href="{% url 'lab_request_create' req.visit.uuid %}" class="btn btn-sm btn-outline-primary me-1">
+                            <i class="bi bi-printer me-1"></i>{% trans "View" %}
+                        </a>
+                        <a href="{% url 'lab_result_input' req.uuid %}" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-pencil-square me-1"></i>{% trans "Input Result" %}
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-5">
+                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                        {% trans "No lab requests for this date." %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="card-footer text-muted small">
+        {% trans "Total" %}: <strong>{{ requests.count }}</strong> {% trans "requests on" %} {{ filter_date|date:"d M Y" }}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Queue Ticket" %} - #{{ visit.queue_number }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-4">
+        <div class="card p-4 text-center border-2 border-primary" id="ticket">
+            <h5 class="text-muted text-uppercase small">{% trans "Clinic Bairo Pite Lanud" %}</h5>
+            <hr>
+            <h6 class="mb-1">{% trans "Queue Number" %}</h6>
+            <h1 class="display-1 fw-bold text-primary mb-0">{{ visit.queue_number }}</h1>
+            <p class="text-muted mb-3">{{ visit.visit_date|date:"d M Y | H:i" }}</p>
+
+            <div class="bg-light p-3 rounded mb-3">
+                <h5 class="mb-1">{{ visit.patient.full_name }}</h5>
+                <small class="text-muted">{{ visit.patient.patient_id }}</small>
+            </div>
+
+            <p class="small text-muted">{% trans "Please wait for your number to be called" %}</p>
+            <hr>
+            <div class="d-grid gap-2 no-print">
+                <button onclick="window.print()" class="btn btn-success">{% trans "Print Ticket" %}</button>
+                <a href="{% url 'reception' %}" class="btn btn-outline-secondary">{% trans "Back to Reception" %}</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+
+        #ticket,
+        #ticket * {
+            visibility: visible;
+        }
+
+        #ticket {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            border: none;
+        }
+
+        .no-print {
+            display: none !important;
+        }
+    }
+</style>
+{% endblock %}
+吐

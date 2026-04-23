@@ -1,0 +1,17 @@
+{
+  "name": "pasient_system",
+  "version": "1.0.0",
+  "description": "Patient system project",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npx droid",
+    "droid": "droid"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@factoryai/droid": "^1.0.0"
+  },
+  "keywords": [],
+  "type": "commonjs"
+}

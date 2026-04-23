@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% load i18n static %}
+
+{% block title %}{% trans "Pharmacy Prescription Form" %}{% endblock %}
+
+{% block content %}
+<style>
+    /* Styling to match the paper form */
+    .rx-form-container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: #fff;
+        padding: 50px 60px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        font-family: 'Times New Roman', Times, serif; /* As the image looks quite formal */
+        color: #333;
+    }
+    
+    .rx-header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .rx-logo img {
+        height: 60px;
+        opacity: 0.8;
+        margin-bottom: 15px;
+    }
+    .rx-address {
+        font-weight: bold;
+        font-size: 15px;
+        margin-bottom: 5px;
+        color: #555;
+    }
+    .rx-contact {
+        font-size: 13px;
+        color: #555;
+    }
+    
+    .rx-divider {
+        border-top: 2px solid #333;
+        margin: 15px 0 25px 0;
+    }
+
+    .input-line {
+        border: none;
+        border-bottom: 1px dotted #888;
+        outline: none;
+        background: transparent;
+        font-family: inherit;
+        color: #000;
+    }
+    
+    .rx-top-right {
+        text-align: right;
+        margin-bottom: 30px;
+        font-size: 16px;
+    }
+    
+    .rx-row {
+        margin-bottom: 20px;
+        font-size: 16px;
+        display: flex;
+        align-items: center;
+    }
+
+    .rx-symbol {
+        font-size: 36px;
+        font-weight: bold;
+        font-style: italic;
+        margin-top: 30px;
+        margin-bottom: 10px;
+        color: #222;
+        font-family: "Georgia", serif;
+    }
+
+    .rx-textarea {
+        width: 100%;
+        border: none;
+        background: repeating-linear-gradient(
+            white,
+            white 30px,
+            #e5e5e5 31px
+        );
+        line-height: 31px;
+        font-size: 18px;
+        padding: 5px 10px;
+        resize: none;
+        outline: none;
+        font-family: "Courier New", Courier, monospace;
+        color: #000;
+        min-height: 300px;
+    }
+
+    .rx-footer {
+        margin-top: 50px;
+        font-size: 16px;
+    }
+    .rx-footer-row {
+        display: flex;
+        margin-bottom: 15px;
+    }
+    .rx-footer-label {
+        width: 180px;
+    }
+
+    /* Print styles */
+    @media print {
+        body { background: white; padding: 0; }
+        .rx-form-container { box-shadow: none; padding: 0; max-width: 100%; border: none; }
+        .no-print { display: none !important; }
+        .sidebar, .navbar { display: none !important; }
+        main { margin: 0 !important; padding: 0 !important; }
+        .rx-textarea { 
+            background: transparent; 
+            border: none; 
+            overflow: hidden;
+        }
+    }
+</style>
+
+<div class="row justify-content-center mb-4 no-print">
+    <div class="col-md-8 d-flex justify-content-between">
+        <a href="{% url 'perform_examination' visit.uuid %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> {% trans "Back to Examination" %}</a>
+        <button onclick="window.print()" class="btn btn-outline-primary"><i class="bi bi-printer"></i> {% trans "Print Empty Form" %}</button>
+    </div>
+</div>
+
+<form method="post" action="{% url 'prescription_create' visit.uuid %}">
+    {% csrf_token %}
+    <div class="rx-form-container">
+        
+        <!-- HEADER -->
+        <div class="rx-header">
+            <div class="rx-logo">
+                <img src="{% static 'assets/Logo.png' %}" alt="Clinic Logo" onerror="this.onerror=null; this.src='/static/assets/Logo.png'">
+            </div>
+            <div class="rx-address">{% trans "Rua de palacio presidente Lanud Bairo Pite, Dom Aleixo, Dili Timor-Leste" %}</div>
+            <div class="rx-contact">
+                {% trans "+670 78179379, bairopitecliniclanud@gmail.com" %}<br>
+                {% trans "web http://bairopitecliniclanud.org/" %}
+            </div>
+        </div>
+        
+        <div class="rx-divider"></div>
+        
+        <!-- DATE -->
+        <div class="rx-top-right">
+            {% trans "Dili" %}, <input type="text" class="input-line text-center" style="width: 150px;" 
+            value="{% if existing_prescription %}{{ existing_prescription.date_created|date:'d / m / Y' }}{% else %}{% now 'd / m / Y' %}{% endif %}" readonly>
+        </div>
+        
+        <!-- POLIKLINIKA -->
+        <div class="rx-row">
+            <span style="width: 150px;">{% trans "Sala/Poliklinika" %} :</span>
+            <input type="text" class="input-line" style="width: 300px;" value="{{ visit.current_room.get_code_display }}" readonly>
+        </div>
+        
+        <!-- ALERJI / AIMORUK -->
+        <div class="rx-row">
+            <span style="width: 80px;">{% trans "Alerjia" %} :</span>
+            
+            <label class="d-flex align-items-center me-3">
+                <span class="me-2">{% trans "iha" %}</span>
+                <input type="radio" name="has_allergy" value="IHA" style="width:18px;height:18px;" 
+                {% if existing_prescription.has_allergy == 'IHA' %}checked{% endif %}>
+            </label>
+            
+            <label class="d-flex align-items-center me-4">
+                <span class="me-2">{% trans "la iha" %}</span>
+                <input type="radio" name="has_allergy" value="LA_IHA" style="width:18px;height:18px;"
+                {% if not existing_prescription or existing_prescription.has_allergy == 'LA_IHA' %}checked{% endif %}>
+            </label>
+            
+            <span class="ms-3 me-2">{% trans "Aimoruk" %} :</span>
+            <input type="text" name="allergy_medicine" class="input-line flex-grow-1" value="{{ existing_prescription.allergy_medicine|default:'' }}">
+        </div>
+        
+        <!-- DOUTOR -->
+        <div class="rx-row">
+            <span style="width: 150px;">{% trans "Doutor/a:" %}</span>
+            <input type="text" class="input-line" style="width: 300px;" 
+                value="{% if existing_prescription %}{% if existing_prescription.doctor %}{{ existing_prescription.doctor.get_full_name|default:existing_prescription.doctor.username }}{% else %}---{% endif %}{% else %}{{ request.user.get_full_name|default:request.user.username }}{% endif %}" readonly>
+        </div>
+        
+        <!-- R/ SYMBOL & PRESCRIPTION AREA -->
+        <div class="rx-symbol">{% trans "R/" %}</div>
+        <div>
+            <textarea name="prescription_text" class="rx-textarea" placeholder="Start typing prescription details here...">{{ existing_prescription.prescription_text|default:'' }}</textarea>
+        </div>
+        
+        <!-- PATIENT DETAILS FOOTER -->
+        <div class="rx-footer">
+            <div class="rx-footer-row">
+                <span class="rx-footer-label">Naran Pasiente</span>
+                <span class="me-2">:</span>
+                <input type="text" class="input-line flex-grow-1 fw-bold fs-5" value="{{ visit.patient.full_name }}" readonly>
+            </div>
+            <div class="rx-footer-row">
+                <span class="rx-footer-label">Data Moris/Idade</span>
+                <span class="me-2">:</span>
+                <input type="text" class="input-line" style="width: 150px;" value="{{ visit.patient.date_of_birth|date:'d/M/Y' }}" readonly>
+                <span class="mx-2">/</span>
+                <input type="text" class="input-line" style="width: 100px;" value="{{ visit.patient.date_of_birth|timesince }}" readonly>
+            </div>
+            <div class="rx-footer-row">
+                <span class="rx-footer-label">Hela Fatin</span>
+                <span class="me-2">:</span>
+                <input type="text" class="input-line flex-grow-1" value="{{ visit.patient.full_address|default:visit.patient.address }}" readonly>
+            </div>
+        </div>
+
+        <!-- SUBMIT BUTTON -->
+        <div class="text-end mt-5 no-print">
+            <button type="submit" class="btn btn-success btn-lg px-5"><i class="bi bi-save me-2"></i>{% trans "Save Prescription to System" %}</button>
+        </div>
+    </div>
+</form>
+{% endblock %}

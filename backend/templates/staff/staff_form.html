@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{{ title }} - {% trans "Clinic Lanud" %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold">{{ title }}</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <strong><i class="bi bi-exclamation-triangle me-1"></i>{% trans "Please fix the errors below:" %}</strong>
+                        <ul class="mb-0 mt-2">
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                <li><strong>{{ field }}:</strong> {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    <h6 class="text-primary fw-bold mb-3 border-bottom pb-2 text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">
+                        <i class="bi bi-person-circle me-1"></i> {% trans "Account Information (User Access)" %}
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold">{{ form.username.label }}</label>
+                            {{ form.username }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold">{{ form.password.label }}</label>
+                            {{ form.password }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold">{{ form.first_name.label }}</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold">{{ form.last_name.label }}</label>
+                            {{ form.last_name }}
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold">{{ form.email.label }}</label>
+                        {{ form.email }}
+                    </div>
+
+                    <h6 class="text-primary fw-bold mb-3 border-bottom pb-2 text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">
+                        <i class="bi bi-person-vcard me-1"></i> {% trans "Professional Profile" %}
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold">{{ form.department.label }}</label>
+                            {{ form.department }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold">{{ form.category.label }}</label>
+                            {{ form.category }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold">{{ form.position.label }}</label>
+                            {{ form.position }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label small fw-bold">{{ form.phone.label }}</label>
+                            {{ form.phone }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <label class="form-label small fw-bold">{{ form.photo.label }}</label>
+                            {{ form.photo }}
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold">{{ form.address.label }}</label>
+                        {{ form.address }}
+                    </div>
+
+                    <h6 class="text-primary fw-bold mb-3 border-bottom pb-2 text-uppercase" style="font-size: 0.8rem; letter-spacing: 1px;">
+                        <i class="bi bi-shield-lock me-1"></i> {% trans "Role & Access Control" %}
+                    </h6>
+                    <div class="card bg-light border-0 mb-4">
+                        <div class="card-body">
+                            <p class="text-muted small mb-3">{% trans "Assign roles now. You can manage granular permissions for these roles in the RBAC Permission Manager." %}</p>
+                            <div class="row">
+                                {% for group in form.roles %}
+                                <div class="col-md-4 mb-2">
+                                    <div class="form-check">
+                                        {{ group.tag }}
+                                        <label class="form-check-label small" for="{{ group.id_for_label }}">
+                                            {{ group.choice_label }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between pt-3">
+                        <a href="{% url 'staff_list' %}" class="btn btn-light border px-4">{% trans "Cancel" %}</a>
+                        <button type="submit" class="btn btn-primary px-5 fw-bold">
+                            <i class="bi bi-check-circle me-2"></i>{% trans "Create User & Staff" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll('input:not([type="checkbox"]), select, textarea').forEach(el => {
+        el.className += ' form-control shadow-sm';
+    });
+    document.querySelectorAll('input[type="checkbox"]').forEach(el => {
+        el.className += ' form-check-input';
+    });
+</script>
+{% endblock %}

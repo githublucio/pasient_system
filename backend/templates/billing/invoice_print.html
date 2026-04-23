@@ -1,0 +1,120 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{% trans "Invoice" %} {{ invoice.invoice_number }}</title>
+    <style>
+        @media print { body { margin: 0; } .no-print { display: none; } }
+        body { font-family: 'Segoe UI', sans-serif; font-size: 13px; color: #333; max-width: 800px; margin: 20px auto; }
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #5d2d91; padding-bottom: 10px; }
+        .header h2 { color: #5d2d91; margin: 5px 0; }
+        .header p { margin: 2px 0; color: #666; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 15px; }
+        .info-box { flex: 1; }
+        .info-box h6 { font-size: 11px; text-transform: uppercase; color: #999; margin-bottom: 4px; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f5f5f5; font-size: 12px; }
+        .text-end { text-align: right; }
+        .total-row { font-weight: bold; background: #f0e6ff; }
+        .footer { margin-top: 30px; text-align: center; font-size: 11px; color: #999; }
+        .status-badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-weight: bold; color: white; }
+        .status-paid { background: #198754; }
+        .status-unpaid { background: #dc3545; }
+        .status-partial { background: #ffc107; color: #333; }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="text-align:center;margin-bottom:20px;">
+        <button onclick="window.print()" style="padding:8px 20px;font-size:14px;cursor:pointer;">{% trans "Print" %}</button>
+        <button onclick="window.close()" style="padding:8px 20px;font-size:14px;cursor:pointer;">{% trans "Close" %}</button>
+    </div>
+
+    <div class="header">
+        <h2>{% trans "Clinic Bairo Pite Lanud" %}</h2>
+        <p>{% trans "Community Health Care East Timor" %}</p>
+        <h3>{% trans "INVOICE" %} / {% trans "NOTA PAGAMENTU" %}</h3>
+    </div>
+
+    <div class="info-row">
+        <div class="info-box">
+            <h6>{% trans "Patient" %}</h6>
+            <strong>{{ invoice.patient.full_name }}</strong><br>
+            ID: {{ invoice.patient.patient_id }}<br>
+            {{ invoice.patient.full_address }}
+        </div>
+        <div class="info-box" style="text-align:right;">
+            <h6>{% trans "Invoice" %}</h6>
+            <strong>{{ invoice.invoice_number }}</strong><br>
+            {% trans "Date" %}: {{ invoice.created_at|date:"d/m/Y" }}<br>
+            {% trans "Status" %}:
+            {% if invoice.status == 'PAID' %}
+                <span class="status-badge status-paid">{% trans "PAID" %}</span>
+            {% elif invoice.status == 'PARTIAL' %}
+                <span class="status-badge status-partial">{% trans "PARTIAL" %}</span>
+            {% else %}
+                <span class="status-badge status-unpaid">{% trans "UNPAID" %}</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>{% trans "Description" %}</th>
+                <th class="text-end">{% trans "Qty" %}</th>
+                <th class="text-end">{% trans "Unit Price" %}</th>
+                <th class="text-end">{% trans "Total" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in invoice.items.all %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ item.description }}{% if item.service.category %} <small>({{ item.service.category.name }})</small>{% endif %}</td>
+                <td class="text-end">{{ item.quantity }}</td>
+                <td class="text-end">${{ item.unit_price|floatformat:2 }}</td>
+                <td class="text-end">${{ item.line_total|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="4" class="text-end">{% trans "Subtotal" %}:</td>
+                <td class="text-end">${{ invoice.subtotal|floatformat:2 }}</td>
+            </tr>
+            {% if invoice.discount > 0 %}
+            <tr>
+                <td colspan="4" class="text-end">{% trans "Discount" %}:</td>
+                <td class="text-end">-${{ invoice.discount|floatformat:2 }}</td>
+            </tr>
+            {% endif %}
+            <tr class="total-row">
+                <td colspan="4" class="text-end">{% trans "TOTAL" %}:</td>
+                <td class="text-end">${{ invoice.total_amount|floatformat:2 }}</td>
+            </tr>
+            <tr>
+                <td colspan="4" class="text-end">{% trans "Amount Paid" %}:</td>
+                <td class="text-end">${{ invoice.amount_paid|floatformat:2 }}</td>
+            </tr>
+            {% if invoice.balance_due > 0 %}
+            <tr>
+                <td colspan="4" class="text-end"><strong>{% trans "Balance Due" %}:</strong></td>
+                <td class="text-end"><strong>${{ invoice.balance_due|floatformat:2 }}</strong></td>
+            </tr>
+            {% endif %}
+        </tfoot>
+    </table>
+
+    {% if invoice.notes %}
+    <p><strong>{% trans "Notes" %}:</strong> {{ invoice.notes }}</p>
+    {% endif %}
+
+    <div class="footer">
+        <p>{% trans "Thank you for your visit" %} / Obrigadu barak ba ita nia vizita</p>
+        <p>Clinic Bairo Pite Lanud &bull; {{ invoice.created_at|date:"d/m/Y H:i" }}</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Billing History" %} - {{ patient.full_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="bi bi-clock-history me-2"></i>{% trans "Billing History" %}: {{ patient.full_name }}</h4>
+    <a href="{% url 'patient_dashboard' uuid=patient.uuid %}" class="btn btn-outline-secondary btn-sm">{% trans "Back to
+        Patient" %}</a>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card p-3">
+            <h6 class="text-muted mb-1">{% trans "Patient ID" %}</h6>
+            <h5>{{ patient.patient_id }}</h5>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 text-center">
+            <h6 class="text-muted mb-1">{% trans "Total Billed" %}</h6>
+            <h4 class="text-primary">${{ total_billed|floatformat:2 }}</h4>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 text-center">
+            <h6 class="text-muted mb-1">{% trans "Total Paid" %}</h6>
+            <h4 class="text-success">${{ total_paid|floatformat:2 }}</h4>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{% trans "Invoice #" %}</th>
+                    <th>{% trans "Date" %}</th>
+                    <th>{% trans "Services / items" %}</th>
+                    <th>{% trans "Total" %}</th>
+                    <th>{% trans "Paid" %}</th>
+                    <th>{% trans "Status" %}</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inv in invoices %}
+                <tr>
+                    <td><a href="{% url 'invoice_detail' uuid=inv.uuid %}">{{ inv.invoice_number }}</a></td>
+                    <td>{{ inv.created_at|date:"d/m/Y" }}</td>
+                    <td class="small text-break">
+                        {% if inv.get_items_summary %}
+                        {{ inv.get_items_summary }}
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>${{ inv.total_amount|floatformat:2 }}</td>
+                    <td>${{ inv.amount_paid|floatformat:2 }}</td>
+                    <td>
+                        {% if inv.status == 'PAID' %}
+                        <span class="badge bg-success">{% trans "Paid" %}</span>
+                        {% elif inv.status == 'PARTIAL' %}
+                        <span class="badge bg-warning text-dark">{% trans "Partial" %}</span>
+                        {% elif inv.status == 'CANCELLED' %}
+                        <span class="badge bg-secondary">{% trans "Cancelled" %}</span>
+                        {% else %}
+                        <span class="badge bg-danger">{% trans "Unpaid" %}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{% url 'invoice_detail' uuid=inv.uuid %}" class="btn btn-sm btn-outline-primary"
+                                title="{% trans 'View' %}"><i class="bi bi-eye"></i></a>
+                            {% if inv.status != 'PAID' and inv.status != 'CANCELLED' %}
+                            <a href="{% url 'payment_create' invoice_uuid=inv.uuid %}"
+                                class="btn btn-sm btn-outline-success" title="{% trans 'Record Payment' %}"><i
+                                    class="bi bi-cash-coin"></i></a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">{% trans "No invoices found." %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

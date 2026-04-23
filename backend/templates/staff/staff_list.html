@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Staff Directory" %} - {% trans "Clinic Lanud" %}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="/">{% trans "Dashboard" %}</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{% trans "Staff" %}</li>
+  </ol>
+</nav>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-people me-2"></i>{% trans "Staff Directory" %}</h5>
+        <a href="{% url 'staff_add' %}" class="btn btn-primary">
+            <i class="bi bi-person-plus me-1"></i> {% trans "Register New Staff" %}
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light text-uppercase small fw-bold">
+                    <tr>
+                        <th class="ps-4">{% trans "Staff ID" %}</th>
+                        <th>{% trans "Full Name" %}</th>
+                        <th>{% trans "Dept / Unit" %}</th>
+                        <th>{% trans "Category (Title)" %}</th>
+                        <th>{% trans "Position (Jabatan)" %}</th>
+                        <th class="text-end pe-4">{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td class="ps-4 fw-medium text-primary">{{ item.staff_id }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if item.photo %}
+                                    <img src="{{ item.photo.url }}" class="rounded-circle me-2" width="32" height="32" style="object-fit: cover;">
+                                {% else %}
+                                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" width="32" height="32" style="width: 32px; height: 32px;">
+                                        <i class="bi bi-person text-muted"></i>
+                                    </div>
+                                {% endif %}
+                                {{ item.user.get_full_name|default:item.user.username }}
+                            </div>
+                        </td>
+                        <td>{{ item.department.name }}</td>
+                        <td><span class="badge bg-info-subtle text-info">{{ item.category.name }}</span></td>
+                        <td>{{ item.position.name }}</td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'staff_edit' item.pk %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            {% trans "No staff members registered yet." %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

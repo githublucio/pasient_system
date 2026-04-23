@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Billing Report" %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="bi bi-bar-chart me-2"></i>{% trans "Billing Report" %}</h4>
+    <div class="d-flex gap-2">
+        <a href="{% url 'billing_report_pdf' %}?date_from={{ date_from }}&date_to={{ date_to }}" class="btn btn-outline-danger" target="_blank"><i class="bi bi-file-pdf me-1"></i>{% trans "Export PDF" %}</a>
+        <a href="{% url 'billing_dashboard' %}" class="btn btn-outline-secondary btn-sm">{% trans "Back to Dashboard" %}</a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label">{% trans "From" %}</label>
+                <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}">
+            </div>
+            <div class="col-auto">
+                <label class="form-label">{% trans "To" %}</label>
+                <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}">
+            </div>
+            <div class="col-auto">
+                <label class="form-label">{% trans "Category" %}</label>
+                <select name="category" class="form-select form-select-sm">
+                    <option value="">{% trans "All Categories" %}</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.pk }}" {% if category_id == cat.pk|stringformat:"d" %}selected{% endif %}>{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-primary btn-sm" type="submit"><i class="bi bi-search me-1"></i>{% trans "Filter" %}</button>
+            </div>
+            <div class="col-auto ms-auto">
+                <div class="btn-group btn-group-sm">
+                    <a href="?period=today" class="btn btn-outline-primary {% if request.GET.period == 'today' %}active{% endif %}">{% trans "Today" %}</a>
+                    <a href="?period=month" class="btn btn-outline-primary {% if request.GET.period == 'month' %}active{% endif %}">{% trans "Month" %}</a>
+                    <a href="?period=quarter" class="btn btn-outline-primary {% if request.GET.period == 'quarter' %}active{% endif %}">{% trans "Quarter" %}</a>
+                    <a href="?period=year" class="btn btn-outline-primary {% if request.GET.period == 'year' %}active{% endif %}">{% trans "Year" %}</a>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center p-3">
+            <h6 class="text-muted mb-1">{% trans "Invoices" %}</h6>
+            <h3 class="mb-0">{{ invoice_count }}</h3>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center p-3">
+            <h6 class="text-muted mb-1">{% trans "Total Billed" %}</h6>
+            <h3 class="mb-0 text-primary">${{ total_billed|floatformat:2 }}</h3>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center p-3">
+            <h6 class="text-muted mb-1">{% trans "Total Paid" %}</h6>
+            <h3 class="mb-0 text-success">${{ total_paid|floatformat:2 }}</h3>
+        </div>
+    </div>
+</div>
+
+{% if category_breakdown %}
+<div class="card mb-4">
+    <div class="card-header"><strong>{% trans "Revenue by Category" %}</strong></div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{% trans "Category" %}</th>
+                    <th>{% trans "Items" %}</th>
+                    <th>{% trans "Revenue (USD)" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in category_breakdown %}
+                <tr>
+                    <td><strong>{{ row.cat_name|default:_("Custom / No Category") }}</strong></td>
+                    <td>{{ row.item_count }}</td>
+                    <td class="text-success"><strong>${{ row.total|floatformat:2 }}</strong></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header"><strong>{% trans "Invoice List" %}</strong></div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{% trans "Invoice #" %}</th>
+                    <th>{% trans "Date" %}</th>
+                    <th>{% trans "Patient" %}</th>
+                    <th>{% trans "Diagnosis" %}</th>
+                    <th>{% trans "Services / items (what was billed)" %}</th>
+                    <th>{% trans "Total" %}</th>
+                    <th>{% trans "Paid" %}</th>
+                    <th>{% trans "Status" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inv in invoices %}
+                <tr>
+                    <td><a href="{% url 'invoice_detail' uuid=inv.uuid %}">{{ inv.invoice_number }}</a></td>
+                    <td>{{ inv.created_at|date:"d/m/Y" }}</td>
+                    <td>{{ inv.patient.full_name }}</td>
+                    <td class="small">
+                        {% if inv.visit.diagnosis %}
+                            <span class="badge bg-light text-dark border">{{ inv.visit.diagnosis.code }}</span><br>
+                            <span class="text-muted" style="font-size: 0.8rem;">{{ inv.visit.diagnosis.name }}</span>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="small text-break">
+                        {% if inv.get_items_summary %}
+                        {{ inv.get_items_summary }}
+                        {% else %}
+                        <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>${{ inv.total_amount|floatformat:2 }}</td>
+                    <td>${{ inv.amount_paid|floatformat:2 }}</td>
+                    <td>
+                        {% if inv.status == 'PAID' %}
+                            <span class="badge bg-success">{% trans "Paid" %}</span>
+                        {% elif inv.status == 'PARTIAL' %}
+                            <span class="badge bg-warning text-dark">{% trans "Partial" %}</span>
+                        {% else %}
+                            <span class="badge bg-danger">{% trans "Unpaid" %}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="text-center text-muted py-4">{% trans "No invoices found." %}</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

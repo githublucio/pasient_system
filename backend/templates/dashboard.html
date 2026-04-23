@@ -1,0 +1,304 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Dashboard" %} - {% trans "Clinic Lanud" %}{% endblock %}
+{% block page_title %}{% trans "Dashboard" %}{% endblock %}
+
+{% block content %}
+<!-- Year Filter -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-1">{% trans "Clinic Dashboard" %}</h4>
+        <p class="text-muted mb-0">{{ today|date:"l, d F Y" }}</p>
+    </div>
+    <form method="get" class="d-flex align-items-center gap-2">
+        <label class="form-label mb-0 small fw-bold text-muted">{% trans "Year" %}:</label>
+        <select name="year" class="form-select form-select-sm" style="width:120px;" onchange="this.form.submit()">
+            {% for y in available_years %}
+            <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+        </select>
+    </form>
+</div>
+
+<!-- Today Summary Header -->
+<div class="row mb-3">
+    <div class="col-12">
+        <h5 class="fw-bold text-primary mb-0"><i class="bi bi-hospital me-2"></i>{% trans "GENERAL CLINIC" %} <small class="text-muted fw-normal">({% trans "Today" %})</small></h5>
+        <hr class="mt-2 mb-3">
+    </div>
+</div>
+
+<!-- Today Summary Cards (General) -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card p-3 shadow-sm border-0">
+            <div class="d-flex align-items-center">
+                <div class="rounded-3 p-2 me-3" style="background:#e8f5e9;">
+                    <i class="bi bi-people-fill text-success" style="font-size:1.5rem;"></i>
+                </div>
+                <div>
+                    <p class="text-muted small mb-0">{% trans "Patients Today" %}</p>
+                    <h4 class="mb-0 fw-bold">{{ patients_today_gen }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card p-3 shadow-sm border-0">
+            <div class="d-flex align-items-center">
+                <div class="rounded-3 p-2 me-3" style="background:#e3f2fd;">
+                    <i class="bi bi-clipboard2-pulse-fill text-primary" style="font-size:1.5rem;"></i>
+                </div>
+                <div>
+                    <p class="text-muted small mb-0">{% trans "Visits Today" %}</p>
+                    <h4 class="mb-0 fw-bold">{{ visits_today_gen }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card p-3 shadow-sm border-0">
+            <div class="d-flex align-items-center">
+                <div class="rounded-3 p-2 me-3" style="background:#fff3e0;">
+                    <i class="bi bi-hourglass-split text-warning" style="font-size:1.5rem;"></i>
+                </div>
+                <div>
+                    <p class="text-muted small mb-0">{% trans "In Progress" %}</p>
+                    <h4 class="mb-0 fw-bold">{{ visits_ip_gen }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card p-3 shadow-sm border-0">
+            <div class="d-flex align-items-center">
+                <div class="rounded-3 p-2 me-3" style="background:#fce4ec;">
+                    <i class="bi bi-check2-circle text-danger" style="font-size:1.5rem;"></i>
+                </div>
+                <div>
+                    <p class="text-muted small mb-0">{% trans "Completed Today" %}</p>
+                    <h4 class="mb-0 fw-bold">{{ visits_com_gen }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HIV CLINIC Summary Header -->
+<div class="row mb-3 mt-4">
+    <div class="col-12">
+        <h5 class="fw-bold text-danger mb-0"><i class="bi bi-shield-plus me-2"></i>{% trans "HIV/AIDS CLINIC" %} <small class="text-muted fw-normal">({% trans "Comprehensive Stats" %})</small></h5>
+        <hr class="mt-2 mb-3">
+    </div>
+</div>
+
+<!-- Today Summary Cards (HIV) -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-4">
+        <div class="card p-3 shadow-sm border-0 border-top border-danger border-4 h-100 bg-danger bg-opacity-10">
+            <div class="d-flex align-items-center">
+                <div class="rounded-3 p-2 me-3 bg-danger">
+                    <i class="bi bi-shield-lock-fill text-white" style="font-size:1.5rem;"></i>
+                </div>
+                <div>
+                    <p class="text-muted small mb-0">{% trans "Global Total HIV Patients" %}</p>
+                    <h3 class="mb-0 fw-bold text-danger">{{ total_patients_hiv }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="card p-3 shadow-sm border-0 border-top border-danger border-4 h-100">
+            <div class="d-flex align-items-center">
+                <div class="rounded-3 p-2 me-3" style="background:#ffebee;">
+                    <i class="bi bi-people text-danger" style="font-size:1.2rem;"></i>
+                </div>
+                <div>
+                    <p class="text-muted small mb-0">{% trans "Patients Today" %}</p>
+                    <h5 class="mb-0 fw-bold">{{ patients_today_hiv }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="card p-3 shadow-sm border-0 border-top border-danger border-4 h-100">
+            <div class="d-flex align-items-center">
+                <div class="rounded-3 p-2 me-3" style="background:#ffebee;">
+                    <i class="bi bi-clipboard2-data text-danger" style="font-size:1.2rem;"></i>
+                </div>
+                <div>
+                    <p class="text-muted small mb-0">{% trans "Visits Today" %}</p>
+                    <h5 class="mb-0 fw-bold">{{ visits_today_hiv }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="card p-3 shadow-sm border-0 border-top border-danger border-4 h-100">
+            <div class="d-flex align-items-center">
+                <div class="rounded-3 p-2 me-3" style="background:#ffebee;">
+                    <i class="bi bi-activity text-danger" style="font-size:1.2rem;"></i>
+                </div>
+                <div>
+                    <p class="text-muted small mb-0">{% trans "In Progress" %}</p>
+                    <h5 class="mb-0 fw-bold">{{ visits_ip_hiv }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-2">
+        <div class="card p-3 shadow-sm border-0 border-top border-danger border-4 h-100">
+            <div class="d-flex align-items-center">
+                <div class="rounded-3 p-2 me-3" style="background:#ffebee;">
+                    <i class="bi bi-check-all text-danger" style="font-size:1.2rem;"></i>
+                </div>
+                <div>
+                    <p class="text-muted small mb-0">{% trans "Consultation Done" %}</p>
+                    <h5 class="mb-0 fw-bold">{{ visits_com_hiv }}</h5>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- All Time Combined Summary Header -->
+<div class="row mb-3">
+    <div class="col-12">
+        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-graph-up-arrow me-2"></i>{% trans "CUMULATIVE PERFORMANCE" %}</h5>
+        <hr class="mt-2 mb-3">
+    </div>
+</div>
+
+<!-- Year Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card p-3 border-start border-4 border-primary shadow-sm h-100">
+            <p class="text-muted small mb-1">{% trans "Total Clinic Patients" %}</p>
+            <h3 class="fw-bold mb-0">{{ total_patients|default:0 }}</h3>
+            <div class="mt-2 text-muted small">
+                <div><i class="bi bi-dot text-primary"></i> {% trans "General" %}: {{ total_patients_gen }}</div>
+                <div><i class="bi bi-dot text-danger"></i> {% trans "HIV/AIDS" %}: {{ total_patients_hiv }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card p-3 border-start border-4 border-success shadow-sm h-100">
+            <p class="text-muted small mb-1">{% trans "Revenue Today" %}</p>
+            <h3 class="fw-bold mb-0">${{ billing_today_paid|floatformat:2 }}</h3>
+            <small class="text-muted">{% trans "Year Billed" %}: ${{ billing_year_billed|floatformat:2 }}</small>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card p-3 border-start border-4 border-info shadow-sm h-100">
+            <p class="text-muted small mb-1">{% trans "Monthly Visits" %}</p>
+            <h3 class="fw-bold mb-0">{{ visits_today_gen|add:visits_today_hiv }}</h3>
+            <small class="text-muted">{% trans "Combined Today" %}</small>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card p-3 border-start border-4 border-warning shadow-sm h-100">
+            <p class="text-muted small mb-1">{% trans "Total Yearly Revenue" %}</p>
+            <h3 class="fw-bold mb-0">${{ billing_year_paid|floatformat:2 }}</h3>
+            <small class="text-muted">{% trans "Year" %}: {{ year }}</small>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <!-- Monthly Visit Trend -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-white"><strong>{% trans "Monthly Visits" %} {{ year }}</strong></div>
+            <div class="card-body">
+                <div class="d-flex align-items-end" style="height:200px;gap:8px;">
+                    {% for m in monthly_visits %}
+                    {% with max_count=total_visits_year %}
+                    <div class="flex-fill text-center">
+                        <div class="d-flex flex-column align-items-center justify-content-end" style="height:170px;">
+                            <small class="text-muted mb-1" style="font-size:0.7rem;">{{ m.count }}</small>
+                            <div style="width:100%;max-width:40px;background:{% if m.count > 0 %}#5d2d91{% else %}#e9ecef{% endif %};border-radius:4px 4px 0 0;height:{% if max_count > 0 %}{% widthratio m.count max_count 150 %}{% else %}2{% endif %}px;min-height:2px;"></div>
+                        </div>
+                        <small class="text-muted" style="font-size:0.7rem;">{{ m.month }}</small>
+                    </div>
+                    {% endwith %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gender Breakdown -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-white"><strong>{% trans "Gender" %} {{ year }}</strong></div>
+            <div class="card-body">
+                {% for g in gender_stats %}
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center">
+                        {% if g.gender == 'M' %}
+                        <div class="rounded-circle p-2 me-2" style="background:#e3f2fd;"><i class="bi bi-gender-male text-primary"></i></div>
+                        <span>{% trans "Male" %}</span>
+                        {% elif g.gender == 'F' %}
+                        <div class="rounded-circle p-2 me-2" style="background:#fce4ec;"><i class="bi bi-gender-female text-danger"></i></div>
+                        <span>{% trans "Female" %}</span>
+                        {% else %}
+                        <div class="rounded-circle p-2 me-2" style="background:#f3e5f5;"><i class="bi bi-gender-ambiguous text-secondary"></i></div>
+                        <span>{% trans "Other" %}</span>
+                        {% endif %}
+                    </div>
+                    <span class="fw-bold">{{ g.total }}</span>
+                </div>
+                {% empty %}
+                <p class="text-muted text-center mb-0">{% trans "No data" %}</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Diagnoses -->
+<div class="row g-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <strong><i class="bi bi-journal-medical me-2"></i>{% trans "Top 10 Diagnoses" %} {{ year }}</strong>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:5%;">#</th>
+                            <th style="width:15%;">{% trans "Diagnosis Code" %}</th>
+                            <th>{% trans "Diagnosis" %}</th>
+                            <th style="width:15%;">{% trans "Cases" %}</th>
+                            <th style="width:30%;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in top_diagnoses %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td><span class="badge bg-primary-subtle text-primary">{{ d.diag_code }}</span></td>
+                            <td>{{ d.diag_name }}</td>
+                            <td><strong>{{ d.total }}</strong></td>
+                            <td>
+                                {% if top_diagnoses.0.total > 0 %}
+                                <div class="progress" style="height:8px;">
+                                    <div class="progress-bar" style="width:{% widthratio d.total top_diagnoses.0.total 100 %}%;background:#5d2d91;"></div>
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center text-muted py-4">{% trans "No diagnosis data for this year." %}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,435 @@
+{% extends "base.html" %}
+{% load i18n static lab_extras %}
+
+{% block title %}{% trans "Laboratory Report" %}{% endblock %}
+
+{% block content %}
+<style>
+    .report-container {
+        background: #fff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        max-width: 1200px;
+        margin: 0 auto;
+        font-size: 0.9rem;
+    }
+
+    .report-header {
+        text-align: center;
+        border-bottom: 2px solid #5d2d91;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        position: relative;
+    }
+
+    .lab-logo img {
+        height: 70px;
+        margin-bottom: 5px;
+    }
+
+    .report-header h2 {
+        color: #5d2d91;
+        font-weight: 800;
+        margin-bottom: 0;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .patient-info-box {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 15px;
+        margin-bottom: 20px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 15px;
+    }
+
+    .info-group label {
+        display: block;
+        font-size: 0.7rem;
+        color: #666;
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 2px;
+    }
+
+    .info-group span {
+        font-weight: 600;
+        color: #333;
+    }
+
+    /* Column Grid - Dynamic */
+    .report-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 20px;
+    }
+    
+    /* Specific widths for printing 3 columns if all active */
+    @media (min-width: 1100px) {
+        .report-grid.cols-3 { grid-template-columns: 1fr 1.2fr 1fr; }
+        .report-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+        .report-grid.cols-1 { grid-template-columns: 1fr; max-width: 800px; margin: 0 auto; }
+    }
+
+    .report-section {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        margin-bottom: 20px;
+        overflow: hidden;
+    }
+
+    .section-header {
+        background: #5d2d91;
+        color: white;
+        padding: 5px 10px;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        text-align: center;
+    }
+
+    .results-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .results-table th {
+        background: #f1f1f1;
+        font-size: 0.75rem;
+        padding: 5px 8px;
+        border-bottom: 1px solid #ccc;
+        text-align: left;
+    }
+
+    .results-table td {
+        padding: 4px 8px;
+        border-bottom: 1px solid #eee;
+        vertical-align: middle;
+    }
+
+    .result-input {
+        width: 100%;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        padding: 2px 5px;
+        font-size: 0.85rem;
+        font-weight: bold;
+    }
+
+    .result-input:focus {
+        border-color: #5d2d91;
+        outline: none;
+    }
+
+    .range-text {
+        font-size: 0.7rem;
+        color: #777;
+        font-family: monospace;
+    }
+
+    .unit-text {
+        font-size: 0.7rem;
+        color: #999;
+    }
+
+    .action-bar {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px solid #eee;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    @media print {
+        .no-print { display: none !important; }
+        .sidebar, .navbar, .topbar, .header-container, .sidebar-overlay, header, aside { display: none !important; }
+        body { padding: 0 !important; margin: 0 !important; background: white !important; }
+        .wrapper { margin: 0 !important; padding: 0 !important; display: block !important; }
+        main { padding: 0 !important; margin: 0 !important; width: 100% !important; border: none !important; }
+        .report-container { box-shadow: none !important; border: none !important; padding: 10px !important; width: 100% !important; max-width: 100% !important; margin: 0 auto !important; }
+        .result-input { border: none !important; padding: 0 !important; background: transparent !important; }
+        .section-header { 
+            background: #5d2d91 !important; 
+            color: white !important; 
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+    }
+</style>
+
+<div class="row mb-3 no-print">
+    <div class="col">
+        <a href="{% url 'lab_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>{% trans "Back" %}
+        </a>
+    </div>
+    <div class="col text-end">
+        <button onclick="window.print()" class="btn btn-dark btn-sm">
+            <i class="bi bi-printer me-2"></i>{% trans "Print" %}
+        </button>
+    </div>
+</div>
+
+<form method="post" action="{% url 'lab_result_input' lab_request.uuid %}" enctype="multipart/form-data">
+    {% csrf_token %}
+    
+    <div class="report-container">
+        <!-- HEADER -->
+        <div class="report-header">
+            <div class="lab-logo">
+                <img src="/media/Logo.png" alt="Logo" onerror="this.onerror=null; this.src='/static/assets/Logo.png'">
+            </div>
+            <h2>{% trans "Laboratory Report" %}</h2>
+            <p class="text-muted small mb-0">{% trans "PHARMACEUTICAL DIAGNOSTIC CENTRE" %}</p>
+            <p class="text-muted" style="font-size: 0.7rem;">Rua Palacio Presidente Lanud, Bairo Pite, Dili | Tel: +670 78179379</p>
+        </div>
+
+        <!-- PATIENT INFO -->
+        <div class="patient-info-box">
+            <div class="info-group">
+                <label>Patient Name</label>
+                <span>{{ lab_request.visit.patient.full_name }}</span>
+            </div>
+            <div class="info-group">
+                <label>Patient ID</label>
+                <span>{{ lab_request.visit.patient.patient_id }}</span>
+            </div>
+            <div class="info-group">
+                <label>Age / Category</label>
+                <span>{{ age_display }} ({{ age_category|replace:"_"|title }})</span>
+            </div>
+            <div class="info-group">
+                <label>Date Requested</label>
+                <span>{{ lab_request.date_of_request|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="info-group">
+                <label>Physician</label>
+                <span>{{ lab_request.requesting_physician.get_full_name }}</span>
+            </div>
+            <div class="info-group">
+                <label>Lab Number</label>
+                <input type="text" name="lab_no" class="form-control form-control-sm border-0 bg-transparent p-0" value="{{ lab_request.lab_no|default:'' }}" style="font-weight:600">
+            </div>
+            <div class="info-group">
+                <label>Ward / Bed</label>
+                <span>{{ lab_request.patient_type|title }}</span>
+            </div>
+            <div class="info-group">
+                <label>Request ID</label>
+                <span class="text-muted" style="font-size:0.6rem">{{ lab_request.uuid|truncatechars:15 }}</span>
+            </div>
+        </div>
+
+        <div class="report-grid cols-{{ active_columns|length }}">
+            {% if 1 in active_columns or has_cbc %}
+            <!-- COLUMN 1: HEMATOLOGY & SEROLOGY -->
+            <div class="grid-col">
+                {% if has_cbc %}
+                <div class="report-section">
+                    <div class="section-header">Hematology (CBC)</div>
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th style="width:40%">Test</th>
+                                <th style="width:30%">Result</th>
+                                <th>Range</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in cbc_params %}
+                            <tr>
+                                <td>{{ p.name }} <br><small class="unit-text">({{ p.unit }})</small></td>
+                                <td>
+                                    <input type="text" name="result_{{ p.key }}" class="result-input" value="{{ existing_cbc|get_item:p.key }}">
+                                </td>
+                                <td><span class="range-text">{{ p.range }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+
+                {% if 1 in active_columns %}
+                <div class="report-section">
+                    <div class="section-header">Serology & Immunology</div>
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th style="width:50%">Test</th>
+                                <th>Result</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in serology_params %}
+                            <tr>
+                                <td>{{ p.name }}</td>
+                                <td>
+                                    <input type="text" name="s_{{ p.key }}" class="result-input" value="{{ existing_serology|get_item:p.key }}">
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="report-section">
+                    <div class="section-header">Microbiology & Parasitology</div>
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th style="width:50%">Test</th>
+                                <th>Result</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in microbiology_params %}
+                            <tr>
+                                <td>{{ p.name }}</td>
+                                <td>
+                                    <input type="text" name="m_{{ p.key }}" class="result-input" value="{{ existing_micro|get_item:p.key }}">
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if 2 in active_columns %}
+            <!-- COLUMN 2: BIOCHEMISTRY -->
+            <div class="grid-col">
+                <div class="report-section">
+                    <div class="section-header">Clinical Biochemistry</div>
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th style="width:25%">Tests</th>
+                                <th style="width:20%">Result</th>
+                                <th style="width:15%">Unit</th>
+                                <th style="width:25%">Reference range</th>
+                                <th style="width:15%">Remark</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in biochemistry_params %}
+                            {% with res_obj=existing_biochem|get_item:p.key %}
+                            <tr>
+                                <td class="fw-bold">{{ p.name }}</td>
+                                <td>
+                                    <input type="text" name="b_{{ p.key }}" class="result-input text-center" 
+                                        value="{% if res_obj %}{{ res_obj.value }}{% else %}{{ res_obj }}{% endif %}" placeholder="...">
+                                </td>
+                                <td class="text-center"><small class="unit-text">{{ p.unit }}</small></td>
+                                <td class="text-center font-monospace" style="font-size: 0.75rem;">{{ p.range }}</td>
+                                <td>
+                                    <input type="text" name="br_{{ p.key }}" class="result-input text-center" 
+                                        value="{{ res_obj.remark|default:'' }}" maxlength="1" placeholder="N/L/H">
+                                </td>
+                            </tr>
+                            {% endwith %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <div class="p-2 border-top bg-light" style="font-size: 0.7rem;">
+                        <strong>NOTE:</strong> L = LOW, H = HIGH, N = NORMAL
+                    </div>
+                </div>
+
+            </div>
+            {% endif %}
+
+            {% if 3 in active_columns %}
+            <!-- COLUMN 3: URINALYSIS -->
+            <div class="grid-col">
+                <div class="report-section">
+                    <div class="section-header">Urinalysis & Microscopy</div>
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th style="width:50%">Test</th>
+                                <th>Result</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in urinalysis_params %}
+                            <tr>
+                                <td>{{ p.name }}</td>
+                                <td>
+                                    <input type="text" name="u_{{ p.key }}" class="result-input" value="{{ existing_urinalysis|get_item:p.key }}">
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <div class="bg-light p-1 text-center small fw-bold border-top border-bottom">MICROSCOPIC</div>
+                    <table class="results-table">
+                        <tbody>
+                            {% for p in microscopy_params %}
+                            <tr>
+                                <td style="width:50%">{{ p.name }}</td>
+                                <td>
+                                    <input type="text" name="ms_{{ p.key }}" class="result-input" value="{{ existing_microscopy|get_item:p.key }}">
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="report-section">
+                    <div class="section-header">Other Remarks</div>
+                    <textarea name="notes" class="form-control border-0" rows="3" style="font-size:0.8rem" placeholder="Observations...">{{ existing_result.notes|default:'' }}</textarea>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- FORM CONTROLS (NO PRINT) -->
+        <div class="action-bar no-print">
+            <div class="d-flex gap-3 align-items-center">
+                <label class="fw-bold">Status:</label>
+                <select name="status" class="form-select form-select-sm" style="width:200px">
+                    <option value="IN_PROGRESS" {% if lab_request.status == 'IN_PROGRESS' %}selected{% endif %}>{% trans "In Progress" %}</option>
+                    <option value="COMPLETED" {% if lab_request.status == 'COMPLETED' or not lab_request.status %}selected{% endif %}>{% trans "Completed / Send to Doctor" %}</option>
+                </select>
+                <div class="ms-4">
+                    <label class="fw-bold me-2">{% trans "Attachments" %}:</label>
+                    <input type="file" name="attachments" class="form-control form-control-sm" style="display:inline-block; width:auto" multiple>
+                </div>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" onclick="window.print()" class="btn btn-outline-primary px-4">
+                    <i class="bi bi-printer me-2"></i>{% trans "Print Report" %}
+                </button>
+                <button type="submit" class="btn btn-success px-5">
+                    <i class="bi bi-save me-2"></i>{% trans "Save Results" %}
+                </button>
+            </div>
+        </div>
+
+
+        <!-- FOOTER (Centered Single Signature) -->
+        <div class="mt-5 border-top pt-4">
+            <div class="text-center">
+                <div class="fw-bold" style="margin-top: 20px; font-size: 1.1rem;">
+                    {% if lab_request.processed_by %}
+                        {{ lab_request.processed_by.get_full_name|default:lab_request.processed_by.username }}
+                    {% else %}
+                        {{ user.get_full_name|default:user.username }}
+                    {% endif %}
+                </div>
+                <div style="border-top:1px solid #000; width:250px; margin:5px auto 0;"></div>
+                <small class="text-uppercase" style="font-size: 0.75rem; letter-spacing: 1px; font-weight: bold;">SIGN BY LAB TEC</small>
+            </div>
+        </div>
+    </div>
+</form>
+
+{% endblock %}

@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Medicine Catalog" %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-0"><i class="bi bi-capsule text-success me-2"></i>{% trans "Medicine Catalog" %}</h3>
+        <p class="text-muted small mb-0">{% trans "Manage medicine master data and stock levels" %}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'stock_entry_list' %}" class="btn btn-outline-primary">
+            <i class="bi bi-box-seam me-1"></i>{% trans "Stock Entries" %}
+        </a>
+        <a href="{% url 'medicine_add' %}" class="btn btn-success">
+            <i class="bi bi-plus-circle me-1"></i>{% trans "Add Medicine" %}
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3 border-0 shadow-sm">
+    <div class="card-body py-2">
+        <form method="get" class="d-flex gap-2 align-items-center flex-wrap">
+            <input type="text" name="q" class="form-control form-control-sm" style="width:250px;" placeholder="{% trans 'Search name or code...' %}" value="{{ query }}">
+            <div class="btn-group btn-group-sm">
+                <a href="{% url 'medicine_list' %}" class="btn {% if not filter_type %}btn-primary{% else %}btn-outline-primary{% endif %}">{% trans "All" %}</a>
+                <a href="?filter=low_stock" class="btn {% if filter_type == 'low_stock' %}btn-warning{% else %}btn-outline-warning{% endif %}">{% trans "Low Stock" %}</a>
+                <a href="?filter=expired" class="btn {% if filter_type == 'expired' %}btn-danger{% else %}btn-outline-danger{% endif %}">{% trans "Expired" %}</a>
+                <a href="?filter=inactive" class="btn {% if filter_type == 'inactive' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">{% trans "Inactive" %}</a>
+            </div>
+            <button type="submit" class="btn btn-sm btn-primary">{% trans "Search" %}</button>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>{% trans "Code" %}</th>
+                    <th>{% trans "Medicine Name" %}</th>
+                    <th>{% trans "Strength" %}</th>
+                    <th>{% trans "Form" %}</th>
+                    <th>{% trans "Unit" %}</th>
+                    <th class="text-center">{% trans "Stock" %}</th>
+                    <th class="text-center">{% trans "Min Stock" %}</th>
+                    <th>{% trans "Nearest Expiry" %}</th>
+                    <th>{% trans "Status" %}</th>
+                    <th class="text-center">{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for med in medicines %}
+                <tr {% if med.has_expired_stock %}class="table-danger"{% elif med.is_low_stock %}class="table-warning"{% endif %}>
+                    <td>{{ forloop.counter }}</td>
+                    <td><code>{{ med.code|default:"-" }}</code></td>
+                    <td class="fw-bold">{{ med.name }}</td>
+                    <td>{{ med.strength|default:"-" }}</td>
+                    <td><span class="badge bg-light text-dark border">{{ med.get_form_display }}</span></td>
+                    <td>{{ med.get_unit_display }}</td>
+                    <td class="text-center">
+                        {% if med.is_low_stock %}
+                            <span class="badge bg-danger fs-6">{{ med.stock }}</span>
+                        {% else %}
+                            <span class="badge bg-success fs-6">{{ med.stock }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">{{ med.min_stock }}</td>
+                    <td>
+                        {% if med.nearest_expiry %}
+                            {% if med.has_expired_stock %}
+                                <span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle me-1"></i>{{ med.nearest_expiry|date:"d M Y" }}</span>
+                            {% else %}
+                                {{ med.nearest_expiry|date:"d M Y" }}
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not med.is_active %}
+                            <span class="badge bg-secondary">{% trans "Inactive" %}</span>
+                        {% elif med.has_expired_stock %}
+                            <span class="badge bg-danger">{% trans "Has Expired" %}</span>
+                        {% elif med.is_low_stock %}
+                            <span class="badge bg-warning text-dark">{% trans "Low Stock" %}</span>
+                        {% else %}
+                            <span class="badge bg-success">{% trans "OK" %}</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <a href="{% url 'medicine_edit' med.pk %}" class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-pencil-square"></i></a>
+                        <a href="{% url 'stock_entry_add' %}?medicine={{ med.pk }}" class="btn btn-sm btn-outline-success me-1" title="{% trans 'Add Stock' %}"><i class="bi bi-plus-circle"></i></a>
+                        <a href="{% url 'medicine_delete' med.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="11" class="text-center text-muted py-5">
+                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                        {% trans "No medicines found." %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if medicines.has_other_pages %}
+    <div class="card-footer">
+        <nav><ul class="pagination pagination-sm justify-content-center mb-0">
+            {% if medicines.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ medicines.previous_page_number }}&q={{ query }}&filter={{ filter_type }}">&laquo;</a></li>{% endif %}
+            {% for num in medicines.paginator.page_range %}
+                {% if medicines.number == num %}<li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > medicines.number|add:"-3" and num < medicines.number|add:"3" %}<li class="page-item"><a class="page-link" href="?page={{ num }}&q={{ query }}&filter={{ filter_type }}">{{ num }}</a></li>{% endif %}
+            {% endfor %}
+            {% if medicines.has_next %}<li class="page-item"><a class="page-link" href="?page={{ medicines.next_page_number }}&q={{ query }}&filter={{ filter_type }}">&raquo;</a></li>{% endif %}
+        </ul></nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

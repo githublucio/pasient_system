@@ -1,0 +1,66 @@
+[
+  {
+    "model": "medical_records.diagnosis",
+    "pk": 1,
+    "fields": {
+      "code": "A09",
+      "name": "Diarrhea and gastroenteritis of infectious origin"
+    }
+  },
+  {
+    "model": "medical_records.diagnosis",
+    "pk": 2,
+    "fields": {
+      "code": "J06.9",
+      "name": "Acute upper respiratory infection, unspecified"
+    }
+  },
+  {
+    "model": "medical_records.diagnosis",
+    "pk": 3,
+    "fields": {
+      "code": "B37.0",
+      "name": "Candidal stomatitis (Thrush)"
+    }
+  },
+  {
+    "model": "medical_records.diagnosis",
+    "pk": 4,
+    "fields": {
+      "code": "A91",
+      "name": "Dengue hemorrhagic fever"
+    }
+  },
+  {
+    "model": "medical_records.diagnosis",
+    "pk": 5,
+    "fields": {
+      "code": "B20",
+      "name": "Human immunodeficiency virus [HIV] disease"
+    }
+  },
+  {
+    "model": "medical_records.diagnosis",
+    "pk": 6,
+    "fields": {
+      "code": "A15",
+      "name": "Respiratory tuberculosis"
+    }
+  },
+  {
+    "model": "medical_records.diagnosis",
+    "pk": 7,
+    "fields": {
+      "code": "E11",
+      "name": "Type 2 diabetes mellitus"
+    }
+  },
+  {
+    "model": "medical_records.diagnosis",
+    "pk": 8,
+    "fields": {
+      "code": "I10",
+      "name": "Essential (primary) hypertension"
+    }
+  }
+]

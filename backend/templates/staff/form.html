@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{{ title }} - {% trans "Clinic Lanud" %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold">{{ title }}</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-uppercase text-muted">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.name == 'photo' and field.value %}
+                            <div class="mt-2">
+                                <img src="/media/{{ field.value }}" class="rounded shadow-sm border" width="100" style="object-fit: cover;">
+                                <div class="small text-muted mt-1">{% trans "Current Photo" %}</div>
+                            </div>
+                        {% endif %}
+                        {% if field.help_text %}
+                        <div class="form-text small">{{ field.help_text }}</div>
+                        {% endif %}
+                        {% if field.errors %}
+                        <div class="text-danger small mt-1">{{ field.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between">
+                        <a href="javascript:history.back()" class="btn btn-light border px-4">{% trans "Cancel" %}</a>
+                        <button type="submit" class="btn btn-primary px-5">{% trans "Save Record" %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll('input, select, textarea').forEach(el => {
+        if (!el.classList.contains('form-check-input')) {
+            el.className += ' form-control';
+        }
+    });
+</script>
+{% endblock %}

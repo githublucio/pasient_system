@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Stock Entries (Obat Masuk)" %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-0"><i class="bi bi-box-seam text-primary me-2"></i>{% trans "Stock Entries (Obat Masuk)" %}</h3>
+        <p class="text-muted small mb-0">{% trans "Record of all medicine purchases and incoming stock" %}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'medicine_list' %}" class="btn btn-outline-success">
+            <i class="bi bi-capsule me-1"></i>{% trans "Medicine Catalog" %}
+        </a>
+        <a href="{% url 'stock_entry_add' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>{% trans "Add Stock Entry" %}
+        </a>
+    </div>
+</div>
+
+<!-- Alerts -->
+{% if expired_count > 0 %}
+<div class="alert alert-danger d-flex align-items-center mb-3">
+    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+    <strong>{{ expired_count }}</strong>&nbsp;{% trans "batch(es) have EXPIRED stock remaining. Please review and dispose." %}
+</div>
+{% endif %}
+{% if expiring_soon_count > 0 %}
+<div class="alert alert-warning d-flex align-items-center mb-3">
+    <i class="bi bi-clock-history me-2 fs-5"></i>
+    <strong>{{ expiring_soon_count }}</strong>&nbsp;{% trans "batch(es) will expire within 90 days." %}
+</div>
+{% endif %}
+
+<!-- Search -->
+<div class="card mb-3 border-0 shadow-sm">
+    <div class="card-body py-2">
+        <form method="get" class="d-flex gap-2">
+            <input type="text" name="q" class="form-control form-control-sm" style="width:300px;" placeholder="{% trans 'Search medicine, batch, supplier...' %}" value="{{ query }}">
+            <button type="submit" class="btn btn-sm btn-primary">{% trans "Search" %}</button>
+            {% if query %}<a href="{% url 'stock_entry_list' %}" class="btn btn-sm btn-outline-secondary">{% trans "Clear" %}</a>{% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>#</th>
+                    <th>{% trans "Medicine" %}</th>
+                    <th>{% trans "Source" %}</th>
+                    <th class="text-center">{% trans "Qty" %}</th>
+                    <th class="text-center">{% trans "Remaining" %}</th>
+                    <th>{% trans "Batch No" %}</th>
+                    <th>{% trans "Received Date" %}</th>
+                    <th>{% trans "Expiry Date" %}</th>
+                    <th>{% trans "Price" %}</th>
+                    <th class="text-center">{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                <tr {% if entry.is_expired and entry.remaining_qty > 0 %}class="table-danger"{% endif %}>
+                    <td>{{ forloop.counter }}</td>
+                    <td class="fw-bold">{{ entry.medicine.name }}</td>
+                    <td>
+                        {% if entry.source_type == 'PURCHASE' %}
+                            <span class="badge bg-primary">{% trans "Purchase" %}</span>
+                        {% elif entry.source_type == 'GOV_DONATION' %}
+                            <span class="badge bg-success">{% trans "Gov. Donation" %}</span>
+                        {% elif entry.source_type == 'NGO_INT' %}
+                            <span class="badge bg-info text-dark">{% trans "NGO Int'l" %}</span>
+                        {% elif entry.source_type == 'NGO_NAT' %}
+                            <span class="badge bg-warning text-dark">{% trans "NGO Nat'l" %}</span>
+                        {% elif entry.source_type == 'VOLUNTEER' %}
+                            <span class="badge bg-secondary">{% trans "Volunteer" %}</span>
+                        {% else %}
+                            <span class="badge bg-dark">{% trans "Other" %}</span>
+                        {% endif %}
+                        {% if entry.donor_name %}
+                            <br><small class="text-muted">{{ entry.donor_name }}</small>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">{{ entry.quantity }}</td>
+                    <td class="text-center">
+                        {% if entry.remaining_qty == 0 %}
+                            <span class="badge bg-secondary">0</span>
+                        {% elif entry.is_expired %}
+                            <span class="badge bg-danger">{{ entry.remaining_qty }}</span>
+                        {% else %}
+                            <span class="badge bg-success">{{ entry.remaining_qty }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ entry.batch_number|default:"-" }}</td>
+                    <td>{{ entry.purchase_date|date:"d M Y" }}</td>
+                    <td>
+                        {% if entry.expiry_date %}
+                            {% if entry.is_expired %}
+                                <span class="text-danger fw-bold"><i class="bi bi-exclamation-triangle me-1"></i>{{ entry.expiry_date|date:"d M Y" }}</span>
+                            {% else %}
+                                {{ entry.expiry_date|date:"d M Y" }}
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>${{ entry.unit_price }}</td>
+                    <td class="text-center">
+                        <a href="{% url 'stock_entry_edit' entry.pk %}" class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-pencil-square"></i></a>
+                        <a href="{% url 'stock_entry_delete' entry.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10" class="text-center text-muted py-5">
+                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                        {% trans "No stock entries found." %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if entries.has_other_pages %}
+    <div class="card-footer">
+        <nav><ul class="pagination pagination-sm justify-content-center mb-0">
+            {% if entries.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ entries.previous_page_number }}&q={{ query }}">&laquo;</a></li>{% endif %}
+            {% for num in entries.paginator.page_range %}
+                {% if entries.number == num %}<li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > entries.number|add:"-3" and num < entries.number|add:"3" %}<li class="page-item"><a class="page-link" href="?page={{ num }}&q={{ query }}">{{ num }}</a></li>{% endif %}
+            {% endfor %}
+            {% if entries.has_next %}<li class="page-item"><a class="page-link" href="?page={{ entries.next_page_number }}&q={{ query }}">&raquo;</a></li>{% endif %}
+        </ul></nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Emergency Dashboard" %} - {% trans "Clinic Lanud" %}{% endblock %}
+
+{% block page_title %}{% trans "Emergency / ED" %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card p-4 bg-danger text-white border-0 shadow-sm">
+            <div class="d-flex align-items-center">
+                <div class="bg-white bg-opacity-25 rounded-circle p-3 me-3">
+                    <i class="bi bi-exclamation-triangle-fill fs-2"></i>
+                </div>
+                <div>
+                    <h2 class="mb-0">{% trans "Emergency Room (ED)" %}</h2>
+                    <p class="mb-0 opacity-75">{% trans "Critical care and immediate medical intervention queue" %}</p>
+                </div>
+                <div class="ms-auto d-flex gap-2">
+                    <a href="{% url 'department_completed_list' %}?dept=emergency" class="btn btn-outline-light btn-lg fw-bold shadow-sm">
+                        <i class="bi bi-clock-history me-1"></i> {% trans "Visit History" %}
+                    </a>
+                    <a href="{% url 'emergency_direct_registration' %}" class="btn btn-light btn-lg fw-bold shadow-sm">
+                        <i class="bi bi-person-plus-fill me-2"></i>{% trans "Register Direct Patient" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Emergency Premium Stats Row -->
+    <div class="col-md-12 mb-4">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100" style="border-left: 5px solid #dc3545 !important;">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase small fw-bold">{% trans "Active Cases" %}</h6>
+                        <h2 class="mb-0 fw-bold">{{ stats.active_cases }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100" style="border-left: 5px solid #6c757d !important;">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase small fw-bold">{% trans "Total Today" %}</h6>
+                        <h2 class="mb-0 fw-bold">{{ stats.total_today }}</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100" style="border-left: 5px solid #198754 !important;">
+                    <div class="card-body">
+                        <h6 class="text-muted text-uppercase small fw-bold">{% trans "Discharged Today" %}</h6>
+                        <h2 class="mb-0 fw-bold">{{ stats.discharged_today }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Emergency Waiting Queue -->
+    <div class="col-md-8">
+        <div class="card p-4 h-100 shadow-sm border-0">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0 text-dark fw-bold">
+                    <i class="bi bi-clock-history me-2 text-danger"></i>{% trans "Emergency Queue" %}
+                </h4>
+                <span class="badge bg-danger rounded-pill px-3">{{ waiting_visits|length }} {% trans "Patients" %}</span>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="10%">{% trans "Queue" %}</th>
+                            <th width="35%">{% trans "Patient" %}</th>
+                            <th width="20%">{% trans "Triage & Arrival" %}</th>
+                            <th width="20%">{% trans "Observation" %}</th>
+                            <th width="15%">{% trans "Action" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for visit in waiting_visits %}
+                        <tr class="{% if visit.triage_level == 'RED' %}table-danger{% elif visit.triage_level == 'YELLOW' %}table-warning{% endif %}">
+                            <td class="text-center">
+                                <span class="fw-bold fs-5">#{{ visit.queue_number }}</span>
+                            </td>
+                            <td>
+                                <div class="fw-bold fs-6 text-dark">{{ visit.patient.full_name }}</div>
+                                <div class="text-muted small">
+                                    ID: {{ visit.patient.patient_id }} • {{ visit.patient.age }} {% trans "yrs" %}
+                                </div>
+                            </td>
+                            <td>
+                                <!-- Triage Badge -->
+                                {% if visit.triage_level == 'RED' %}
+                                    <span class="badge bg-danger text-uppercase mb-1 d-block p-2 shadow-sm animate-pulse-slow">
+                                        <i class="bi bi-heart-pulse-fill me-1"></i> {% trans "RED (CRITICAL)" %}
+                                    </span>
+                                {% elif visit.triage_level == 'YELLOW' %}
+                                    <span class="badge bg-warning text-dark text-uppercase mb-1 d-block p-2 shadow-sm">
+                                        <i class="bi bi-exclamation-circle-fill me-1"></i> {% trans "YELLOW (URGENT)" %}
+                                    </span>
+                                {% elif visit.triage_level == 'GREEN' %}
+                                    <span class="badge bg-success text-uppercase mb-1 d-block p-2 shadow-sm">
+                                        <i class="bi bi-check-circle-fill me-1"></i> {% trans "GREEN (STABLE)" %}
+                                    </span>
+                                {% elif visit.triage_level == 'BLACK' %}
+                                    <span class="badge bg-dark text-uppercase mb-1 d-block p-2 shadow-sm">
+                                        <i class="bi bi-slash-circle-fill me-1"></i> {% trans "BLACK (EXPECTANT/DECEASED)" %}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary text-uppercase mb-1 d-block p-2 shadow-sm">
+                                        {% trans "NO TRIAGE" %}
+                                    </span>
+                                {% endif %}
+                                
+                                {% if visit.vas_score %}
+                                    {% if visit.vas_score == '0' %}
+                                        <span class="badge bg-success bg-opacity-75 text-white mb-1 d-block p-1 shadow-sm"><i class="bi bi-emoji-smile me-1"></i>VAS: 0 ({% trans "No Pain" %})</span>
+                                    {% elif visit.vas_score == '1-3' %}
+                                        <span class="badge mb-1 d-block p-1 shadow-sm text-white" style="background-color: #8bc34a;"><i class="bi bi-emoji-neutral me-1"></i>VAS: 1-3 ({% trans "Mild" %})</span>
+                                    {% elif visit.vas_score == '4-6' %}
+                                        <span class="badge bg-warning text-dark mb-1 d-block p-1 shadow-sm"><i class="bi bi-emoji-frown me-1"></i>VAS: 4-6 ({% trans "Moderate" %})</span>
+                                    {% elif visit.vas_score == '7-9' %}
+                                        <span class="badge text-white mb-1 d-block p-1 shadow-sm" style="background-color: #fd7e14;"><i class="bi bi-emoji-tear me-1"></i>VAS: 7-9 ({% trans "Severe" %})</span>
+                                    {% elif visit.vas_score == '10' %}
+                                        <span class="badge bg-danger text-white mb-1 d-block p-1 shadow-sm"><i class="bi bi-emoji-dizzy me-1"></i>VAS: 10 ({% trans "Worst Pain" %})</span>
+                                    {% endif %}
+                                {% endif %}
+
+                                <div class="small text-muted mt-1">
+                                    <i class="bi bi-truck me-1"></i> {{ visit.get_arrival_mode_display }}
+                                    {% if visit.companion_name %}
+                                        <br><i class="bi bi-people me-1"></i> <span class="fw-bold">{{ visit.companion_name }}</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <!-- Observation & Diagnostic Status Logic -->
+                                <div class="{% if visit.needs_referral %}text-danger fw-bold{% elif visit.observation_hours > 12 %}text-warning fw-bold{% else %}text-success{% endif %} mb-2">
+                                    <i class="bi bi-stopwatch me-1"></i>
+                                    {{ visit.observation_hours|floatformat:1 }} {% trans "Hours" %}
+                                    
+                                    {% if visit.needs_referral %}
+                                        <div class="badge bg-danger mt-1">
+                                            <i class="bi bi-arrow-right-circle-fill me-1"></i> {% trans "EXCEEDED 24H: REFER!" %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Auxiliary Department Badges -->
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% if visit.current_room.code == 'ROOM_7' or visit.current_room.code == 'LAB' %}
+                                        <span class="badge bg-soft-primary text-primary border border-primary border-opacity-25 py-1 px-2 small">
+                                            <i class="bi bi-droplet-half me-1"></i>{% trans "At Lab" %}
+                                        </span>
+                                    {% elif visit.lab_request.status == 'COMPLETED' %}
+                                        <span class="badge bg-soft-success text-success border border-success border-opacity-25 py-1 px-2 small">
+                                            <i class="bi bi-check2-circle me-1"></i>{% trans "Lab Ready" %}
+                                        </span>
+                                    {% endif %}
+
+                                    {% if visit.current_room.code == 'RADIOLOGY' %}
+                                        <span class="badge bg-soft-warning text-warning-emphasis border border-warning border-opacity-25 py-1 px-2 small">
+                                            <i class="bi bi-heart-pulse me-1"></i>{% trans "At X-Ray" %}
+                                        </span>
+                                    {% elif visit.radiology_request.status == 'COMPLETED' %}
+                                        <span class="badge bg-soft-success text-success border border-success border-opacity-25 py-1 px-2 small">
+                                            <i class="bi bi-image me-1"></i>{% trans "X-Ray Ready" %}
+                                        </span>
+                                    {% endif %}
+
+                                    {% if visit.current_room.code == 'PHARMACY' or visit.current_room.code == 'ROOM_8' %}
+                                        <span class="badge bg-soft-info text-info-emphasis border border-info border-opacity-25 py-1 px-2 small">
+                                            <i class="bi bi-capsule me-1"></i>{% trans "At Pharmacy" %}
+                                        </span>
+                                    {% endif %}
+
+                                    {% if visit.current_room.code == 'DENTAL' %}
+                                        <span class="badge bg-soft-secondary text-secondary-emphasis border border-secondary border-opacity-25 py-1 px-2 small">
+                                            <i class="bi bi-emoji-smile me-1"></i>{% trans "At Dental" %}
+                                        </span>
+                                    {% endif %}
+
+                                    {% if visit.current_room.code == 'NUTRISI' %}
+                                        <span class="badge bg-soft-success text-success-emphasis border border-success border-opacity-25 py-1 px-2 small">
+                                            <i class="bi bi-egg-fried me-1"></i>{% trans "At Nutrition" %}
+                                        </span>
+                                    {% endif %}
+                                    
+                                    {% if visit.current_room.code == 'KIA' %}
+                                        <span class="badge bg-soft-danger text-danger-emphasis border border-danger border-opacity-25 py-1 px-2 small">
+                                            <i class="bi bi-gender-female me-1"></i>{% trans "At MCH" %}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <a href="{% url 'perform_examination' visit.uuid %}" class="btn btn-outline-danger btn-sm w-100 fw-bold shadow-sm">
+                                    <i class="bi {% if is_nurse %}bi-thermometer-half{% else %}bi-clipboard2-pulse{% endif %} me-1"></i>
+                                    {% if is_nurse %}{% trans "Triage & Vitals" %}{% else %}{% trans "Examine" %}{% endif %}
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <div class="text-muted opacity-50">
+                                    <i class="bi bi-check2-circle fs-1 d-block mb-2"></i>
+                                    {% trans "No emergency patients in queue." %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recently Treated / Completed -->
+    <div class="col-md-4">
+        <div class="card p-4 h-100 border-start border-success border-4 shadow-sm border-0">
+            <h4 class="mb-4 text-success fw-bold">
+                <i class="bi bi-check-all me-2"></i>{% trans "Recently Treated Today" %}
+            </h4>
+            <div class="list-group list-group-flush mt-2">
+                {% for visit in completed_today %}
+                <div class="list-group-item px-0 py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold">{{ visit.patient.full_name }}</div>
+                        <small class="text-muted"><i class="bi bi-clock me-1"></i> {{ visit.visit_date|date:"H:i" }}</small>
+                    </div>
+                    <span class="badge bg-success rounded-pill">#{{ visit.queue_number }}</span>
+                </div>
+                {% empty %}
+                <div class="text-center py-4 text-muted small">
+                    <i class="bi bi-info-circle d-block mb-2"></i>
+                    {% trans "No emergency cases completed today." %}
+                </div>
+                {% endfor %}
+            </div>
+            
+            {% if completed_today %}
+            <div class="mt-auto pt-4 text-center">
+                <small class="text-muted">{% trans "Showing last 100 cases today." %}</small>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

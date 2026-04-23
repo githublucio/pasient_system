@@ -1,0 +1,31 @@
+{% extends "base.html" %}{% load i18n %}
+{% block title %}{% trans "Settings - Backup & Restore" %}{% endblock %}
+{% block page_title %}{% trans "Database Administration" %}{% endblock %}
+{% block content %}
+<div class="container-fluid"><div class="row"><div class="col-md-6"><div class="card shadow-sm mb-4">
+<div class="card-header bg-primary text-white d-flex align-items-center"><i class="bi bi-cloud-download me-2 fs-4"></i><h5 class="mb-0">{% trans "Backup Database" %}</h5></div>
+<div class="card-body"><p class="text-muted">{% trans "Generate a full snapshot of the database. You can save this file on your PC or Laptop to prevent data loss." %}</p>
+<div class="alert alert-info"><i class="bi bi-info-circle me-1"></i>{% trans "The backup includes all patients, staff, medical records, and clinical data." %}</div>
+<form action="{% url 'backup_database' %}" method="get"><button type="submit" class="btn btn-primary w-100 py-2"><i class="bi bi-download me-1"></i> {% trans "Download Backup Now (.sql)" %}</button></form>
+</div></div></div><div class="col-md-6"><div class="card shadow-sm mb-4">
+<div class="card-header bg-danger text-white d-flex align-items-center"><i class="bi bi-cloud-upload me-2 fs-4"></i><h5 class="mb-0">{% trans "Restore Database" %}</h5></div>
+<div class="card-body"><p class="text-muted">{% trans "Restore the database using a previously downloaded SQL backup file." %}</p>
+<div class="alert alert-warning border-warning"><h6 class="alert-heading text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> {% trans "WARNING: Destructive Action" %}</h6><p class="mb-0 small">{% trans "This process will completely OVERWRITE your current data. Use with extreme caution." %}</p></div>
+<form action="{% url 'restore_database' %}" method="post" enctype="multipart/form-data" id="restoreForm">{% csrf_token %}
+<div class="mb-3"><label for="backup_file" class="form-label fw-bold">{% trans "Select Backup File (.sql)" %}</label><input class="form-control" type="file" id="backup_file" name="backup_file" accept=".sql" required></div>
+<button type="button" class="btn btn-outline-danger w-100 py-2" data-bs-toggle="modal" data-bs-target="#confirmRestoreModal"><i class="bi bi-arrow-clockwise me-1"></i> {% trans "Start Database Restoration" %}</button>
+</form></div></div></div></div></div>
+<div class="modal fade" id="confirmRestoreModal" tabindex="-1" aria-hidden="true"><div class="modal-dialog"><div class="modal-content">
+<div class="modal-header bg-danger text-white"><h5 class="modal-title">{% trans "Confirm Restoration" %}</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+<div class="modal-body text-center p-4"><i class="bi bi-exclamation-triangle text-danger fs-1 mb-3"></i><h4 class="fw-bold">{% trans "Are you absolutely sure?" %}</h4><p>{% trans "This will overwrite all data. This cannot be undone." %}</p>
+<div class="bg-light p-2 rounded border small text-start">{% trans "Please type <b>RESTORE</b> to confirm:" %}<input type="text" id="confirmInput" class="form-control form-control-sm mt-1" placeholder="RESTORE"></div></div>
+<div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% trans "Cancel" %}</button><button type="button" class="btn btn-danger" id="confirmSubmitBtn" disabled>{% trans "Yes, Overwrite & Restore" %}</button></div>
+</div></div></div>
+{% endblock %}
+{% block extra_js %}
+<script>
+    const confirmInput = document.getElementById('confirmInput'); const confirmSubmitBtn = document.getElementById('confirmSubmitBtn');
+    confirmInput.addEventListener('input', function () { confirmSubmitBtn.disabled = this.value !== 'RESTORE'; });
+    confirmSubmitBtn.addEventListener('click', function () { this.innerHTML = '<span class="spinner-border spinner-border-sm"></span> {% trans "Restoring..." %}'; this.disabled = true; document.getElementById('restoreForm').submit(); });
+</script>
+{% endblock %}

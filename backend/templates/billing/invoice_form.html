@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4><i class="bi bi-receipt me-2"></i>{{ title }}</h4>
+    <a href="{% url 'billing_dashboard' %}" class="btn btn-outline-secondary btn-sm">{% trans "Back to Dashboard" %}</a>
+</div>
+
+<form method="post" id="invoiceForm">
+    {% csrf_token %}
+
+    <div class="card mb-3">
+        <div class="card-header"><strong>{% trans "Patient Information" %}</strong></div>
+        <div class="card-body">
+            {% if patient %}
+                <input type="hidden" name="patient" value="{{ patient.uuid }}">
+                {% if visit %}
+                <input type="hidden" name="visit" value="{{ visit.uuid }}">
+                {% endif %}
+                <div class="row">
+                    <div class="col-md-4">
+                        <p class="mb-1"><strong>{{ patient.full_name }}</strong></p>
+                        <p class="text-muted mb-0">{{ patient.patient_id }}</p>
+                    </div>
+                    {% if visit %}
+                    <div class="col-md-4">
+                        <p class="mb-1"><strong>{% trans "Visit" %}:</strong> {{ visit.visit_date|date:"d/m/Y H:i" }}</p>
+                        <p class="text-muted mb-0">{% trans "Queue" %}: {{ visit.queue_number }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">{% trans "Search Patient" %}</label>
+                        <input type="text" id="patientSearch" class="form-control" placeholder="{% trans 'Type name or ID...' %}" autocomplete="off">
+                        <input type="hidden" name="patient" id="selectedPatient" required>
+                        <div id="patientResults" class="list-group mt-1" style="position:absolute;z-index:1000;max-height:200px;overflow-y:auto;"></div>
+                        <div id="selectedPatientInfo" class="mt-2"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">{% trans "Visit (optional)" %}</label>
+                        <select name="visit" id="visitSelect" class="form-select" disabled>
+                            <option value="">{% trans "-- Select Visit --" %}</option>
+                        </select>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <strong>{% trans "Invoice Items" %}</strong>
+            <div class="d-flex gap-2">
+                <select id="categorySelect" class="form-select form-select-sm" style="width:200px;">
+                    <option value="">{% trans "-- Quick Add from Catalog --" %}</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.pk }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+                <select id="serviceSelect" class="form-select form-select-sm" style="width:250px;" disabled>
+                    <option value="">{% trans "-- Select Service --" %}</option>
+                </select>
+                <button type="button" id="addServiceBtn" class="btn btn-outline-success btn-sm" disabled>
+                    <i class="bi bi-plus"></i>
+                </button>
+                <button type="button" id="addCustomBtn" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-circle me-1"></i> {% trans "Add Item" %}
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-bordered mb-0" id="itemsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:40%">{% trans "Description" %}</th>
+                        <th style="width:15%">{% trans "Qty" %}</th>
+                        <th style="width:20%">{% trans "Unit Price (USD)" %}</th>
+                        <th style="width:20%">{% trans "Total" %}</th>
+                        <th style="width:5%"></th>
+                    </tr>
+                </thead>
+                <tbody id="itemsBody">
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" class="text-end"><strong>{% trans "Subtotal" %}:</strong></td>
+                        <td><strong id="subtotalDisplay">$0.00</strong></td>
+                        <td></td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="text-end">
+                            <strong>{% trans "Discount" %} (USD):</strong>
+                        </td>
+                        <td>
+                            <input type="number" name="discount" id="discountInput" class="form-control form-control-sm" value="0" min="0" step="0.01">
+                        </td>
+                        <td></td>
+                    </tr>
+                    <tr class="table-primary">
+                        <td colspan="3" class="text-end"><strong>{% trans "TOTAL" %}:</strong></td>
+                        <td><strong id="totalDisplay">$0.00</strong></td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-body">
+            <label class="form-label">{% trans "Notes" %}</label>
+            <textarea name="notes" class="form-control" rows="2"></textarea>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+        <a href="{% url 'billing_dashboard' %}" class="btn btn-secondary">{% trans "Cancel" %}</a>
+        <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+            <i class="bi bi-check-circle me-1"></i>{% trans "Create Invoice" %}
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let serviceCache = {};
+const allCategories = [
+    {% for cat in categories %}
+    { id: "{{ cat.pk }}", name: "{{ cat.name }}" },
+    {% endfor %}
+];
+let rowIndex = 0;
+
+document.getElementById('categorySelect').addEventListener('change', function() {
+    const catId = this.value;
+    const svcSelect = document.getElementById('serviceSelect');
+    const addBtn = document.getElementById('addServiceBtn');
+    svcSelect.innerHTML = '<option value="">-- {% trans "Select Service" %} --</option>';
+    svcSelect.disabled = true;
+    addBtn.disabled = true;
+
+    if (!catId) return;
+
+    fetch('{% url "api_services_by_category" %}?category_id=' + catId)
+        .then(r => r.json())
+        .then(data => {
+            serviceCache = {};
+            data.forEach(s => {
+                serviceCache[s.id] = s;
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.name + ' - $' + parseFloat(s.price).toFixed(2);
+                svcSelect.appendChild(opt);
+            });
+            svcSelect.disabled = false;
+        });
+});
+
+document.getElementById('serviceSelect').addEventListener('change', function() {
+    document.getElementById('addServiceBtn').disabled = !this.value;
+});
+
+document.getElementById('addServiceBtn').addEventListener('click', function() {
+    const svcId = document.getElementById('serviceSelect').value;
+    if (!svcId || !serviceCache[svcId]) return;
+    const svc = serviceCache[svcId];
+    // For catalog services, we know the category
+    const catId = document.getElementById('categorySelect').value;
+    addRow(svc.name, 1, parseFloat(svc.price), svcId, catId);
+});
+
+document.getElementById('addCustomBtn').addEventListener('click', function() {
+    addRow('', 1, 0, '', '');
+});
+
+function addRow(desc, qty, price, svcId, catId) {
+    const tbody = document.getElementById('itemsBody');
+    const tr = document.createElement('tr');
+    
+    let catOptions = '<option value="">-- {% trans "Select Category" %} --</option>';
+    allCategories.forEach(c => {
+        catOptions += `<option value="${c.id}" ${catId == c.id ? 'selected' : ''}>${c.name}</option>`;
+    });
+
+    tr.innerHTML = `
+        <td>
+            <input type="text" name="item_description" class="form-control form-control-sm mb-1" value="${desc}" placeholder="{% trans 'Description' %}" required>
+            <input type="hidden" name="item_service_id" value="${svcId}">
+            <select name="item_category_id" class="form-select form-select-sm" ${svcId ? 'style="background-color:#e9ecef" readonly' : 'required'}>
+                ${catOptions}
+            </select>
+        </td>
+        <td><input type="number" name="item_quantity" class="form-control form-control-sm item-qty" value="${qty}" min="1" required></td>
+        <td><input type="number" name="item_price" class="form-control form-control-sm item-price" value="${price.toFixed(2)}" min="0" step="0.01" required></td>
+        <td class="item-total">$${(qty * price).toFixed(2)}</td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="bi bi-trash"></i></button></td>
+    `;
+    tbody.appendChild(tr);
+    recalculate();
+    checkSubmit();
+}
+
+document.getElementById('itemsBody').addEventListener('input', recalculate);
+document.getElementById('discountInput').addEventListener('input', recalculate);
+
+document.getElementById('itemsBody').addEventListener('click', function(e) {
+    if (e.target.closest('.remove-row')) {
+        e.target.closest('tr').remove();
+        recalculate();
+        checkSubmit();
+    }
+});
+
+function recalculate() {
+    let subtotal = 0;
+    document.querySelectorAll('#itemsBody tr').forEach(tr => {
+        const qty = parseFloat(tr.querySelector('.item-qty').value) || 0;
+        const price = parseFloat(tr.querySelector('.item-price').value) || 0;
+        const total = qty * price;
+        tr.querySelector('.item-total').textContent = '$' + total.toFixed(2);
+        subtotal += total;
+    });
+    const discount = parseFloat(document.getElementById('discountInput').value) || 0;
+    const total = Math.max(subtotal - discount, 0);
+    document.getElementById('subtotalDisplay').textContent = '$' + subtotal.toFixed(2);
+    document.getElementById('totalDisplay').textContent = '$' + total.toFixed(2);
+}
+
+function checkSubmit() {
+    const rows = document.querySelectorAll('#itemsBody tr').length;
+    const hasPatient = document.getElementById('selectedPatient') ? document.getElementById('selectedPatient').value : true;
+    document.getElementById('submitBtn').disabled = rows === 0;
+}
+
+{% if patient %}
+checkSubmit();
+{% endif %}
+
+// Patient AJAX search
+const searchInput = document.getElementById('patientSearch');
+if (searchInput) {
+    let debounce;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(debounce);
+        const q = this.value.trim();
+        const resultsDiv = document.getElementById('patientResults');
+        if (q.length < 2) { resultsDiv.innerHTML = ''; return; }
+        debounce = setTimeout(() => {
+            fetch('{% url "api_search_patients" %}?q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(data => {
+                    resultsDiv.innerHTML = '';
+                    data.forEach(p => {
+                        const a = document.createElement('a');
+                        a.href = '#';
+                        a.className = 'list-group-item list-group-item-action py-2';
+                        a.innerHTML = '<strong>' + p.full_name + '</strong> <small class="text-muted ms-2">' + p.patient_id + '</small>';
+                        a.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            document.getElementById('selectedPatient').value = p.uuid;
+                            document.getElementById('selectedPatientInfo').innerHTML = '<div class="alert alert-success py-2 mb-0"><strong>' + p.full_name + '</strong> (' + p.patient_id + ')</div>';
+                            searchInput.value = p.full_name;
+                            resultsDiv.innerHTML = '';
+                            checkSubmit();
+
+                            // Load visits
+                            const visitSelect = document.getElementById('visitSelect');
+                            if (visitSelect) {
+                                visitSelect.innerHTML = '<option value="">-- {% trans "Loading..." %} --</option>';
+                                visitSelect.disabled = true;
+                                
+                                fetch("{% url 'api_patient_visits' '00000000-0000-0000-0000-000000000000' %}".replace("00000000-0000-0000-0000-000000000000", p.uuid))
+                                    .then(r => r.json())
+                                    .then(v_data => {
+                                        visitSelect.innerHTML = '<option value="">-- {% trans "Select Visit (optional)" %} --</option>';
+                                        v_data.forEach(v => {
+                                            const vOpt = document.createElement('option');
+                                            vOpt.value = v.id;
+                                            vOpt.textContent = v.date + ' (Q: ' + v.queue + ') - ' + v.status;
+                                            visitSelect.appendChild(vOpt);
+                                        });
+                                        visitSelect.disabled = false;
+                                    })
+                                    .catch(err => {
+                                        visitSelect.innerHTML = '<option value="">-- {% trans "Select Visit" %} --</option>';
+                                        visitSelect.disabled = false;
+                                    });
+                            }
+                        });
+                        resultsDiv.appendChild(a);
+                    });
+                    if (data.length === 0) {
+                        resultsDiv.innerHTML = '<div class="list-group-item text-muted py-2">{% trans "No patients found." %}</div>';
+                    }
+                });
+        }, 300);
+    });
+}
+</script>
+{% endblock %}

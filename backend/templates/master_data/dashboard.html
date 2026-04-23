@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{% trans "Master Data Dashboard" %} - {% trans "Clinic Lanud" %}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-database-fill-gear me-2"></i>{% trans "Master Data Management" %}</h2>
+</div>
+
+<div class="row g-4">
+    <!-- Patients Card -->
+    <div class="col-md-4">
+        <div class="card h-100 border-start border-primary border-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted text-uppercase mb-2">{% trans "Total Patients" %}</h6>
+                        <h3 class="fw-bold mb-0">{{ patient_count }}</h3>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-people-fill text-primary fs-3"></i>
+                    </div>
+                </div>
+                <hr>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'patient_list' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-list-ul me-1"></i> {% trans "View All Patients" %}
+                    </a>
+                    <a href="{% url 'register_patient' %}" class="btn btn-primary btn-sm">
+                        <i class="bi bi-person-plus-fill me-1"></i> {% trans "Add New Patient" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Municipio Card -->
+    <div class="col-md-4">
+        <div class="card h-100 border-start border-success border-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted text-uppercase mb-2">{% trans "Municipios" %}</h6>
+                        <h3 class="fw-bold mb-0">{{ municipio_count }}</h3>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-map-fill text-success fs-3"></i>
+                    </div>
+                </div>
+                <hr>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'municipio_list' %}" class="btn btn-outline-success btn-sm">
+                        <i class="bi bi-list-ul me-1"></i> {% trans "Manage Municipios" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Posto Card -->
+    <div class="col-md-4">
+        <div class="card h-100 border-start border-info border-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted text-uppercase mb-2">{% trans "Postos Administrativos" %}</h6>
+                        <h3 class="fw-bold mb-0">{{ posto_count }}</h3>
+                    </div>
+                    <div class="bg-info bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-geo-alt-fill text-info fs-3"></i>
+                    </div>
+                </div>
+                <hr>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'posto_list' %}" class="btn btn-outline-info btn-sm">
+                        <i class="bi bi-list-ul me-1"></i> {% trans "Manage Postos" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Suco Card -->
+    <div class="col-md-4">
+        <div class="card h-100 border-start border-warning border-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted text-uppercase mb-2">{% trans "Sucos" %}</h6>
+                        <h3 class="fw-bold mb-0">{{ suco_count }}</h3>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-house-door-fill text-warning fs-3"></i>
+                    </div>
+                </div>
+                <hr>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'suco_list' %}" class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-list-ul me-1"></i> {% trans "Manage Sucos" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Aldeia Card -->
+    <div class="col-md-4">
+        <div class="card h-100 border-start border-danger border-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted text-uppercase mb-2">{% trans "Aldeias" %}</h6>
+                        <h3 class="fw-bold mb-0">{{ aldeia_count }}</h3>
+                    </div>
+                    <div class="bg-danger bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-signpost-2-fill text-danger fs-3"></i>
+                    </div>
+                </div>
+                <hr>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'aldeia_list' %}" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-list-ul me-1"></i> {% trans "Manage Aldeias" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diagnosis Card -->
+    <div class="col-md-4">
+        <div class="card h-100 border-start border-secondary border-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted text-uppercase mb-2">{% trans "Diagnoses" %}</h6>
+                        <h3 class="fw-bold mb-0">{{ diagnosis_count }}</h3>
+                    </div>
+                    <div class="bg-secondary bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-journal-medical text-secondary fs-3"></i>
+                    </div>
+                </div>
+                <hr>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'diagnosis_list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-list-ul me-1"></i> {% trans "Manage Diagnoses" %}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Staff Card -->
+    <div class="col-md-4">
+        <div class="card h-100 border-start border-dark border-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted text-uppercase mb-2">{% trans "Total Staff" %}</h6>
+                        <h3 class="fw-bold mb-0">{{ staff_count }}</h3>
+                    </div>
+                    <div class="bg-dark bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-person-badge-fill text-dark fs-3"></i>
+                    </div>
+                </div>
+                <hr>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'staff_list' %}" class="btn btn-outline-dark btn-sm">
+                        <i class="bi bi-people me-1"></i> {% trans "Staff Directory" %}
+                    </a>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <a href="{% url 'department_list' %}" class="btn btn-light border btn-sm w-100 small">{% trans "Depts" %}: {{ dept_count }}</a>
+                        </div>
+                        <div class="col-6">
+                            <a href="{% url 'category_list' %}" class="btn btn-light border btn-sm w-100 small">{% trans "Titles" %}: {{ cat_count }}</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

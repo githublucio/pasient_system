@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "MCH Direct Registration" %} - Maternidade{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-11">
+
+        <!-- Header -->
+        <div class="card p-4 mb-4 border-0 shadow-sm text-white"
+             style="background: linear-gradient(135deg,#e83e8c 0%,#fd7e14 100%);">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-white bg-opacity-25 rounded-circle p-3">
+                        <i class="bi bi-gender-female fs-2"></i>
+                    </div>
+                    <div>
+                        <h2 class="mb-0 fw-bold">{% trans "MCH Direct Registration" %}</h2>
+                        <p class="mb-0 opacity-75">
+                            {% trans "Register patients directly to Maternidade / MCH without going through Triage" %}
+                        </p>
+                    </div>
+                </div>
+                <a href="{% url 'doctor_dashboard' %}?room=KIA" class="btn btn-outline-light">
+                    <i class="bi bi-arrow-left me-1"></i> {% trans "Back to MCH Dashboard" %}
+                </a>
+            </div>
+        </div>
+
+        <!-- Category Selector -->
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-body">
+                <h5 class="fw-bold mb-3"><i class="bi bi-list-check me-2 text-warning"></i>{% trans "Select MCH Category" %}</h5>
+                <div class="row g-2" id="categorySelector">
+                    <div class="col-md-3">
+                        <input type="radio" class="btn-check" name="kia_category_choice" id="cat1" value="ANA_0_6" checked>
+                        <label class="btn btn-outline-info w-100 py-3" for="cat1">
+                            <i class="bi bi-emoji-smile d-block fs-4 mb-1"></i>
+                            <strong>1.</strong> {% trans "Baby 0–6 Months" %}
+                        </label>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="radio" class="btn-check" name="kia_category_choice" id="cat2" value="ANA_6_59">
+                        <label class="btn btn-outline-primary w-100 py-3" for="cat2">
+                            <i class="bi bi-person d-block fs-4 mb-1"></i>
+                            <strong>2.</strong> {% trans "Child 6–59 Months" %}
+                        </label>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="radio" class="btn-check" name="kia_category_choice" id="cat3" value="IBU_MENYUSU">
+                        <label class="btn btn-outline-success w-100 py-3" for="cat3">
+                            <i class="bi bi-heart d-block fs-4 mb-1"></i>
+                            <strong>3.</strong> {% trans "Breastfeeding Mother" %}
+                        </label>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="radio" class="btn-check" name="kia_category_choice" id="cat4" value="IBU_HAMIL">
+                        <label class="btn btn-outline-danger w-100 py-3" for="cat4">
+                            <i class="bi bi-hospital d-block fs-4 mb-1"></i>
+                            <strong>4.</strong> {% trans "Pregnant Mother" %}
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- ── LEFT: Search Existing Patient ── -->
+            <div class="col-md-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="bi bi-search me-2 text-warning"></i>{% trans "Find Existing Patient" %}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="get" class="mb-3">
+                            <div class="input-group">
+                                <input type="text" name="q" class="form-control"
+                                       placeholder="{% trans 'Name or Patient ID...' %}"
+                                       value="{{ query }}" autofocus>
+                                <button class="btn btn-warning" type="submit">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </form>
+
+                        <div class="list-group list-group-flush">
+                            {% for p in patients %}
+                            <div class="list-group-item px-0 py-2 border-bottom">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <div class="fw-bold small">{{ p.full_name }}</div>
+                                        <div class="text-muted" style="font-size:0.75rem;">
+                                            ID: {{ p.patient_id }} &bull;
+                                            {{ p.get_gender_display }} &bull;
+                                            {{ p.age }} yrs
+                                        </div>
+                                        <div class="text-muted" style="font-size:0.72rem;">
+                                            {{ p.full_address|truncatechars:40 }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Vitals quick-entry for this patient -->
+                                <form method="post" action="{% url 'kia_direct_registration' %}" class="mt-2">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="patient_uuid" value="{{ p.uuid }}">
+                                    <input type="hidden" name="select_patient" value="1">
+                                    <input type="hidden" name="kia_category" class="kia-cat-hidden" value="ANA_0_6">
+                                    <input type="hidden" name="patient_type" value="TUAN">
+                                    <div class="row g-1 mb-1">
+                                        <div class="col-4">
+                                            <input type="number" name="weight" class="form-control form-control-sm"
+                                                   placeholder="BB kg" step="0.1" min="0">
+                                        </div>
+                                        <div class="col-4">
+                                            <input type="number" name="height" class="form-control form-control-sm"
+                                                   placeholder="TB cm" step="0.1" min="0">
+                                        </div>
+                                        <div class="col-4">
+                                            <input type="number" name="muac" class="form-control form-control-sm"
+                                                   placeholder="LILA" step="0.1" min="0">
+                                        </div>
+                                    </div>
+                                    <div class="mb-1">
+                                        <input type="text" name="companion_name" class="form-control form-control-sm"
+                                               placeholder="{% trans 'Husband/Companion (optional)' %}">
+                                    </div>
+                                    <button type="submit" class="btn btn-warning btn-sm w-100 fw-bold">
+                                        <i class="bi bi-gender-female me-1"></i> {% trans "Admit to MCH" %}
+                                    </button>
+                                </form>
+                            </div>
+                            {% empty %}
+                            <div class="text-center py-4 text-muted small">
+                                {% if query %}
+                                    <i class="bi bi-person-exclamation fs-2 d-block mb-2"></i>
+                                    {% trans "No patients found. Register as new patient →" %}
+                                {% else %}
+                                    <i class="bi bi-search fs-2 d-block mb-2 opacity-25"></i>
+                                    {% trans "Type a name or ID to search..." %}
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── RIGHT: Register New Patient ── -->
+            <div class="col-md-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-bottom">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="bi bi-person-plus-fill me-2 text-success"></i>
+                            {% trans "Register New Patient & Admit to MCH" %}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{% url 'kia_direct_registration' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="register_new" value="1">
+                            <input type="hidden" name="kia_category" id="new_kia_category" value="ANA_0_6">
+
+                            <!-- MCH Vitals section -->
+                            <div class="alert alert-warning py-2 mb-3">
+                                <i class="bi bi-rulers me-1"></i>
+                                <strong>{% trans "Category" %}:</strong>
+                                <span id="selected_cat_label">{% trans "Baby 0–6 Months" %}</span>
+                            </div>
+                            <div class="row g-2 mb-3 p-3 bg-light rounded border">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold small">{% trans "Weight (kg)" %} <small class="text-muted">(Todan)</small></label>
+                                    <input type="number" name="weight" class="form-control" placeholder="e.g. 8.5" step="0.1" min="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold small">{% trans "Height (cm)" %} <small class="text-muted">(Altura)</small></label>
+                                    <input type="number" name="height" class="form-control" placeholder="e.g. 72" step="0.1" min="0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold small">LILA / MUAC (cm)</label>
+                                    <input type="number" name="muac" class="form-control" placeholder="e.g. 14.5" step="0.1" min="0">
+                                </div>
+                                <div id="husband_field" class="col-md-12 d-none">
+                                    <label class="form-label fw-bold small">{% trans "Husband's Name" %} <small class="text-muted">(Laen nia naran)</small></label>
+                                    <input type="text" name="companion_name" class="form-control" placeholder="{% trans 'Enter husband or companion name' %}">
+                                </div>
+                            </div>
+
+                            <!-- Patient Info -->
+                            <div class="row g-2">
+                                <div class="col-md-8 mb-2">
+                                    <label class="form-label fw-bold">{% trans "Full Name" %} <span class="text-danger">*</span></label>
+                                    {{ registration_form.full_name }}
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <label class="form-label fw-bold">{% trans "Category" %}</label>
+                                    {{ registration_form.patient_category }}
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label fw-bold">{% trans "Date of Birth" %} <span class="text-danger">*</span></label>
+                                    {{ registration_form.date_of_birth }}
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label fw-bold">{% trans "Gender" %} <span class="text-danger">*</span></label>
+                                    {{ registration_form.gender }}
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label fw-bold">{% trans "Father's Name" %}</label>
+                                    {{ registration_form.father_name }}
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label fw-bold">{% trans "Mother's Name" %}</label>
+                                    {{ registration_form.mother_name }}
+                                </div>
+                            </div>
+
+                            <h6 class="mt-3 mb-2 fw-bold text-secondary border-bottom pb-1">
+                                <i class="bi bi-geo-alt me-1"></i>{% trans "Address / Location" %}
+                            </h6>
+                            <div class="row g-2">
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label fw-bold small">{% trans "Municipality" %}</label>
+                                    {{ registration_form.municipio }}
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label fw-bold small">{% trans "Administrative Post" %}</label>
+                                    {{ registration_form.posto_administrativo }}
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label fw-bold small">{% trans "Village (Suco)" %}</label>
+                                    {{ registration_form.suco }}
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label fw-bold small">{% trans "Hamlet (Aldeia / Dusun)" %}</label>
+                                    {{ registration_form.aldeia }}
+                                </div>
+                                <div class="col-md-12 mb-2">
+                                    <label class="form-label fw-bold small">{% trans "Additional Address Notes" %}</label>
+                                    {{ registration_form.address }}
+                                </div>
+                            </div>
+
+                            <div class="row g-2">
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label fw-bold">{% trans "Phone Number" %}</label>
+                                    {{ registration_form.phone_number }}
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label fw-bold">{% trans "Contribution (USD)" %}</label>
+                                    {{ registration_form.registration_fee }}
+                                </div>
+                            </div>
+
+                            {% if registration_form.errors %}
+                            <div class="alert alert-danger mt-2">
+                                {% for field, errors in registration_form.errors.items %}
+                                    {% for e in errors %}<div>{{ field }}: {{ e }}</div>{% endfor %}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
+                            <!-- Duplicate Check Alert -->
+                            <div id="duplicate-warning" class="alert alert-danger d-none shadow-sm mt-3" role="alert">
+                                <h6 class="alert-heading fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i> {% trans "Potential Duplicates Found!" %}</h6>
+                                <ul id="duplicate-list" class="mb-0 small"></ul>
+                            </div>
+
+                            <div class="d-grid mt-3">
+                                <button type="submit" class="btn btn-success btn-lg fw-bold">
+                                    <i class="bi bi-check2-circle me-2"></i>
+                                    {% trans "Register New Patient & Admit to MCH Now" %}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.btn-check:checked + .btn { font-weight: bold; }
+.form-control, .form-select { border-radius: 8px; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // --- MCH Category Logic ---
+    const CAT_LABELS = {
+        'ANA_0_6':    '1. Baby 0–6 Months',
+        'ANA_6_59':   '2. Child 6–59 Months',
+        'IBU_MENYUSU':'3. Breastfeeding Mother',
+        'IBU_HAMIL':  '4. Pregnant Mother (ANC)',
+    };
+
+    function updateCategory(val) {
+        // Update hidden field for new patient form
+        document.getElementById('new_kia_category').value = val;
+        // Update display label
+        document.getElementById('selected_cat_label').textContent = CAT_LABELS[val] || val;
+        // Show/hide husband field
+        const hf = document.getElementById('husband_field');
+        if (val === 'IBU_HAMIL') hf.classList.remove('d-none');
+        else hf.classList.add('d-none');
+        // Update all existing-patient form hidden fields
+        document.querySelectorAll('.kia-cat-hidden').forEach(function(el) {
+            el.value = val;
+        });
+    }
+
+    document.querySelectorAll('input[name="kia_category_choice"]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            updateCategory(this.value);
+        });
+    });
+
+    // --- Geolocation Cascading Logic ---
+    const municipioSelect = document.getElementById('id_municipio');
+    const postoSelect = document.getElementById('id_posto');
+    const sucoSelect = document.getElementById('id_suco');
+    const aldeiaSelect = document.getElementById('id_aldeia');
+
+    function fetchOptions(url, selectElement, defaultText) {
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                selectElement.innerHTML = `<option value="">${defaultText}</option>`;
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.name;
+                    selectElement.appendChild(option);
+                });
+                selectElement.removeAttribute('disabled');
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                selectElement.innerHTML = `<option value="">--- {% trans "Error loading data" %} ---</option>`;
+                selectElement.setAttribute('disabled', 'disabled');
+            });
+    }
+
+    if (municipioSelect) {
+        municipioSelect.addEventListener('change', function() {
+            const municipioId = this.value;
+            postoSelect.innerHTML = '<option value="">{% trans "--- Loading ---" %}</option>';
+            postoSelect.setAttribute('disabled', 'disabled');
+            sucoSelect.innerHTML = '<option value="">{% trans "--- Select Village ---" %}</option>';
+            sucoSelect.setAttribute('disabled', 'disabled');
+            aldeiaSelect.innerHTML = '<option value="">{% trans "--- Select Hamlet ---" %}</option>';
+            aldeiaSelect.setAttribute('disabled', 'disabled');
+
+            if (municipioId) {
+                fetchOptions("{% url 'load_postos' %}?municipio=" + municipioId, postoSelect, '{% trans "--- Select Administrative Post ---" %}');
+            }
+        });
+    }
+
+    if (postoSelect) {
+        postoSelect.addEventListener('change', function() {
+            const postoId = this.value;
+            sucoSelect.innerHTML = '<option value="">{% trans "--- Loading ---" %}</option>';
+            sucoSelect.setAttribute('disabled', 'disabled');
+            aldeiaSelect.innerHTML = '<option value="">{% trans "--- Select Hamlet ---" %}</option>';
+            aldeiaSelect.setAttribute('disabled', 'disabled');
+
+            if (postoId) {
+                fetchOptions("{% url 'load_sucos' %}?posto=" + postoId, sucoSelect, '{% trans "--- Select Village ---" %}');
+            }
+        });
+    }
+
+    if (sucoSelect) {
+        sucoSelect.addEventListener('change', function() {
+            const sucoId = this.value;
+            aldeiaSelect.innerHTML = '<option value="">{% trans "--- Loading ---" %}</option>';
+            aldeiaSelect.setAttribute('disabled', 'disabled');
+
+            if (sucoId) {
+                fetchOptions("{% url 'load_aldeias' %}?suco=" + sucoId, aldeiaSelect, '{% trans "--- Select Hamlet ---" %}');
+            }
+        });
+    }
+
+    // --- Duplicate Check Logic ---
+    const nameInput = document.getElementById('id_full_name');
+    const dobInput = document.getElementById('id_dob');
+    const warningDiv = document.getElementById('duplicate-warning');
+    const duplicateList = document.getElementById('duplicate-list');
+
+    function checkDuplicates() {
+        if (!nameInput || !dobInput || !warningDiv) return;
+        const name = nameInput.value.trim();
+        const dob = dobInput.value;
+
+        if (name.length > 3 && dob) {
+            const url = `{% url 'api_check_duplicates' %}?name=${encodeURIComponent(name)}&dob=${dob}`;
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.duplicates && data.duplicates.length > 0) {
+                        warningDiv.classList.remove('d-none');
+                        duplicateList.innerHTML = '';
+                        data.duplicates.forEach(p => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `<strong>${p.name}</strong> (${p.dob}) - <span class="text-danger">${p.reason}</span>`;
+                            duplicateList.appendChild(li);
+                        });
+                    } else {
+                        warningDiv.classList.add('d-none');
+                    }
+                });
+        } else {
+            warningDiv.classList.add('d-none');
+        }
+    }
+
+    if (nameInput) nameInput.addEventListener('blur', checkDuplicates);
+    if (dobInput) dobInput.addEventListener('change', checkDuplicates);
+
+    // Initial state
+    updateCategory('ANA_0_6');
+});
+</script>
+{% endblock %}

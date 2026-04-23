@@ -1,0 +1,417 @@
+{% load i18n %}
+{% load vitals_tags %}
+
+<div class="p-2">
+    <div class="row mb-3">
+        <div class="col-md-4 border-end">
+            <h6 class="text-muted text-uppercase small fw-bold">{% trans "Visit Date" %}</h6>
+            <p class="mb-0 fw-bold">{{ visit.visit_date|date:"d M Y" }} | {{ visit.visit_date|time:"H:i" }}</p>
+        </div>
+        <div class="col-md-4 border-end ps-md-3">
+            <h6 class="text-muted text-uppercase small fw-bold">{% trans "Doctor" %}</h6>
+            <p class="mb-0 fw-bold">{{ visit.doctor.get_full_name|default:"-" }}</p>
+        </div>
+        <div class="col-md-4 ps-md-3">
+            <h6 class="text-muted text-uppercase small fw-bold">{% trans "Department / Room" %}</h6>
+            {% if visit.current_room.code == 'HIV' %}
+                <span class="badge bg-danger"><i class="bi bi-shield-plus me-1"></i> HIV / AIDS</span>
+            {% else %}
+                <p class="mb-0 fw-bold text-primary">{{ visit.current_room.name|default:"-" }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if visit|can_view_medical_data:request.user %}
+    <div class="mb-4 bg-light p-3 rounded position-relative">
+        {% if visit.triage_level %}
+        <div class="position-absolute top-0 end-0 m-2">
+            {% if visit.triage_level == 'RED' %}
+                <span class="badge bg-danger">RED TRIAGE</span>
+            {% elif visit.triage_level == 'YELLOW' %}
+                <span class="badge bg-warning text-dark">YELLOW TRIAGE</span>
+            {% elif visit.triage_level == 'GREEN' %}
+                <span class="badge bg-success">GREEN TRIAGE</span>
+            {% elif visit.triage_level == 'BLACK' %}
+                <span class="badge bg-dark">BLACK TRIAGE</span>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <h6 class="fw-bold"><i class="bi bi-chat-left-text me-2"></i>{% trans "Chief Complaint" %}</h6>
+        <p class="mb-0">{{ visit.complaint|default:"-" }}</p>
+        
+        {% if visit.arrival_mode %}
+        <div class="mt-2 pt-2 border-top small">
+            <strong>{% trans "Arrival" %}:</strong> {{ visit.get_arrival_mode_display }}
+            {% if visit.brought_by_name %} | <strong>{% trans "Brought By" %}:</strong> {{ visit.brought_by_name }}{% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="mb-4">
+        <h6 class="fw-bold mb-2"><i class="bi bi-activity me-2"></i>{% trans "Vital Signs" %}</h6>
+        <div class="row g-2">
+            <div class="col-4">
+                <div class="border rounded p-1 text-center bg-white">
+                    <small class="text-muted d-block small">{% trans "BP" %}</small>
+                    <span class="fw-bold">{{ visit.bp_sys|default:"-" }}/{{ visit.bp_dia|default:"-" }}</span>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="border rounded p-1 text-center bg-white">
+                    <small class="text-muted d-block small">{% trans "SPO2" %}</small>
+                    <span class="fw-bold">{{ visit.spo2|default:"-" }}%</span>
+                </div>
+            </div>
+            <div class="col-2">
+                <div class="border rounded p-1 text-center bg-white">
+                    <small class="text-muted d-block small">{% trans "Temp" %}</small>
+                    <span class="fw-bold">{{ visit.temp|default:"-" }}°C</span>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="border rounded p-1 text-center bg-white">
+                    <small class="text-muted d-block small">{% trans "Weight" %}</small>
+                    <span class="fw-bold">{{ visit.weight|default:"-" }}kg</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <h6 class="fw-bold"><i class="bi bi-journal-medical me-2"></i>{% trans "Diagnosis & Clinical Notes" %}</h6>
+        <div class="border rounded p-3 bg-white">
+            <p class="fw-bold text-primary mb-1">{% trans "Diagnosis" %}: {{ visit.diagnosis|default:"-" }}</p>
+            <div class="text-dark small" style="white-space: pre-wrap;">{{ visit.clinical_notes|default:"-" }}</div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-secondary text-center p-4 my-4 border-0 shadow-sm" style="background: #f8f9fa;">
+        <i class="bi bi-shield-lock text-danger fs-1 d-block mb-3"></i>
+        <h5 class="fw-bold text-dark mb-1">{% trans "Restricted Clinical Content" %}</h5>
+        <p class="text-muted small mb-0">{% trans "This patient's medical history is only accessible to authorized HIV/AIDS department staff." %}</p>
+        <div class="mt-3">
+            <span class="badge bg-danger rounded-pill px-3 py-2">
+                <i class="bi bi-eye-slash-fill me-1"></i> [RESTRICTED]
+            </span>
+        </div>
+    </div>
+    {% endif %}
+    <!-- Emergency Logs -->
+    {% if visit.observations.exists or visit.emergency_medications.exists %}
+    <div class="mb-4">
+        <h6 class="fw-bold text-danger"><i class="bi bi-heart-pulse-fill me-2"></i>{% trans "Emergency Clinical Logs" %}</h6>
+        
+        {% if visit.observations.exists %}
+        <div class="border rounded p-2 bg-white small mb-3">
+            <h6 class="fw-bold mb-2">{% trans "Observations Log" %}</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-0" style="font-size: 0.75rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th>{% trans "Time" %}</th>
+                            <th class="text-center">{% trans "BP" %}</th>
+                            <th class="text-center">{% trans "SPO2" %}</th>
+                            <th class="text-center">{% trans "Pulse" %}</th>
+                            <th class="text-center">{% trans "Temp" %}</th>
+                            <th>{% trans "Notes" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for obs in visit.observations.all %}
+                        <tr>
+                            <td>{{ obs.check_time|date:"H:i" }}</td>
+                            <td class="text-center">{{ obs.bp_sys|default:"-" }}/{{ obs.bp_dia|default:"-" }}</td>
+                            <td class="text-center">{{ obs.spo2|default:"-" }}%</td>
+                            <td class="text-center">{{ obs.pulse|default:"-" }}</td>
+                            <td class="text-center">{{ obs.temp|default:"-" }}°C</td>
+                            <td>{{ obs.clinical_notes|truncatechars:30 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if visit.emergency_medications.exists %}
+        <div class="border rounded p-2 bg-white small">
+            <h6 class="fw-bold mb-2">{% trans "Emergency Medications" %}</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-0" style="font-size: 0.75rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th>{% trans "Time" %}</th>
+                            <th>{% trans "Medicine" %}</th>
+                            <th class="text-center">{% trans "Qty" %}</th>
+                            <th>{% trans "Dosage" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for med in visit.emergency_medications.all %}
+                        <tr>
+                            <td>{{ med.given_at|date:"H:i" }}</td>
+                            <td class="fw-bold">{{ med.medicine.name }} ({{ med.get_admin_type_display }})</td>
+                            <td class="text-center">{{ med.quantity }}</td>
+                            <td>{{ med.dosage_instruction }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if visit.discharge_condition %}
+        <div class="mt-2 text-dark small alert alert-secondary p-2 mb-0 border">
+            <strong>{% trans "Discharged As" %}:</strong> {{ visit.get_discharge_condition_display }} 
+            {% if visit.discharge_datetime %}({{ visit.discharge_datetime|date:"d M H:i" }}){% endif %}
+            {% if visit.outcome_notes %}<br><strong>{% trans "Notes" %}:</strong> {{ visit.outcome_notes }}{% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Laboratory -->
+    {% with lab_req=visit.lab_request %}
+    {% if lab_req %}
+    <div class="mb-3">
+        <h6 class="fw-bold text-primary"><i class="bi bi-eyedropper me-2"></i>{% trans "Laboratory" %}
+            {% if lab_req.status == 'COMPLETED' %}<span class="badge bg-success ms-2">{% trans "Completed" %}</span>
+            {% elif lab_req.status == 'IN_PROGRESS' %}<span class="badge bg-warning text-dark ms-2">{% trans "In Progress" %}</span>
+            {% elif lab_req.status == 'SAMPLE_COLLECTED' %}<span class="badge bg-info text-dark ms-2">{% trans "Sample Collected" %}</span>
+            {% else %}<span class="badge bg-secondary ms-2">{% trans "Pending" %}</span>{% endif %}
+        </h6>
+        <div class="border rounded p-2 bg-white small">
+            <div class="mb-1"><strong>{% trans "Tests" %}:</strong>
+                {% for test in lab_req.tests.all %}
+                    <span class="badge bg-primary me-1">{{ test.name }}</span>
+                {% empty %}-{% endfor %}
+            </div>
+            {% if lab_req.urgency == 'URGENT' %}<div class="mb-1"><span class="badge bg-danger">URGENT</span></div>{% endif %}
+            {% if lab_req.status == 'COMPLETED' %}
+                {% with result=lab_req.result %}
+                {% if result %}
+                <div class="mt-2 p-2 bg-light rounded">
+                    <strong>{% trans "Result" %}:</strong><br>
+                    {% if visit.cbc_structured_list %}
+                        <div class="table-responsive mt-1">
+                            <table class="table table-sm table-bordered bg-white mb-2" style="font-size: 0.75rem;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>{% trans "CBC Param" %}</th>
+                                        <th class="text-center">{% trans "Value" %}</th>
+                                        <th class="text-center">{% trans "Range" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in visit.cbc_structured_list %}
+                                    <tr>
+                                        <td class="fw-bold">{{ item.param }}</td>
+                                        <td class="text-center fw-bold text-primary">{{ item.value|default:"-" }}</td>
+                                        <td class="text-center text-muted small">{{ item.range }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+
+                    {% if visit.lab_categorized_results %}
+                        {% for cat, data in visit.lab_categorized_results.items %}
+                            <div class="mb-2 mt-1">
+                                <div class="bg-secondary text-white px-2 py-0 rounded-top" style="font-size: 0.65rem; font-weight: bold;">{{ cat|upper }}</div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered bg-white mb-0" style="font-size: 0.7rem;">
+                                        {% if cat|lower == 'biochemistry' %}
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Tests</th>
+                                                <th class="text-center">Result</th>
+                                                <th class="text-center">Unit</th>
+                                                <th class="text-center">Range</th>
+                                                <th class="text-center">Rem</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for item in data %}
+                                            <tr>
+                                                <td class="fw-bold">{{ item.name }}</td>
+                                                <td class="text-center fw-bold text-primary">{{ item.value }}</td>
+                                                <td class="text-center"><small>{{ item.unit }}</small></td>
+                                                <td class="text-center text-muted small">{{ item.range }}</td>
+                                                <td class="text-center fw-bold text-danger">{{ item.remark }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                        {% else %}
+                                        <tbody>
+                                            {% for item in data %}
+                                            <tr>
+                                                <td style="width: 50%;">{{ item.name }}</td>
+                                                <td class="text-center fw-bold text-dark">{{ item.value }}</td>
+                                                <td class="text-muted small text-end">{{ item.range }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                        {% endif %}
+
+                                    </table>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    {% if not visit.cbc_structured_list and not visit.lab_categorized_results %}
+                    <div class="alert alert-warning py-2 small mb-2">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        {% trans "Lab marked as Completed but no numeric results were entered. See attachments below if any." %}
+                    </div>
+                    {% endif %}
+
+                    {% if result.result_text %}<div style="white-space: pre-wrap;">{{ result.result_text }}</div>{% endif %}
+                    {% if result.notes %}<div class="mt-1 text-muted"><strong>{% trans "Notes" %}:</strong> {{ result.notes }}</div>{% endif %}
+
+                    {% comment %} Always show attachments (PDF scans, images) {% endcomment %}
+                    {% if result.attachment %}
+                    <div class="mt-2">
+                        <a href="{{ result.attachment.url }}" target="_blank" class="btn btn-sm btn-outline-primary py-1 px-2">
+                            <i class="bi bi-paperclip me-1"></i>{% trans "Main Attachment (PDF/Image)" %}
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% for att in result.attachments.all %}
+                    <div class="mt-1">
+                        <a href="{{ att.file.url }}" target="_blank" class="btn btn-sm btn-outline-info py-0 px-2">
+                            <i class="bi bi-image me-1"></i>{% trans "Attachment" %} #{{ forloop.counter }}{% if att.description %} — {{ att.description }}{% endif %}
+                        </a>
+                    </div>
+                    {% endfor %}
+
+                    <div class="text-muted mt-2" style="font-size:11px;">{% trans "Verified by" %}: {{ result.verified_by.get_full_name|default:result.verified_by.username }} | {{ result.completed_at|date:"d M Y H:i" }}</div>
+                </div>
+                {% else %}
+                <div class="mt-2 alert alert-warning py-2 small"><i class="bi bi-exclamation-triangle me-1"></i>{% trans "Status: Completed, but no result record found." %}</div>
+                {% endif %}
+                {% endwith %}
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Radiology -->
+    {% with rad_req=visit.radiology_request %}
+    {% if rad_req %}
+    <div class="mb-3">
+        <h6 class="fw-bold text-warning"><i class="bi bi-heart-pulse me-2"></i>{% trans "Radiology" %}
+            {% if rad_req.status == 'COMPLETED' %}<span class="badge bg-success ms-2">{% trans "Completed" %}</span>
+            {% elif rad_req.status == 'IN_PROGRESS' %}<span class="badge bg-warning text-dark ms-2">{% trans "In Progress" %}</span>
+            {% else %}<span class="badge bg-secondary ms-2">{% trans "Pending" %}</span>{% endif %}
+        </h6>
+        <div class="border rounded p-2 bg-white small">
+            <div class="mb-1"><strong>{% trans "Tests" %}:</strong>
+                {% for test in rad_req.tests.all %}
+                    <span class="badge bg-secondary me-1">{{ test.name }}</span>
+                {% empty %}-{% endfor %}
+            </div>
+            {% if rad_req.status == 'COMPLETED' %}
+                {% with result=rad_req.result %}
+                {% if result %}
+                <div class="mt-2 p-2 bg-light rounded">
+                    <strong>{% trans "Findings" %}:</strong><br>
+                    <div style="white-space: pre-wrap;">{{ result.findings|default:"-" }}</div>
+                    {% if result.impression %}<div class="mt-1"><strong>{% trans "Impression" %}:</strong><br><div style="white-space: pre-wrap;">{{ result.impression }}</div></div>{% endif %}
+                    {% if result.notes %}<div class="mt-1 text-muted"><strong>{% trans "Notes" %}:</strong> {{ result.notes }}</div>{% endif %}
+                    {% if result.attachment %}<div class="mt-1"><a href="{{ result.attachment.url }}" target="_blank"><i class="bi bi-paperclip me-1"></i>{% trans "Attachment" %}</a></div>{% endif %}
+                    <div class="text-muted mt-1" style="font-size:11px;">{% trans "Verified by" %}: {{ result.verified_by.get_full_name|default:result.verified_by.username }} | {{ result.completed_at|date:"d M Y H:i" }}</div>
+                </div>
+                {% endif %}
+                {% endwith %}
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Pathology -->
+    {% with patho_req=visit.pathology_request %}
+    {% if patho_req %}
+    <div class="mb-3">
+        <h6 class="fw-bold text-info"><i class="bi bi-droplet-half me-2"></i>{% trans "Pathology" %}
+            {% if patho_req.status == 'COMPLETED' %}<span class="badge bg-success ms-2">{% trans "Completed" %}</span>
+            {% elif patho_req.status == 'IN_PROGRESS' %}<span class="badge bg-warning text-dark ms-2">{% trans "In Progress" %}</span>
+            {% elif patho_req.status == 'SAMPLE_COLLECTED' %}<span class="badge bg-info text-dark ms-2">{% trans "Sample Collected" %}</span>
+            {% else %}<span class="badge bg-secondary ms-2">{% trans "Pending" %}</span>{% endif %}
+        </h6>
+        <div class="border rounded p-2 bg-white small">
+            <div class="mb-1"><strong>{% trans "Tests" %}:</strong>
+                {% for test in patho_req.tests.all %}
+                    <span class="badge bg-info text-dark me-1">{{ test.name }}</span>
+                {% empty %}-{% endfor %}
+            </div>
+            {% if patho_req.clinica_history %}<div class="mb-1"><strong>{% trans "Clinical History" %}:</strong> {{ patho_req.clinica_history }}</div>{% endif %}
+            {% if patho_req.status == 'COMPLETED' %}
+                {% with result=patho_req.result %}
+                {% if result %}
+                <div class="mt-2 p-2 bg-light rounded">
+                    <strong>{% trans "Result" %}:</strong><br>
+                    <div style="white-space: pre-wrap;">{{ result.result_text|default:"-" }}</div>
+                    {% if result.notes %}<div class="mt-1 text-muted"><strong>{% trans "Notes" %}:</strong> {{ result.notes }}</div>{% endif %}
+                    {% if result.attachment %}<div class="mt-1"><a href="{{ result.attachment.url }}" target="_blank"><i class="bi bi-paperclip me-1"></i>{% trans "Attachment" %}</a></div>{% endif %}
+                    <div class="text-muted mt-1" style="font-size:11px;">{% trans "Verified by" %}: {{ result.verified_by.get_full_name|default:result.verified_by.username }} | {{ result.completed_at|date:"d M Y H:i" }}</div>
+                </div>
+                {% endif %}
+                {% endwith %}
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Pharmacy / Prescription -->
+    {% with rx=visit.prescription %}
+    {% if rx %}
+    <div class="mb-3">
+        <h6 class="fw-bold text-success"><i class="bi bi-capsule-pill me-2"></i>{% trans "Pharmacy / Prescription" %}
+            {% if rx.dispensing_status == 'COLLECTED' %}<span class="badge bg-success ms-2">{% trans "Collected" %}</span>
+            {% elif rx.dispensing_status == 'DISPENSED' %}<span class="badge bg-primary ms-2">{% trans "Dispensed" %}</span>
+            {% elif rx.dispensing_status == 'DISPENSING' %}<span class="badge bg-warning text-dark ms-2">{% trans "Dispensing" %}</span>
+            {% else %}<span class="badge bg-secondary ms-2">{% trans "Pending" %}</span>{% endif %}
+        </h6>
+        <div class="border rounded p-2 bg-white small">
+            {% if rx.has_allergy == 'IHA' %}
+            <div class="mb-1"><span class="badge bg-danger">{% trans "Allergy" %}: {{ rx.allergy_medicine }}</span></div>
+            {% endif %}
+            <div class="mb-1"><strong>{% trans "Doctor" %}:</strong> {{ rx.doctor.get_full_name|default:rx.doctor.username }}</div>
+            <div class="p-2 bg-light rounded" style="white-space: pre-wrap; font-family: 'Courier New', monospace;">{{ rx.prescription_text }}</div>
+            {% if rx.dispensed_items.all %}
+            <div class="mt-2">
+                <strong>{% trans "Medicines Given" %}:</strong>
+                <table class="table table-sm table-bordered mt-1 mb-0" style="font-size:12px;">
+                    <thead class="table-light">
+                        <tr><th>{% trans "Medicine" %}</th><th>{% trans "Qty" %}</th><th>{% trans "Dosage" %}</th></tr>
+                    </thead>
+                    <tbody>
+                    {% for item in rx.dispensed_items.all %}
+                        <tr>
+                            <td>{{ item.medicine.name }}</td>
+                            <td><strong>{{ item.quantity }}</strong> {{ item.medicine.get_unit_display }}</td>
+                            <td>{{ item.dosage_instructions|default:"-" }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+            {% if rx.dispensing_notes %}
+            <div class="mt-2 text-muted"><strong>{% trans "Dispensing Notes" %}:</strong> {{ rx.dispensing_notes }}</div>
+            {% endif %}
+            {% if rx.dispensed_at %}
+            <div class="text-muted mt-1" style="font-size:11px;">{% trans "Dispensed by" %}: {{ rx.dispensed_by.get_full_name|default:rx.dispensed_by.username }} | {{ rx.dispensed_at|date:"d M Y H:i" }}</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+</div>

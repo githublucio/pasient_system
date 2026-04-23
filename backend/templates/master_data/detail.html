@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block title %}{{ title }} - {% trans "Clinic Lanud" %}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{% url 'master_data_dashboard' %}">{% trans "Master Data" %}</a></li>
+    <li class="breadcrumb-item"><a href="{% url model_name|add:'_list' %}">{{ title|cut:" Detail" }}s</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{% trans "Detail" %}</li>
+  </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="text-primary mb-0"><i class="bi bi-info-circle me-2"></i>{{ title }}</h3>
+                <div>
+                    <a href="{% url model_name|add:'_edit' item.pk %}" class="btn btn-primary">
+                        <i class="bi bi-pencil-square me-1"></i> {% trans "Edit" %}
+                    </a>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <tr>
+                        <th class="bg-light w-25">ID</th>
+                        <td>#{{ item.id }}</td>
+                    </tr>
+                    <tr>
+                        <th class="bg-light">{% trans "Name" %}</th>
+                        <td class="fw-bold">{{ item.name }}</td>
+                    </tr>
+                    
+                    {% if model_name == 'posto' %}
+                    <tr>
+                        <th class="bg-light">{% trans "Municipio" %}</th>
+                        <td>{{ item.municipio.name }}</td>
+                    </tr>
+                    {% endif %}
+
+                    {% if model_name == 'suco' %}
+                    <tr>
+                        <th class="bg-light">{% trans "Posto Administrativo" %}</th>
+                        <td>{{ item.posto.name }} ({{ item.posto.municipio.name }})</td>
+                    </tr>
+                    {% endif %}
+
+                    {% if model_name == 'aldeia' %}
+                    <tr>
+                        <th class="bg-light">{% trans "Suco" %}</th>
+                        <td>{{ item.suco.name }} ({{ item.suco.posto.name }})</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+
+            <div class="mt-4">
+                <a href="{% url model_name|add:'_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-1"></i> {% trans "Back to List" %}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

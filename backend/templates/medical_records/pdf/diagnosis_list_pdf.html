@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+{% load i18n %}
+<html>
+<head>
+    <style>
+        @page {
+            size: A4;
+            margin: 1cm;
+        }
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            color: #333;
+            font-size: 10pt;
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #5d2d91;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .logo {
+            width: 80px;
+            height: auto;
+        }
+        .clinic-name {
+            font-size: 18pt;
+            font-weight: bold;
+            color: #5d2d91;
+            margin: 5px 0;
+        }
+        .report-title {
+            font-size: 14pt;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        .meta {
+            font-size: 9pt;
+            color: #666;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th {
+            background-color: #f2f2f2;
+            border-bottom: 1px solid #333;
+            text-align: left;
+            padding: 8px;
+            font-weight: bold;
+        }
+        td {
+            border-bottom: 1px solid #eee;
+            padding: 8px;
+        }
+        .parent-code {
+            color: #888;
+            font-size: 9pt;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 8pt;
+            color: #aaa;
+            border-top: 1px solid #eee;
+            padding-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img src="media/Logo.png" class="logo">
+        <div class="clinic-name">{{ clinic_name }}</div>
+        <div class="report-title">{% trans "List of Diagnoses" %}</div>
+    </div>
+
+    <div class="meta">
+        {% trans "Generated on" %}: {{ today|date:"d M Y H:i" }}<br>
+        {% if query %}{% trans "Filtered by" %}: "{{ query }}"{% endif %}
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 15%;">{% trans "Code" %}</th>
+                <th>{% trans "Description" %}</th>
+                <th style="width: 15%;">{% trans "Parent" %}</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td><strong>{{ item.code }}</strong></td>
+                <td>{{ item.name }}</td>
+                <td><span class="parent-code">{{ item.parent.code|default:"-" }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        {% trans "Page" %} <pdf:pagenumber/> {% trans "of" %} <pdf:pagecount/>
+    </div>
+</body>
+</html>

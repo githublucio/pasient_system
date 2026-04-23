@@ -1,0 +1,94 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "Login" %} - {% trans "Bairo Pite CMS" %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        :root { --primary: #1a6b3c; }
+        body {
+            min-height: 100vh;
+            background: url('https://images.unsplash.com/photo-1631815588090-d4bfec5b1ccb?w=1920&q=80') no-repeat center center fixed;
+            background-size: cover;
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+        }
+        body::before {
+            content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 50, 25, 0.6);
+            z-index: 0;
+        }
+        .login-card { position: relative; z-index: 1; }
+        .login-card {
+            width: 100%; max-width: 420px;
+            background: white; border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .login-header {
+            background: var(--primary); padding: 2rem;
+            text-align: center; color: white;
+        }
+        .login-body { padding: 2rem; }
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 0.2rem rgba(93,45,145,0.25); }
+        .btn-login {
+            background: var(--primary); border-color: var(--primary);
+            color: white; width: 100%; padding: .75rem;
+            font-size: 1rem; font-weight: 600; border-radius: 8px;
+            transition: all .2s;
+        }
+        .btn-login:hover { background: #145230; border-color: #145230; color: white; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-header">
+            <img src="/media/Logo.png" alt="Logo" width="80" height="80" class="mb-3 rounded-circle bg-white p-2">
+            <h4 class="fw-bold mb-1">{% trans "Bairo Pite CMS" %}</h4>
+            <p class="mb-0 opacity-75 small">{% trans "Clinic Management System" %}</p>
+        </div>
+        <div class="login-body">
+            {% if form.errors %}
+            <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                {% trans "Invalid username or password. Please try again." %}
+            </div>
+            {% endif %}
+
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ next }}">
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">{% trans "Username" %}</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                        <input type="text" name="username" autofocus required
+                               class="form-control form-control-lg" placeholder="{% trans 'Enter username' %}">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">{% trans "Password" %}</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                        <input type="password" name="password" required
+                               class="form-control form-control-lg" placeholder="{% trans 'Enter password' %}">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-login">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>{% trans "Sign In" %}
+                </button>
+            </form>
+        </div>
+        <div class="text-center pb-3 text-muted small">
+            {% trans "Bairo Pite CMS" %} &copy; {% now "Y" %}
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

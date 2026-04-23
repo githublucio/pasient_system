@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold mb-0"><i class="bi bi-capsule text-success me-2"></i>{{ title }}</h3>
+            <a href="{% url 'medicine_list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>{% trans "Back" %}
+            </a>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{% trans "Medicine Name" %} *</label>
+                        <input type="text" name="name" class="form-control" value="{{ medicine.name|default:'' }}" required placeholder="e.g. Amoxicillin, Paracetamol">
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{% trans "Strength / Dosage" %}</label>
+                            <input type="text" name="strength" class="form-control" value="{{ medicine.strength|default:'' }}" placeholder="e.g. 500mg, 250mg, 125mg/5ml">
+                            <small class="text-muted">{% trans "This differentiates variants of the same medicine" %}</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{% trans "Form / Sediaan" %} *</label>
+                            <select name="form" class="form-select">
+                                {% for val, label in form_choices %}
+                                <option value="{{ val }}" {% if medicine.form == val %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-bold">{% trans "Code" %}</label>
+                            <input type="text" name="code" class="form-control" value="{{ medicine.code|default:'' }}" placeholder="e.g. MED001">
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{% trans "Unit (Packaging)" %} *</label>
+                            <select name="unit" class="form-select">
+                                {% for val, label in unit_choices %}
+                                <option value="{{ val }}" {% if medicine.unit == val %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">{% trans "How you count stock (per tablet, per bottle, etc.)" %}</small>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{% trans "Minimum Stock Alert" %}</label>
+                            <input type="number" name="min_stock" class="form-control" min="0" value="{{ medicine.min_stock|default:10 }}">
+                        </div>
+                        <div class="col-md-6">
+                            {% if medicine %}
+                            <label class="form-label fw-bold">{% trans "Current Stock" %}</label>
+                            <input type="text" class="form-control" value="{{ medicine.stock }}" disabled>
+                            <small class="text-muted">{% trans "Stock is managed through Stock Entries" %}</small>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{% trans "Description" %}</label>
+                        <textarea name="description" class="form-control" rows="3">{{ medicine.description|default:'' }}</textarea>
+                    </div>
+
+                    {% if medicine %}
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="is_active" id="is_active" {% if medicine.is_active %}checked{% endif %}>
+                            <label class="form-check-label fw-bold" for="is_active">{% trans "Active" %}</label>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'medicine_list' %}" class="btn btn-outline-secondary">{% trans "Cancel" %}</a>
+                        <button type="submit" class="btn btn-success px-5">
+                            <i class="bi bi-save me-1"></i>{% trans "Save" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

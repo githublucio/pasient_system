@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Patient Registration" %} - {% trans "Clinic Lanud" %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card p-4">
+            <h2 class="text-center mb-4 text-primary">{% trans "Patient Registration" %}</h2>
+            <form method="post">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label font-weight-bold text-primary">{% trans "Assigned Patient ID" %}</label>
+                        {{ form.patient_id }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label font-weight-bold">{% trans "Patient Category" %}</label>
+                        {{ form.patient_category }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label font-weight-bold">{% trans "Full Name" %}</label>
+                    {{ form.full_name }}
+                </div>
+
+                <div id="nationality-section" class="mb-3 d-none">
+                    <label class="form-label font-weight-bold">{% trans "Nationality" %}</label>
+                    {{ form.nationality }}
+                </div>
+
+                <div id="duplicate-warning" class="alert alert-warning d-none" role="alert">
+                    <h6 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> {% trans "Potential Duplicates Found!" %}</h6>
+                    <ul id="duplicate-list" class="mb-0 small"></ul>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{% trans "Date of Birth" %}</label>
+                        {{ form.date_of_birth }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{% trans "Gender" %}</label>
+                        {{ form.gender }}
+                    </div>
+                </div>
+
+                <h5 class="mt-4 mb-3 text-secondary border-bottom pb-2">{% trans "Official Identification" %}</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{% trans "ID Type" %}</label>
+                        {{ form.id_type }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{% trans "ID Number" %}</label>
+                        {{ form.id_number }}
+                        <small class="text-muted">{% trans "Passport / Eleitoral / BI" %}</small>
+                    </div>
+                </div>
+
+                <div id="parent-info-section">
+                    <h5 class="mt-4 mb-3 text-secondary border-bottom pb-2">{% trans "Parent Information" %}</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% trans "Father Name" %}</label>
+                            {{ form.father_name }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% trans "Mother Name" %}</label>
+                            {{ form.mother_name }}
+                        </div>
+                    </div>
+                </div>
+                <h5 class="mt-4 mb-3 text-secondary border-bottom pb-2">{% trans "Address / Location" %}</h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{% trans "Municipality" %}</label>
+                        {{ form.municipio }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{% trans "Administrative Post" %}</label>
+                        {{ form.posto_administrativo }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{% trans "Village (Suco)" %}</label>
+                        {{ form.suco }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{% trans "Hamlet (Aldeia)" %}</label>
+                        {{ form.aldeia }}
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">{% trans "Additional Address Detail" %}</label>
+                    {{ form.address }}
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">{% trans "Phone Number" %}</label>
+                    {{ form.phone_number }}
+                </div>
+                {% if not is_hiv %}
+                <div class="mb-3">
+                    <label class="form-label">{% trans "Contribution (USD)" %}</label>
+                    {{ form.registration_fee }}
+                </div>
+                {% endif %}
+                <hr>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{% trans "Emergency Contact Name" %}</label>
+                        {{ form.emergency_contact_name }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{% trans "Emergency Contact Phone" %}</label>
+                        {{ form.emergency_contact_phone }}
+                    </div>
+                </div>
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg mt-3">{% trans "Register Patient" %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const municipioSelect = document.getElementById('id_municipio');
+    const postoSelect = document.getElementById('id_posto');
+    const sucoSelect = document.getElementById('id_suco');
+    const aldeiaSelect = document.getElementById('id_aldeia');
+
+    function fetchOptions(url, selectElement, defaultText) {
+        console.log('Fetching:', url);
+        fetch(url)
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json();
+            })
+            .then(data => {
+                console.log('Data received:', data);
+                selectElement.innerHTML = `<option value="">${defaultText}</option>`;
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = item.name;
+                    selectElement.appendChild(option);
+                });
+                selectElement.removeAttribute('disabled');
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                selectElement.innerHTML = `<option value="">--- {% trans "Error loading data" %} ---</option>`;
+                selectElement.setAttribute('disabled', 'disabled');
+            });
+    }
+
+    municipioSelect.addEventListener('change', function() {
+        const municipioId = this.value;
+        console.log('Municipality changed to:', municipioId);
+        
+        postoSelect.innerHTML = '<option value="">{% trans "--- Loading ---" %}</option>';
+        postoSelect.setAttribute('disabled', 'disabled');
+        sucoSelect.innerHTML = '<option value="">{% trans "--- Select Village ---" %}</option>';
+        sucoSelect.setAttribute('disabled', 'disabled');
+        aldeiaSelect.innerHTML = '<option value="">{% trans "--- Select Hamlet ---" %}</option>';
+        aldeiaSelect.setAttribute('disabled', 'disabled');
+
+        if (municipioId) {
+            fetchOptions("{% url 'load_postos' %}?municipio=" + municipioId, postoSelect, '{% trans "--- Select Administrative Post ---" %}');
+        } else {
+            postoSelect.innerHTML = '<option value="">{% trans "--- Select Administrative Post ---" %}</option>';
+        }
+    });
+
+    postoSelect.addEventListener('change', function() {
+        const postoId = this.value;
+        console.log('Administrative Post changed to:', postoId);
+        
+        sucoSelect.innerHTML = '<option value="">{% trans "--- Loading ---" %}</option>';
+        sucoSelect.setAttribute('disabled', 'disabled');
+        aldeiaSelect.innerHTML = '<option value="">{% trans "--- Select Hamlet ---" %}</option>';
+        aldeiaSelect.setAttribute('disabled', 'disabled');
+
+        if (postoId) {
+            fetchOptions("{% url 'load_sucos' %}?posto=" + postoId, sucoSelect, '{% trans "--- Select Village ---" %}');
+        } else {
+            sucoSelect.innerHTML = '<option value="">{% trans "--- Select Village ---" %}</option>';
+        }
+    });
+
+    sucoSelect.addEventListener('change', function() {
+        const sucoId = this.value;
+        console.log('Village changed to:', sucoId);
+        
+        aldeiaSelect.innerHTML = '<option value="">{% trans "--- Loading ---" %}</option>';
+        aldeiaSelect.setAttribute('disabled', 'disabled');
+
+        if (sucoId) {
+            fetchOptions("{% url 'load_aldeias' %}?suco=" + sucoId, aldeiaSelect, '{% trans "--- Select Hamlet ---" %}');
+        } else {
+            aldeiaSelect.innerHTML = '<option value="">{% trans "--- Select Hamlet ---" %}</option>';
+        }
+    });
+
+    // --- Category Logic (Show/Hide Parents) ---
+    const categorySelect = document.getElementById('id_patient_category');
+    const parentSection = document.getElementById('parent-info-section');
+    const nationalitySection = document.getElementById('nationality-section');
+
+    function toggleCategoryFields() {
+        if (categorySelect.value === 'RAI_LIUR') {
+            parentSection.classList.add('d-none');
+            nationalitySection.classList.remove('d-none');
+        } else {
+            parentSection.classList.remove('d-none');
+            nationalitySection.classList.add('d-none');
+        }
+    }
+
+    categorySelect.addEventListener('change', toggleCategoryFields);
+    toggleCategoryFields(); // Initial state
+
+    // --- Duplicate Check Logic ---
+    const nameInput = document.getElementById('id_full_name');
+    const dobInput = document.getElementById('id_dob');
+    const idInput = document.getElementById('id_id_number');
+    const warningDiv = document.getElementById('duplicate-warning');
+    const duplicateList = document.getElementById('duplicate-list');
+
+    function checkDuplicates() {
+        const name = nameInput.value;
+        const dob = dobInput.value;
+        const idNum = idInput.value;
+
+        if ((name.length > 3 && dob) || idNum.length > 4) {
+            const url = `{% url 'api_check_duplicates' %}?name=${encodeURIComponent(name)}&dob=${dob}&id_number=${encodeURIComponent(idNum)}`;
+            fetch(url)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.duplicates && data.duplicates.length > 0) {
+                        warningDiv.classList.remove('d-none');
+                        duplicateList.innerHTML = '';
+                        data.duplicates.forEach(p => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `<strong>${p.name}</strong> (${p.dob}) - <span class="text-danger">${p.reason}</span>`;
+                            duplicateList.appendChild(li);
+                        });
+                    } else {
+                        warningDiv.classList.add('d-none');
+                    }
+                });
+        } else {
+            warningDiv.classList.add('d-none');
+        }
+    }
+
+    [nameInput, dobInput, idInput].forEach(el => {
+        el.addEventListener('blur', checkDuplicates);
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "ER Vitals Input" %} - {{ visit.patient.full_name }}{% endblock %}
+{% block page_title %}{% trans "Emergency Room Triage / Vitals" %}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Patient Banner -->
+            <div class="card border-0 shadow-sm mb-4 bg-primary text-white rounded-4 overflow-hidden">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-circle bg-white bg-opacity-25 p-3 me-3">
+                                <i class="bi bi-person-fill fs-2"></i>
+                            </div>
+                            <div>
+                                <h3 class="fw-bold mb-0">{{ visit.patient.full_name }}</h3>
+                                <p class="mb-0 opacity-75">
+                                    ID: {{ visit.patient.patient_id }} | 
+                                    {{ visit.patient.get_gender_display }}, {{ visit.patient.age }}y | 
+                                    {% trans "Queue" %}: <span class="fw-bold text-white">#{{ visit.queue_number }}</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-white text-primary rounded-pill px-3 py-2 fw-bold shadow-sm">
+                                <i class="bi bi-hospital me-1"></i> {{ visit.current_room.name }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="row g-4">
+                    <!-- Vitals Entry -->
+                    <div class="col-md-7">
+                        <div class="card border-0 shadow-sm rounded-4 h-100">
+                            <div class="card-header bg-white py-3 border-0">
+                                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-heart-pulse text-danger me-2"></i>{% trans "Vital Signs" %}</h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-muted small">{% trans "Blood Pressure (Systolic)" %}</label>
+                                        <div class="input-group input-group-lg">
+                                            {{ form.er_bp_sys }}
+                                            <span class="input-group-text bg-light small">mmHg</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-muted small">{% trans "Blood Pressure (Diastolic)" %}</label>
+                                        <div class="input-group input-group-lg">
+                                            {{ form.er_bp_dia }}
+                                            <span class="input-group-text bg-light small">mmHg</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-muted small">{% trans "Pulse Rate" %}</label>
+                                        <div class="input-group input-group-lg">
+                                            {{ form.er_pulse }}
+                                            <span class="input-group-text bg-light small">bpm</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-muted small">{% trans "Oxygen Saturation (SPO2)" %}</label>
+                                        <div class="input-group input-group-lg">
+                                            {{ form.er_spo2 }}
+                                            <span class="input-group-text bg-light small">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-muted small">{% trans "Respiratory Rate" %}</label>
+                                        <div class="input-group input-group-lg">
+                                            {{ form.er_rr }}
+                                            <span class="input-group-text bg-light small">bpm</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold text-muted small">{% trans "Temperature" %}</label>
+                                        <div class="input-group input-group-lg">
+                                            {{ form.er_temp }}
+                                            <span class="input-group-text bg-light small">°C</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12 mt-4">
+                                        <label class="form-label fw-bold text-muted small">{% trans "Initial Complaint" %}</label>
+                                        {{ form.complaint }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pain Score & Triage Level -->
+                    <div class="col-md-5">
+                        <div class="card border-0 shadow-sm rounded-4 mb-4">
+                            <div class="card-header bg-white py-3 border-0 text-center">
+                                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-emoji-smile text-warning me-2"></i>{% trans "Pain Score (VAS)" %}</h5>
+                            </div>
+                            <div class="card-body p-4 text-center">
+                                <div class="d-flex justify-content-center flex-wrap gap-3 mb-3">
+                                    {% for val, label, icon, color in form.fields.vas_score.choices_data %}
+                                    <div class="vas-option cursor-pointer text-center" data-val="{{ val }}" title="{{ label }}">
+                                        <div class="vas-icon rounded-circle p-2 border mb-2 shadow-sm d-flex align-items-center justify-content-center" 
+                                             style="width: 54px; height: 54px; font-size: 1.8rem;">
+                                            {{ icon|safe }}
+                                        </div>
+                                        <div class="small fw-bold text-muted" style="font-size: 0.65rem;">{{ label }}</div>
+                                        <div class="check-mark text-primary mt-1" style="display: none;"><i class="bi bi-check-circle-fill"></i></div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {{ form.vas_score }}
+                            </div>
+                        </div>
+
+                        <div class="card border-0 shadow-sm rounded-4">
+                            <div class="card-header bg-white py-3 border-0">
+                                <h5 class="card-title mb-0 fw-bold"><i class="bi bi-flag-fill text-primary me-2"></i>{% trans "Queue Management" %}</h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold text-muted small">{% trans "Current Triage Level" %}</label>
+                                    {{ form.triage_level|default:"--" }}
+                                    <p class="small text-muted mt-2 mb-0">{% trans "Assigned at registration. Update if clinical status has changed." %}</p>
+                                </div>
+                                <div class="mb-0">
+                                    <label class="form-label fw-bold text-muted small">{% trans "Direct to Room" %}</label>
+                                    {{ form.current_room }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg rounded-pill shadow fw-bold py-3">
+                                <i class="bi bi-check2-circle me-2"></i>{% trans "Save & Continue" %}
+                            </button>
+                            <a href="{% url 'emergency_triage_dashboard' %}" class="btn btn-outline-secondary rounded-pill fw-bold">
+                                {% trans "Cancel" %}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .cursor-pointer { cursor: pointer; }
+    .vas-icon { transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+    .vas-option:hover .vas-icon { transform: scale(1.1); background-color: var(--bs-light); }
+    .check-mark { font-size: 1.2rem; }
+    .input-group-lg > .form-control { font-weight: 700; color: #1e1e2d; }
+</style>
+
+<script>
+    $(document).ready(function() {
+        // VAS Interactive Logic (matches patient examination pattern)
+        const vasInput = document.getElementById('id_vas_score');
+        const vasOptions = document.querySelectorAll('.vas-option');
+        
+        if (vasInput && vasOptions.length > 0) {
+            vasOptions.forEach(opt => {
+                opt.addEventListener('click', function() {
+                    const val = this.getAttribute('data-val');
+                    vasInput.value = val;
+                    
+                    vasOptions.forEach(o => {
+                        const icon = o.querySelector('.vas-icon');
+                        const check = o.querySelector('.check-mark');
+                        if (icon) {
+                            icon.style.transform = 'scale(1)';
+                            icon.style.borderColor = '#dee2e6';
+                            icon.style.backgroundColor = '#fff';
+                        }
+                        if (check) check.style.display = 'none';
+                    });
+                    
+                    const selectedIcon = this.querySelector('.vas-icon');
+                    const selectedCheck = this.querySelector('.check-mark');
+                    if (selectedIcon) {
+                        selectedIcon.style.transform = 'scale(1.2)';
+                        selectedIcon.style.borderColor = '#0d6efd';
+                        selectedIcon.style.backgroundColor = '#e7f1ff';
+                    }
+                    if (selectedCheck) selectedCheck.style.display = 'block';
+                });
+
+                if (vasInput.value === opt.getAttribute('data-val')) {
+                    opt.click();
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

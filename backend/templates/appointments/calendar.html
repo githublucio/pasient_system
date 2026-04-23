@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Appointments" %}{% endblock %}
+{% block page_title %}{% trans "Appointment Calendar" %}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h3>{{ today_count }}</h3>
+                <small>{% trans "Today" %}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h3>{{ scheduled_count }}</h3>
+                <small>{% trans "Upcoming Scheduled" %}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 d-flex align-items-center justify-content-end">
+        <form method="get" class="d-flex gap-2">
+            <input type="date" name="date" value="{{ filter_date|date:'Y-m-d' }}" class="form-control">
+            <button type="submit" class="btn btn-outline-primary"><i class="bi bi-search"></i></button>
+        </form>
+        <a href="{% url 'appointment_create' %}" class="btn btn-success ms-2">
+            <i class="bi bi-plus-circle me-1"></i>{% trans "New Appointment" %}
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-calendar3 me-2"></i>{% trans "Appointments for" %} {{ filter_date|date:"d M Y" }}</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "Time" %}</th>
+                        <th>{% trans "Patient" %}</th>
+                        <th>{% trans "Department" %}</th>
+                        <th>{% trans "Doctor" %}</th>
+                        <th>{% trans "Reason" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for apt in appointments %}
+                    <tr>
+                        <td><strong>{{ apt.appointment_time|time:"H:i" }}</strong></td>
+                        <td>
+                            <a href="{% url 'patient_dashboard' uuid=apt.patient.uuid %}">
+                                {{ apt.patient.full_name }}
+                            </a>
+                            <br><small class="text-muted">{{ apt.patient.patient_id }}</small>
+                        </td>
+                        <td>{{ apt.department|default:"-" }}</td>
+                        <td>{{ apt.doctor.get_full_name|default:apt.doctor.username|default:"-" }}</td>
+                        <td>{{ apt.reason|truncatewords:10|default:"-" }}</td>
+                        <td>
+                            {% if apt.status == 'SCHEDULED' %}
+                                <span class="badge bg-primary">{{ apt.get_status_display }}</span>
+                            {% elif apt.status == 'CONFIRMED' %}
+                                <span class="badge bg-info">{{ apt.get_status_display }}</span>
+                            {% elif apt.status == 'CHECKED_IN' %}
+                                <span class="badge bg-warning text-dark">{{ apt.get_status_display }}</span>
+                            {% elif apt.status == 'COMPLETED' %}
+                                <span class="badge bg-success">{{ apt.get_status_display }}</span>
+                            {% elif apt.status == 'CANCELLED' %}
+                                <span class="badge bg-danger">{{ apt.get_status_display }}</span>
+                            {% elif apt.status == 'NO_SHOW' %}
+                                <span class="badge bg-secondary">{{ apt.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'appointment_edit' uuid=apt.uuid %}" class="btn btn-outline-primary" title="{% trans 'Edit' %}">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% if apt.status != 'CANCELLED' and apt.status != 'COMPLETED' and apt.status != 'CHECKED_IN' %}
+                                    {% if apt.status == 'SCHEDULED' %}
+                                    <form method="post" action="{% url 'appointment_status_update' uuid=apt.uuid %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" name="status" value="CONFIRMED" class="btn btn-outline-info" title="{% trans 'Confirm' %}">
+                                            <i class="bi bi-check"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                    
+                                    <form method="post" action="{% url 'appointment_check_in_visit' uuid=apt.uuid %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-warning" title="{% trans 'Check-In & Start Visit Today' %}">
+                                            <i class="bi bi-box-arrow-in-right me-1"></i>{% trans "Check-In" %}
+                                        </button>
+                                    </form>
+                                {% endif %}
+
+                                <a href="{% url 'appointment_cancel' uuid=apt.uuid %}" class="btn btn-outline-danger" title="{% trans 'Cancel' %}">
+                                    <i class="bi bi-x-circle"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+                            {% trans "No appointments for this date." %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if upcoming %}
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-clock-history me-2"></i>{% trans "Upcoming Appointments" %}</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>{% trans "Date" %}</th>
+                        <th>{% trans "Time" %}</th>
+                        <th>{% trans "Patient" %}</th>
+                        <th>{% trans "Department" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for apt in upcoming %}
+                    <tr>
+                        <td>{{ apt.appointment_date|date:"d M Y" }}</td>
+                        <td>{{ apt.appointment_time|time:"H:i" }}</td>
+                        <td>{{ apt.patient.full_name }}</td>
+                        <td>{{ apt.department|default:"-" }}</td>
+                        <td>
+                            <span class="badge bg-{% if apt.status == 'SCHEDULED' %}primary{% elif apt.status == 'CONFIRMED' %}info{% endif %}">
+                                {{ apt.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{% url 'appointment_edit' uuid=apt.uuid %}" class="btn btn-outline-primary" title="{% trans 'Edit' %}">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% if apt.status == 'SCHEDULED' or apt.status == 'CONFIRMED' %}
+                                <form method="post" action="{% url 'appointment_check_in_visit' uuid=apt.uuid %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-warning" title="{% trans 'Check-In Today' %}">
+                                        <i class="bi bi-box-arrow-in-right"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

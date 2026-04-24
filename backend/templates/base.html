@@ -321,6 +321,10 @@
                 {% endif %}
                 {% if is_admin or dept == 'NUTRISI' or perms.medical_records.view_menu_specialist_nutrition %}
                 <li><a href="{% url 'doctor_dashboard' %}?room=NUTRISI"><i class="bi bi-egg-fried"></i> {% trans "Specialist: Nutrition" %}</a></li>
+                <li><a href="{% url 'patient_list' %}?nutrition_cat=baby" class="ps-5 small opacity-75"><i class="bi bi-baby-carriage"></i> {% trans "Baby 0-6 Months" %}</a></li>
+                <li><a href="{% url 'patient_list' %}?nutrition_cat=child" class="ps-5 small opacity-75"><i class="bi bi-child-filter"></i> {% trans "Child 6-59 Months" %}</a></li>
+                <li><a href="{% url 'patient_list' %}?nutrition_cat=bumil" class="ps-5 small opacity-75"><i class="bi bi-gender-female"></i> {% trans "Pregnant (Bumil)" %}</a></li>
+                <li><a href="{% url 'patient_list' %}?nutrition_cat=busui" class="ps-5 small opacity-75"><i class="bi bi-heart-pulse"></i> {% trans "Lactating (Busui)" %}</a></li>
                 <li><a href="{% url 'department_completed_list' %}?dept=NUTRISI" class="ps-5 small opacity-75"><i class="bi bi-clock-history"></i> {% trans "Nutrition Visit History" %}</a></li>
                 {% endif %}
                 {% if is_admin or dept == 'USG' or perms.medical_records.view_menu_specialist_usg %}

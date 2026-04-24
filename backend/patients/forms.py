@@ -12,7 +12,7 @@ class PatientRegistrationForm(forms.ModelForm):
             'municipio', 'posto_administrativo', 'suco', 'aldeia',
             'address',
             'phone_number', 'emergency_contact_name', 'emergency_contact_phone',
-            'registration_fee'
+            'registration_fee', 'is_pregnant', 'is_lactating'
         ]
         widgets = {
             'patient_id': forms.TextInput(attrs={'class': 'form-control', 'readonly': 'readonly', 'style': 'background-color: #e9ecef; font-weight: bold;'}),
@@ -32,6 +32,8 @@ class PatientRegistrationForm(forms.ModelForm):
             'registration_fee': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
             'father_name': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_father_name'}),
             'mother_name': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_mother_name'}),
+            'is_pregnant': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_lactating': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
     id_type = forms.ChoiceField(

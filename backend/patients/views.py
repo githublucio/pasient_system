@@ -9,6 +9,7 @@ from django.db.models import Q, Max, ProtectedError
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 import hashlib
+from dateutil.relativedelta import relativedelta
 from .forms import PatientRegistrationForm
 from .models import Patient, Municipio, PostoAdministrativo, Suco, Aldeia, DailyQueue, PatientID
 from medical_records.models import Visit
@@ -334,6 +335,24 @@ class PatientListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             if hasattr(self.request.user, 'staff_profile') and self.request.user.staff_profile.is_hiv_staff:
                 qs = qs.filter(is_hiv_patient=True)
                 
+        # Nutrition Filtering
+        nutrition_cat = self.request.GET.get('nutrition_cat')
+        if nutrition_cat:
+            today = timezone.localdate()
+            if nutrition_cat == 'baby':
+                # 0-6 months (born within last 6 months)
+                limit = today - relativedelta(months=6)
+                qs = qs.filter(date_of_birth__gt=limit)
+            elif nutrition_cat == 'child':
+                # 6-59 months (born between 59 and 6 months ago)
+                upper = today - relativedelta(months=6)
+                lower = today - relativedelta(months=59)
+                qs = qs.filter(date_of_birth__lte=upper, date_of_birth__gte=lower)
+            elif nutrition_cat == 'bumil':
+                qs = qs.filter(is_pregnant=True)
+            elif nutrition_cat == 'busui':
+                qs = qs.filter(is_lactating=True)
+
         return qs.order_by('-created_at')
 
     def get_context_data(self, **kwargs):

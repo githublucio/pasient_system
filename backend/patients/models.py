@@ -204,6 +204,8 @@ class Patient(models.Model):
 
     is_hiv_patient = models.BooleanField(_('Is HIV Patient'), default=False, db_index=True)
     is_tb_patient = models.BooleanField(_('Is TB Patient'), default=False, db_index=True)
+    is_pregnant = models.BooleanField(_('Is Pregnant'), default=False, db_index=True)
+    is_lactating = models.BooleanField(_('Is Lactating'), default=False, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

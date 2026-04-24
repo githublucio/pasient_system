@@ -304,28 +304,28 @@
             {% if perms.medical_records.view_menu_specialist_kia or perms.medical_records.view_menu_specialist_hiv or perms.medical_records.view_menu_specialist_tb or perms.medical_records.view_menu_specialist_dental or perms.medical_records.view_menu_specialist_nutrition or is_admin %}
                 {% if is_admin or dept == 'KIA' or perms.medical_records.view_menu_specialist_kia %}
                 <li><a href="{% url 'doctor_dashboard' %}?room=KIA"><i class="bi bi-gender-female"></i> {% trans "Specialist: MCH" %}</a></li>
-                <li><a href="{% url 'department_completed_list' %}?dept=KIA" class="ps-5 small text-muted"><i class="bi bi-clock-history"></i> {% trans "MCH Visit History" %}</a></li>
+                <li><a href="{% url 'department_completed_list' %}?dept=KIA" class="ps-5 small opacity-75"><i class="bi bi-clock-history"></i> {% trans "MCH Visit History" %}</a></li>
                 {% endif %}
                 {% if is_admin or dept == 'HIV' or perms.medical_records.view_menu_specialist_hiv %}
                 <li><a href="{% url 'doctor_dashboard' %}?room=HIV"><i class="bi bi-virus"></i> {% trans "Specialist: HIV / AIDS" %}</a></li>
                 <li><a href="{% url 'hiv_appointment_calendar' %}" class="ps-5 small" style="color: #d63a5a;"><i class="bi bi-calendar-heart"></i> {% trans "HIV Appointments" %}</a></li>
-                <li><a href="{% url 'department_completed_list' %}?dept=HIV" class="ps-5 small text-muted"><i class="bi bi-clock-history"></i> {% trans "HIV Visit History" %}</a></li>
+                <li><a href="{% url 'department_completed_list' %}?dept=HIV" class="ps-5 small opacity-75"><i class="bi bi-clock-history"></i> {% trans "HIV Visit History" %}</a></li>
                 {% endif %}
                 {% if is_admin or dept == 'TB' or perms.medical_records.view_menu_specialist_tb %}
                 <li><a href="{% url 'doctor_dashboard' %}?room=TB"><i class="bi bi-lungs"></i> {% trans "Specialist: TB" %}</a></li>
-                <li><a href="{% url 'department_completed_list' %}?dept=TB" class="ps-5 small text-muted"><i class="bi bi-clock-history"></i> {% trans "TB Visit History" %}</a></li>
+                <li><a href="{% url 'department_completed_list' %}?dept=TB" class="ps-5 small opacity-75"><i class="bi bi-clock-history"></i> {% trans "TB Visit History" %}</a></li>
                 {% endif %}
                 {% if is_admin or dept == 'DENTAL' or perms.medical_records.view_menu_specialist_dental %}
                 <li><a href="{% url 'doctor_dashboard' %}?room=DENTAL"><i class="bi bi-emoji-smile"></i> {% trans "Specialist: Dental" %}</a></li>
-                <li><a href="{% url 'department_completed_list' %}?dept=DENTAL" class="ps-5 small text-muted"><i class="bi bi-clock-history"></i> {% trans "Dental Visit History" %}</a></li>
+                <li><a href="{% url 'department_completed_list' %}?dept=DENTAL" class="ps-5 small opacity-75"><i class="bi bi-clock-history"></i> {% trans "Dental Visit History" %}</a></li>
                 {% endif %}
                 {% if is_admin or dept == 'NUTRISI' or perms.medical_records.view_menu_specialist_nutrition %}
                 <li><a href="{% url 'doctor_dashboard' %}?room=NUTRISI"><i class="bi bi-egg-fried"></i> {% trans "Specialist: Nutrition" %}</a></li>
-                <li><a href="{% url 'department_completed_list' %}?dept=NUTRISI" class="ps-5 small text-muted"><i class="bi bi-clock-history"></i> {% trans "Nutrition Visit History" %}</a></li>
+                <li><a href="{% url 'department_completed_list' %}?dept=NUTRISI" class="ps-5 small opacity-75"><i class="bi bi-clock-history"></i> {% trans "Nutrition Visit History" %}</a></li>
                 {% endif %}
                 {% if is_admin or dept == 'USG' or perms.medical_records.view_menu_specialist_usg %}
                 <li><a href="{% url 'doctor_dashboard' %}?room=USG"><i class="bi bi-broadcast-pin"></i> {% trans "Specialist: USG" %}</a></li>
-                <li><a href="{% url 'department_completed_list' %}?dept=USG" class="ps-5 small text-muted"><i class="bi bi-clock-history"></i> {% trans "USG Visit History" %}</a></li>
+                <li><a href="{% url 'department_completed_list' %}?dept=USG" class="ps-5 small opacity-75"><i class="bi bi-clock-history"></i> {% trans "USG Visit History" %}</a></li>
                 {% endif %}
             {% endif %}
         </ul>

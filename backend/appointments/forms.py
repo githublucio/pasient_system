@@ -1,4 +1,5 @@
 from django import forms
+from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 from .models import Appointment
@@ -13,9 +14,12 @@ class AppointmentForm(forms.ModelForm):
             'reason', 'notes',
         ]
         widgets = {
-            'patient': forms.Select(attrs={'class': 'form-select'}),
-            'department': forms.Select(attrs={'class': 'form-select'}),
-            'doctor': forms.Select(attrs={'class': 'form-select'}),
+            'patient': forms.Select(attrs={
+                'class': 'form-select select2-ajax-patients',
+                'data-ajax-url': reverse_lazy('api_patient_search')
+            }),
+            'department': forms.Select(attrs={'class': 'form-select select2-basic'}),
+            'doctor': forms.Select(attrs={'class': 'form-select select2-basic'}),
             'appointment_date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'appointment_time': forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'}),
             'reason': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),

@@ -58,6 +58,15 @@ class Appointment(models.Model):
     created_at = models.DateTimeField(_('Created At'), auto_now_add=True)
     updated_at = models.DateTimeField(_('Updated At'), auto_now=True)
     cancelled_reason = models.TextField(_('Cancellation Reason'), blank=True, null=True)
+    
+    @property
+    def is_late(self):
+        """Checks if the appointment is in the past but not yet checked-in/completed."""
+        if self.status in ['SCHEDULED', 'CONFIRMED']:
+            now = timezone.localtime()
+            apt_datetime = timezone.make_aware(timezone.datetime.combine(self.appointment_date, self.appointment_time))
+            return now > apt_datetime
+        return False
 
     objects = AppointmentManager()
 

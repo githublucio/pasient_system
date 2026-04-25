@@ -53,8 +53,13 @@
                 </thead>
                 <tbody>
                     {% for apt in appointments %}
-                    <tr>
-                        <td><strong>{{ apt.appointment_time|time:"H:i" }}</strong></td>
+                    <tr {% if apt.is_late %}class="table-danger"{% endif %}>
+                        <td>
+                            <strong>{{ apt.appointment_time|time:"H:i" }}</strong>
+                            {% if apt.is_late %}
+                                <i class="bi bi-alarm-fill text-danger ms-1 animate-pulse" title="{% trans 'Patient is late!' %}"></i>
+                            {% endif %}
+                        </td>
                         <td>
                             <a href="{% url 'patient_dashboard' uuid=apt.patient.uuid %}">
                                 {{ apt.patient.full_name }}
@@ -65,7 +70,11 @@
                         <td>{{ apt.doctor.get_full_name|default:apt.doctor.username|default:"-" }}</td>
                         <td>{{ apt.reason|truncatewords:10|default:"-" }}</td>
                         <td>
-                            {% if apt.status == 'SCHEDULED' %}
+                            {% if apt.is_late %}
+                                <span class="badge bg-danger">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>{% trans "LATE" %}
+                                </span>
+                            {% elif apt.status == 'SCHEDULED' %}
                                 <span class="badge bg-primary">{{ apt.get_status_display }}</span>
                             {% elif apt.status == 'CONFIRMED' %}
                                 <span class="badge bg-info">{{ apt.get_status_display }}</span>
@@ -175,4 +184,16 @@
     </div>
 </div>
 {% endif %}
+
+<style>
+    @keyframes pulse-red {
+        0% { transform: scale(0.95); opacity: 0.7; }
+        50% { transform: scale(1.1); opacity: 1; }
+        100% { transform: scale(0.95); opacity: 0.7; }
+    }
+    .animate-pulse {
+        animation: pulse-red 1.5s infinite;
+        display: inline-block;
+    }
+</style>
 {% endblock %}

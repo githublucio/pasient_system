@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from clinic_core.fields import EncryptedTextField
+from dateutil.relativedelta import relativedelta
 import hashlib
 
 
@@ -103,29 +104,53 @@ class PatientQuerySet(models.QuerySet):
             return self
         
         is_hiv_staff = False
+        is_nutrition_staff = False
         staff_profile = getattr(user, 'staff_profile', None)
-        if staff_profile:
+        if staff_profile and staff_profile.department:
             try:
                 dept_code = staff_profile.department.code.upper()
                 is_hiv_staff = dept_code in ['HIV', 'AIDS']
+                is_nutrition_staff = dept_code == 'NUTRISI'
             except AttributeError:
                 pass
         
-        if is_hiv_staff:
+        # Superadmins, HIV Staff, and Nutrition Staff see their respective patients
+        if user.is_superuser:
+            return self
+            
+        today = timezone.localdate()
+        child_limit = today - relativedelta(months=59)
+
+        # Base filter: Exclude HIV and Nutrition patients from general view
+        # Unless they have an active/today's visit in the current user's permitted areas (like IGD)
+        qs = self.all()
+
+        if not is_hiv_staff and not is_nutrition_staff:
+            # General Staff: Hide BOTH HIV and Nutrition categories
+            qs = qs.filter(
+                # Condition A: Not HIV and Not Nutrition
+                (Q(is_hiv_patient=False) & Q(is_pregnant=False) & Q(is_lactating=False) & Q(date_of_birth__lt=child_limit)) |
+                # Condition B: Emergency exception (if they are in IGD today, everyone can see them for safety)
+                Q(
+                    visits__current_room__code__in=['IGD', 'EMERGENCY'],
+                    visits__visit_date__date=today
+                ) |
+                Q(
+                    visits__current_room__code__in=['IGD', 'EMERGENCY'],
+                    visits__status__in=['SCH', 'IP']
+                )
+            )
+        elif is_nutrition_staff:
+            # Nutrition Staff: Can see Nutrition patients + General patients, but NO HIV patients
+            qs = qs.filter(
+                Q(is_hiv_patient=False) |
+                Q(visits__current_room__code__in=['IGD', 'EMERGENCY'], visits__visit_date__date=today)
+            )
+        elif is_hiv_staff:
+            # HIV Staff: Usually see everything (as per current system policy)
             return self
 
-        today = timezone.localdate()
-        return self.filter(
-            Q(is_hiv_patient=False) |
-            Q(
-                visits__current_room__code__in=['IGD', 'EMERGENCY'],
-                visits__status__in=['SCH', 'IP']
-            ) |
-            Q(
-                visits__current_room__code__in=['IGD', 'EMERGENCY'],
-                visits__visit_date__date=today
-            )
-        ).distinct()
+        return qs.distinct()
 
 class PatientManager(models.Manager):
     def get_queryset(self):
@@ -255,6 +280,23 @@ class Patient(models.Model):
             new_num = 1
             
         return f"{prefix}{new_num:04d}"
+
+    def save(self, *args, **kwargs):
+        """
+        Custom save to handle potential ID collisions during concurrent registrations.
+        """
+        if not self.patient_id:
+            self.patient_id = self.generate_next_id()
+        
+        # If this is a new patient, check if the ID was already taken 
+        # (race condition between form load and save)
+        if not self._state.adding is False: # If it's a new record
+            attempts = 0
+            while Patient.objects.filter(patient_id=self.patient_id).exists() and attempts < 10:
+                self.patient_id = self.generate_next_id()
+                attempts += 1
+                
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = _("Patient")

@@ -185,17 +185,21 @@ def doctor_dashboard(request):
     room_filter = request.GET.get('room', '')  # e.g. ?room=KIA
     search_query = request.GET.get('q', '').strip()
 
-    # All clinical rooms (general doctors + specialists)
-    all_clinical_rooms = [
-        'DOKTER', 'KIA', 'HIV', 'TB', 'DENTAL', 'NUTRISI', 'USG',
-        'ROOM_3', 'ROOM_4', 'ROOM_5', 'ROOM_6',  # legacy
-    ]
+    # Rooms that should appear in the general OPD dashboard
+    general_rooms = ['DOKTER', 'ROOM_3', 'ROOM_4', 'ROOM_5', 'ROOM_6']
+    
+    # Specialized rooms that require explicit selection
+    specialist_rooms = ['KIA', 'HIV', 'TB', 'DENTAL', 'NUTRISI', 'USG']
+    
+    all_clinical_rooms = general_rooms + specialist_rooms
 
     # Role-based room default for non-admins
     if not room_filter and not request.user.is_superuser:
         if hasattr(request.user, 'staff_profile'):
             dept_code = request.user.staff_profile.department.code.upper()
-            if dept_code in all_clinical_rooms:
+            if dept_code in specialist_rooms:
+                room_filter = dept_code
+            elif dept_code in general_rooms:
                 room_filter = dept_code
 
     if room_filter and room_filter in all_clinical_rooms:
@@ -203,9 +207,9 @@ def doctor_dashboard(request):
         room_codes = [room_filter]
         page_title = Room.objects.filter(code=room_filter).values_list('name', flat=True).first() or room_filter
     else:
-        # Default: show all clinical rooms (filtered by visibility later)
-        room_codes = all_clinical_rooms
-        page_title = None
+        # Default: show ONLY general clinical rooms
+        room_codes = general_rooms
+        page_title = _("General Consultation")
 
     # Show pending/in-progress patients:
     # - Include 'In Progress' (IP) from any date to ensure continuity.
@@ -1007,11 +1011,28 @@ def kia_direct_registration(request):
             year   = timezone.localdate().year
             prefix = f"MD{year}"
             last = Patient.objects.filter(patient_id__startswith=prefix).aggregate(max_id=Max('patient_id'))
-            new_num = (int(last['max_id'][-4:]) + 1) if last['max_id'] else 1
+            
+            # Safe parsing of the last ID number
+            try:
+                if last['max_id']:
+                    new_num = int(last['max_id'][-4:]) + 1
+                else:
+                    new_num = 1
+            except (ValueError, TypeError):
+                new_num = 1
+                
             patient.patient_id = f"{prefix}{new_num:04d}"
+            
+            category = request.POST.get('kia_category', 'ANA_0_6')
+            if category == 'IBU_HAMIL':
+                patient.is_pregnant = True
+                patient.gender = 'F'  # Force female for pregnant
+            elif category == 'IBU_MENYUSU':
+                patient.is_lactating = True
+                patient.gender = 'F'  # Force female for breastfeeding
+                
             patient.save()
 
-            category     = request.POST.get('kia_category', 'ANA_0_6')
             patient_type = 'FOUN'  # always new
             visit, err = _create_kia_visit(
                 patient, category, patient_type,
@@ -1048,7 +1069,8 @@ def kia_direct_registration(request):
             Q(phone_number__icontains=query)
         )[:10]
 
-    registration_form = PatientRegistrationForm()
+    next_id = Patient.generate_next_id()
+    registration_form = PatientRegistrationForm(initial={'patient_id': next_id})
     return render(request, 'medical_records/kia_direct_registration.html', {
         'registration_form': registration_form,
         'patients': patients,
@@ -1239,9 +1261,14 @@ def department_completed_list(request):
     dept = request.GET.get('dept', '')
     query = request.GET.get('q', '').strip()
     
-    # NEW: Default to HIV dept for HIV staff if no dept specified
-    if not dept and hasattr(request.user, 'staff_profile') and request.user.staff_profile.is_hiv_staff:
-        dept = 'HIV'
+    # NEW: Default to specialized dept if no dept specified and user belongs to that dept
+    staff_profile = getattr(request.user, 'staff_profile', None)
+    if not dept and staff_profile and staff_profile.department:
+        dept_code = staff_profile.department.code.upper()
+        if dept_code in ['HIV', 'AIDS']:
+            dept = 'HIV'
+        elif dept_code == 'NUTRISI':
+            dept = 'NUTRISI'
     
     visits = Visit.objects.visible_to(request.user).select_related('patient', 'current_room').order_by('-visit_date')
     
@@ -1257,6 +1284,18 @@ def department_completed_list(request):
         # Master Log: Show ALL historical visits for any patient tagged as HIV
         visits = visits.filter(patient__is_hiv_patient=True, status='COM')
         page_title = _("Complete HIV Patients History")
+    elif dept == 'NUTRISI':
+        # Nutrition Master Log: Show visits for patients who are Pregnant, Lactating, or Children (<5 years)
+        from dateutil.relativedelta import relativedelta
+        today = timezone.localdate()
+        child_limit = today - relativedelta(months=59)
+        visits = visits.filter(
+            Q(patient__is_pregnant=True) | 
+            Q(patient__is_lactating=True) | 
+            Q(patient__date_of_birth__gte=child_limit),
+            status='COM'
+        )
+        page_title = _("Nutrition Patients Master History")
     elif dept:
         # For KIA, TB, Dental, etc (Room-specific history)
         visits = visits.filter(current_room__code=dept, status='COM')
@@ -1300,9 +1339,20 @@ def export_visit_history_pdf(request):
     if dept == 'triage':
         visits = visits.filter(triage_nurse__isnull=False)
         page_title = _("Triage History")
-    elif dept == 'emergency':
-        visits = visits.filter(current_room__code__in=['IGD', 'EMERGENCY'], status__in=['COM', 'IP']).exclude(doctor__isnull=True)
-        page_title = _("Emergency History")
+    elif dept == 'HIV':
+        visits = visits.filter(patient__is_hiv_patient=True, status='COM')
+        page_title = _("HIV Patients History")
+    elif dept == 'NUTRISI':
+        from dateutil.relativedelta import relativedelta
+        today = timezone.localdate()
+        child_limit = today - relativedelta(months=59)
+        visits = visits.filter(
+            Q(patient__is_pregnant=True) | 
+            Q(patient__is_lactating=True) | 
+            Q(patient__date_of_birth__gte=child_limit),
+            status='COM'
+        )
+        page_title = _("Nutrition Patients History")
     elif dept:
         visits = visits.filter(current_room__code=dept)
         room_obj = Room.objects.filter(code=dept).first()
@@ -1344,6 +1394,16 @@ def export_visit_history_excel(request):
         visits = visits.filter(triage_nurse__isnull=False)
     elif dept == 'emergency':
         visits = visits.filter(current_room__code__in=['IGD', 'EMERGENCY'], status__in=['COM', 'IP']).exclude(doctor__isnull=True)
+    elif dept == 'NUTRISI':
+        from dateutil.relativedelta import relativedelta
+        today = timezone.localdate()
+        child_limit = today - relativedelta(months=59)
+        visits = visits.filter(
+            Q(patient__is_pregnant=True) | 
+            Q(patient__is_lactating=True) | 
+            Q(patient__date_of_birth__gte=child_limit),
+            status='COM'
+        )
     elif dept:
         visits = visits.filter(current_room__code=dept)
 

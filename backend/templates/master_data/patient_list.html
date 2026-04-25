@@ -48,7 +48,11 @@
                     {% for patient in patients %}
                     <tr>
                         <td class="ps-3"><code class="text-dark fw-bold">{{ patient.patient_id }}</code></td>
-                        <td>{{ patient.full_name }}</td>
+                        <td>
+                            {{ patient.full_name }}
+                            {% if patient.is_pregnant %}<span class="badge bg-danger ms-1">Bumil</span>{% endif %}
+                            {% if patient.is_lactating %}<span class="badge bg-success ms-1">Busui</span>{% endif %}
+                        </td>
                         <td>{{ patient.get_gender_display }}</td>
                         <td>{{ patient.date_of_birth|date:"d/m/Y" }}</td>
                         <td class="small">{{ patient.full_address }}</td>

@@ -55,6 +55,12 @@ class PatientRegistrationForm(forms.ModelForm):
             self.fields['registration_fee'].widget = forms.HiddenInput()
             self.fields['registration_fee'].required = False
 
+        self.fields['patient_id'].required = False
+        
+        # Auto-generate next ID if not provided (for new registration)
+        if not self.initial.get('patient_id') and not self.instance.pk:
+            self.initial['patient_id'] = Patient.generate_next_id()
+
         self.fields['municipio'].queryset = Municipio.objects.all()
         self.fields['municipio'].empty_label = _("--- Select Municipality ---")
         

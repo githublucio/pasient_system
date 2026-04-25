@@ -36,3 +36,9 @@ ENV/
 # OS
 .DS_Store
 Thumbs.db
+
+backend/check_*.py
+backend/find_*.py
+backend/verify_*.py
+backend/scratch/
+

@@ -41,6 +41,7 @@ urlpatterns = [
 
     # APIs
     path('api/check-duplicates/', views.check_duplicates, name='api_check_duplicates'),
+    path('api/patient-search/', views.api_patient_search, name='api_patient_search'),
     path('ajax/load-postos/', views.load_postos, name='load_postos'),
     path('ajax/load-sucos/', views.load_sucos, name='load_sucos'),
     path('ajax/load-aldeias/', views.load_aldeias, name='load_aldeias'),

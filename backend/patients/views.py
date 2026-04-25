@@ -320,7 +320,7 @@ class PatientListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
             'municipio', 'posto_administrativo', 'suco', 'aldeia'
         ).only(
             'uuid', 'patient_id', 'full_name', 'gender', 'date_of_birth',
-            'address', 'registration_fee',
+            'address', 'registration_fee', 'is_pregnant', 'is_lactating',
             'municipio__name', 'posto_administrativo__name', 'suco__name', 'aldeia__name',
         )
         q = self.request.GET.get('q', '').strip()
@@ -586,3 +586,28 @@ def check_duplicates(request):
                 })
                 
     return JsonResponse({'duplicates': duplicates})
+
+@login_required
+def api_patient_search(request):
+    """
+    Search patients for Select2 AJAX autocomplete.
+    """
+    query = request.GET.get('q', '').strip()
+    if len(query) < 2:
+        return JsonResponse({'results': []})
+    
+    from django.db.models import Q
+    patients = Patient.objects.visible_to(request.user).filter(
+        Q(full_name__icontains=query) |
+        Q(patient_id__icontains=query) |
+        Q(phone_number__icontains=query)
+    ).order_by('full_name')[:30]
+    
+    results = []
+    for p in patients:
+        results.append({
+            'id': str(p.uuid),
+            'text': f"{p.full_name} ({p.patient_id}) - {p.age} yrs"
+        })
+    
+    return JsonResponse({'results': results})

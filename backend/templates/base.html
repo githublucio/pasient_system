@@ -358,7 +358,9 @@
         {% if perms.medical_records.view_visit or is_admin or dept == 'ADM' %}
         <div class="sb-sec">{% trans "REPORTS & ANALYTICS" %}</div>
         <ul class="sb-nav">
-            <li><a href="{% url 'department_completed_list' %}{% if profile.is_hiv_staff %}?dept=HIV{% endif %}"><i class="bi bi-clock-history"></i> {% trans "Visit History" %}</a></li>
+            {% if is_admin or dept != 'HIV' and dept != 'NUTRISI' %}
+            <li><a href="{% url 'department_completed_list' %}"><i class="bi bi-clock-history"></i> {% trans "Visit History" %}</a></li>
+            {% endif %}
             {% if is_admin or dept == 'RJ' or dept == 'ADM' %}
             <li><a href="{% url 'disease_statistics_report' %}"><i class="bi bi-bar-chart-line"></i> {% trans "Disease Statistics" %}</a></li>
             {% endif %}
@@ -497,6 +499,40 @@ function closeSidebar() { document.getElementById('sidebar').classList.remove('s
             $('.select2-meds').select2({
                 theme: 'bootstrap-5',
                 placeholder: '{% trans "Select medicine..." %}'
+            });
+
+            // Basic Select2 for standard searchable dropdowns
+            $('.select2-basic').select2({
+                theme: 'bootstrap-5',
+                placeholder: '{% trans "Type to search..." %}',
+                allowClear: true
+            });
+
+            $('.select2-ajax-patients').each(function() {
+                var ajaxUrl = $(this).data('ajax-url');
+                $(this).select2({
+                    theme: 'bootstrap-5',
+                    placeholder: '{% trans "Type name, ID or phone..." %}',
+                    allowClear: true,
+                    minimumInputLength: 2,
+                    ajax: {
+                        url: ajaxUrl,
+                        dataType: 'json',
+                        delay: 250,
+                        data: function (params) {
+                            return {
+                                q: params.term,
+                                page: params.page
+                            };
+                        },
+                        processResults: function (data, params) {
+                            return {
+                                results: data.results
+                            };
+                        },
+                        cache: true
+                    }
+                });
             });
         });
     </script>

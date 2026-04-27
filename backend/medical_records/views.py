@@ -836,9 +836,10 @@ def enrich_visit_diagnostic_data(visit, context):
 from laboratory.views import CBC_RANGES, SEROLOGY_PARAMS, BIOCHEMISTRY_PARAMS, URINALYSIS_PARAMS, MICROSCOPY_PARAMS, MICROBIOLOGY_PARAMS
 
 def enrich_visit_lab_results(visit):
-    if hasattr(visit, 'lab_request') and visit.lab_request and visit.lab_request.status == 'COMPLETED':
+    lab_req = getattr(visit, 'lab_request', None)
+    if lab_req and lab_req.status == 'COMPLETED':
         try:
-            res = visit.lab_request.result
+            res = lab_req.result
             if not res or not res.result_data:
                 return
 

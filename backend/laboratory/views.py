@@ -121,6 +121,9 @@ def lab_request_create(request, visit_uuid):
         others_note = request.POST.get('others_note', '')
         selected_tests = request.POST.getlist('tests') # List of LabTest IDs
         
+        # Determine source from visit
+        source_tag = 'IGD' if visit.current_room and visit.current_room.code in ['IGD', 'EMERGENCY'] else 'OPD'
+
         # Create Lab Request
         lab_request, created = LabRequest.objects.get_or_create(
             visit=visit,
@@ -130,16 +133,20 @@ def lab_request_create(request, visit_uuid):
                 'patient_type': patient_type,
                 'special_category': special_category,
                 'others_note': others_note,
+                'source': source_tag,
             }
         )
         
         # If updating existing
         if not created:
+            # Update fields if it already existed (e.g. from quick check)
             lab_request.urgency = urgency
             lab_request.patient_type = patient_type
             lab_request.special_category = special_category
             lab_request.others_note = others_note
-            lab_request.requesting_physician = request.user
+            lab_request.source = source_tag
+            if not lab_request.requesting_physician:
+                lab_request.requesting_physician = request.user
             lab_request.save()
             
         # Set tests

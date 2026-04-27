@@ -286,7 +286,7 @@
         {% if perms.medical_records.view_menu_medical_records or is_admin %}
         <div class="sb-sec">{% trans "CLINICAL CARE" %}</div>
         <ul class="sb-nav">
-            {% if is_admin or dept == 'TRIAGE' or perms.medical_records.view_menu_triage %}
+            {% if is_admin or perms.medical_records.view_menu_triage or dept == 'TRIAGE' %}
             <li><a href="{% url 'triage_dashboard' %}"><i class="bi bi-heart-pulse"></i> {% trans "Triage (Vitals)" %}</a></li>
             {% endif %}
             

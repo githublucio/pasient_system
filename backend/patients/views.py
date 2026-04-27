@@ -127,30 +127,43 @@ def reception_dashboard(request):
     query = request.GET.get('q', '').strip()
     patients = []
     if query:
+        # Clean the query: strip spaces and convert to upper
+        clean_query = query.strip().upper()
+        
         base_qs = Patient.objects.visible_to(request.user).select_related(
             'municipio', 'posto_administrativo', 'suco', 'aldeia'
         ).prefetch_related('identities')
 
-        # 1. Exact clinic Patient ID
-        exact_match = base_qs.filter(patient_id__iexact=query).first()
+        # 1. Exact or Cleaned Patient ID Match
+        # Try multiple variations: "PAT-001", "001", etc.
+        exact_match = base_qs.filter(
+            Q(patient_id__iexact=query) | 
+            Q(patient_id__iexact=clean_query)
+        ).first()
+        
         if exact_match:
             patients.append(exact_match)
         
         # 2. Search by national / other ID number hash (exact match)
-        query_hash = hashlib.sha256(query.strip().upper().encode()).hexdigest()
+        query_hash = hashlib.sha256(clean_query.encode()).hexdigest()
         by_id = PatientID.objects.filter(id_search_hash=query_hash).select_related('patient').first()
         if by_id:
             p = by_id.patient
             if p not in patients:
                 patients.append(p)
         
-        # 3. Fuzzy search by name, ID, or phone (only if we haven't found exact ID matches, or show them too)
-        # We'll always perform the fuzzy search to show similar names, but prepend exact ID matches.
-        fuzzy_results = base_qs.filter(
-            Q(full_name__icontains=query)
-            | Q(patient_id__icontains=query)
-            | Q(phone_number__icontains=query)
-        )[:15]
+        # 3. Fuzzy search by name, ID, or phone
+        # Also try to match digits if the query is something like "PAT-123" -> search for "123"
+        numeric_query = ''.join(filter(str.isdigit, clean_query))
+        
+        fuzzy_query = Q(full_name__icontains=clean_query) | \
+                      Q(patient_id__icontains=clean_query) | \
+                      Q(phone_number__icontains=clean_query)
+        
+        if numeric_query:
+            fuzzy_query |= Q(patient_id__icontains=numeric_query)
+
+        fuzzy_results = base_qs.filter(fuzzy_query)[:15]
         
         for p in fuzzy_results:
             if p not in patients:
@@ -160,9 +173,10 @@ def reception_dashboard(request):
         if is_hiv:
             # HIV staff focus only on patients tagged as HIV
             patients = [p for p in patients if p.is_hiv_patient]
-        else:
-            # General receptionist only sees non-HIV patients
+        elif not request.user.is_superuser:
+            # General staff (non-superusers) only see non-HIV patients
             patients = [p for p in patients if not p.is_hiv_patient]
+        # Superusers bypass this filter and see everything
         
         # Limit total results
         patients = patients[:20]

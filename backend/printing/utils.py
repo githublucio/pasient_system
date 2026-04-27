@@ -12,7 +12,12 @@ def generate_patient_assets(patient_uuid):
     # 1. Generate QR Code
     # The QR code contains the patient ID (Unit Card Number)
     qr_data = patient.patient_id
-    qr = qrcode.QRCode(version=1, box_size=10, border=4)
+    qr = qrcode.QRCode(
+        version=1, 
+        error_correction=qrcode.constants.ERROR_CORRECT_M, # Medium is better for simple IDs
+        box_size=10, 
+        border=4
+    )
     qr.add_data(qr_data)
     qr.make(fit=True)
     img_qr = qr.make_image(fill_color="black", back_color="white")

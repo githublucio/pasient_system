@@ -287,6 +287,7 @@ class Visit(models.Model):
             ("view_menu_specialist_dental", "Can see Dental menu in sidebar"),
             ("view_menu_specialist_nutrition", "Can see Nutrition menu in sidebar"),
             ("view_menu_specialist_usg", "Can see USG menu in sidebar"),
+            ("view_menu_triage", "Can see Triage menu in sidebar"),
         ]
 
 

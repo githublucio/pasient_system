@@ -209,27 +209,52 @@ def medicine_list(request):
 
 @login_required
 def medicine_add(request):
+    # Generate next code
+    last_med = Medicine.objects.filter(code__startswith='MED-').order_by('-code').first()
+    if last_med:
+        try:
+            # Extract number from MED-XXXX
+            last_code = last_med.code
+            number_part = last_code.split('-')[1]
+            next_number = int(number_part) + 1
+            suggested_code = f"MED-{next_number:04d}"
+        except (IndexError, ValueError):
+            suggested_code = "MED-0001"
+    else:
+        suggested_code = "MED-0001"
+
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()
-        code = request.POST.get('code', '').strip() or None
+        code = request.POST.get('code', suggested_code).strip() or suggested_code
         unit = request.POST.get('unit', 'TABLET')
         min_stock = int(request.POST.get('min_stock', 10))
         description = request.POST.get('description', '')
-
         strength = request.POST.get('strength', '').strip() or None
         form_type = request.POST.get('form', 'TABLET')
 
-        Medicine.objects.create(
-            name=name, strength=strength, form=form_type,
-            code=code, unit=unit,
-            min_stock=min_stock, description=description,
-        )
-        messages.success(request, _("Medicine added successfully."))
-        return redirect('medicine_list')
+        # Double check if code exists
+        if Medicine.objects.filter(code=code).exists():
+            # If exists, try to generate a fresh one
+            last_med = Medicine.objects.filter(code__startswith='MED-').order_by('-code').first()
+            if last_med:
+                next_number = int(last_med.code.split('-')[1]) + 1
+                code = f"MED-{next_number:04d}"
+
+        try:
+            Medicine.objects.create(
+                name=name, strength=strength, form=form_type,
+                code=code, unit=unit,
+                min_stock=min_stock, description=description,
+            )
+            messages.success(request, _("Medicine added successfully with code %(code)s.") % {'code': code})
+            return redirect('medicine_list')
+        except Exception as e:
+            messages.error(request, _("Error adding medicine: %(error)s") % {'error': str(e)})
 
     return render(request, 'pharmacy/medicine_form.html', {
         'title': _('Add New Medicine'),
         'medicine': None,
+        'suggested_code': suggested_code,
         'unit_choices': Medicine.UNIT_CHOICES,
         'form_choices': Medicine.FORM_CHOICES,
     })

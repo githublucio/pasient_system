@@ -8,10 +8,9 @@ from django.http import HttpResponse
 def preview_card(request, uuid):
     patient = get_object_or_404(Patient, uuid=uuid)
     
-    # Ensure QR/Barcode are generated
-    if not patient.qr_code_image or not patient.barcode_image:
-        generate_patient_assets(patient.uuid)
-        patient.refresh_from_db()
+    # Force regenerate for now to apply new robust QR settings
+    generate_patient_assets(patient.uuid)
+    patient.refresh_from_db()
         
     return render(request, 'printing/card_preview.html', {
         'patient': patient,

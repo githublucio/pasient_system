@@ -123,7 +123,7 @@
 {% endblock %}
 
 {% block extra_js %}
-{% if patient.is_hiv_patient and not profile.is_hiv_staff %}
+{% if patient.is_hiv_patient and not request.user.staff_profile.is_hiv_staff %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const toastHTML = `

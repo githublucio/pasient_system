@@ -100,8 +100,8 @@
                     {% endif %}
                 </div>
 
-                <!-- ROOM 3-6 & EMERGENCY SPECIAL FORMAT: Quick Requests -->
-                {% if visit.current_room.code in 'ROOM_3 ROOM_4 ROOM_5 ROOM_6' or is_emergency %}
+                <!-- QUICK ACTIONS: Available to all doctors and emergency -->
+                {% if not is_nurse or is_emergency %}
                 <div class="card bg-primary bg-opacity-10 border-primary mb-4 shadow-sm">
                     <div class="card-header bg-primary text-white fw-bold">
                         <i class="bi bi-lightning-charge me-2"></i>{% trans "Quick Actions" %}
@@ -797,7 +797,7 @@
 {% block extra_js %}
 <!-- Select2 CSS is already in the <head> block above -->
 
-{% if visit.patient.is_hiv_patient and not profile.is_hiv_staff %}
+{% if visit.patient.is_hiv_patient and not request.user.staff_profile.is_hiv_staff %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Inject a Bootstrap Toast dynamically

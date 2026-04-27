@@ -39,7 +39,8 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-bold">{% trans "Code" %}</label>
-                            <input type="text" name="code" class="form-control" value="{{ medicine.code|default:'' }}" placeholder="e.g. MED001">
+                            <input type="text" name="code" class="form-control bg-light" value="{{ medicine.code|default:suggested_code }}" readonly>
+                            <small class="text-muted">{% trans "Auto-generated unique code" %}</small>
                         </div>
                     </div>
 

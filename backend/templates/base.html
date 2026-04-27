@@ -286,7 +286,7 @@
         {% if perms.medical_records.view_menu_medical_records or is_admin %}
         <div class="sb-sec">{% trans "CLINICAL CARE" %}</div>
         <ul class="sb-nav">
-            {% if is_admin or dept == 'TRIAGE' %}
+            {% if is_admin or dept == 'TRIAGE' or perms.medical_records.view_menu_triage %}
             <li><a href="{% url 'triage_dashboard' %}"><i class="bi bi-heart-pulse"></i> {% trans "Triage (Vitals)" %}</a></li>
             {% endif %}
             
@@ -326,6 +326,7 @@
                 <li><a href="{% url 'patient_list' %}?nutrition_cat=bumil" class="ps-5 small opacity-75"><i class="bi bi-gender-female"></i> {% trans "Pregnant (Bumil)" %}</a></li>
                 <li><a href="{% url 'patient_list' %}?nutrition_cat=busui" class="ps-5 small opacity-75"><i class="bi bi-heart-pulse"></i> {% trans "Lactating (Busui)" %}</a></li>
                 <li><a href="{% url 'department_completed_list' %}?dept=NUTRISI" class="ps-5 small opacity-75"><i class="bi bi-clock-history"></i> {% trans "Nutrition Visit History" %}</a></li>
+                <li><a href="{% url 'nutrition_statistics' %}" class="ps-5 small" style="color:#ffc107;"><i class="bi bi-bar-chart-steps"></i> {% trans "Statistika (TLHIS/04)" %}</a></li>
                 {% endif %}
                 {% if is_admin or dept == 'USG' or perms.medical_records.view_menu_specialist_usg %}
                 <li><a href="{% url 'doctor_dashboard' %}?room=USG"><i class="bi bi-broadcast-pin"></i> {% trans "Specialist: USG" %}</a></li>

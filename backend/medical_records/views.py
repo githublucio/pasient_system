@@ -215,10 +215,11 @@ def doctor_dashboard(request):
     # - Include 'In Progress' (IP) from any date to ensure continuity.
     # - Include 'Scheduled' (SCH) only for today.
     waiting_visits_qs = Visit.objects.visible_to(request.user).filter(
-        current_room__code__in=room_codes,
+        Q(current_room__code__in=room_codes) |
+        Q(doctor=request.user, status='IP')
     ).filter(
         Q(status='IP') | Q(status='SCH', visit_date__date=today)
-    )
+    ).distinct()
 
     if search_query:
         waiting_visits_qs = waiting_visits_qs.filter(
@@ -272,7 +273,7 @@ def emergency_dashboard(request):
         status__in=['SCH', 'IP']
     ).filter(
         Q(current_room__code__in=['IGD', 'EMERGENCY']) | 
-        Q(current_room__code__in=['ROOM_7', 'RADIOLOGY', 'PHARMACY', 'LAB', 'NUTRISI', 'DENTAL', 'KIA'], er_bp_sys__isnull=False)
+        Q(source='IGD')
     ).select_related('patient', 'current_room').distinct()
     
     waiting_visits = waiting_visits_qs.order_by('queue_number')
@@ -1511,3 +1512,164 @@ def search_diagnosis_ajax(request):
         'total_count': total_count
     }
     return JsonResponse(data)
+
+
+@login_required
+@permission_required('medical_records.view_menu_specialist_nutrition', raise_exception=True)
+def nutrition_statistics(request):
+    """
+    Halaman statistika nutrisi format TLHIS/04 untuk laporan ke Ministerio da Saúde.
+    Data yang tersedia: MUAC, registrasi pasien, pasien baru.
+    Data yang belum ada (—): tinggi badan, Z-score, suplemen, PTE/PTI.
+    """
+    from dateutil.relativedelta import relativedelta
+    from django.db.models import Count, Q
+    from patients.models import Patient
+
+    # --- Filter Bulan ---
+    selected_month = request.GET.get('month', timezone.localdate().strftime('%Y-%m'))
+    try:
+        year, month = int(selected_month[:4]), int(selected_month[5:7])
+    except (ValueError, IndexError):
+        year, month = timezone.localdate().year, timezone.localdate().month
+
+    month_start = timezone.datetime(year, month, 1).date()
+    if month == 12:
+        month_end = timezone.datetime(year + 1, 1, 1).date()
+    else:
+        month_end = timezone.datetime(year, month + 1, 1).date()
+
+    today = timezone.localdate()
+
+    # --- Batas usia ---
+    limit_0m  = today - relativedelta(months=0)
+    limit_24m = today - relativedelta(months=24)
+    limit_59m = today - relativedelta(months=59)
+
+    # Pasien anak berdasarkan kelompok usia
+    def children_qs(age_min_m, age_max_m, gender=None):
+        dob_upper = today - relativedelta(months=age_min_m)
+        dob_lower = today - relativedelta(months=age_max_m)
+        qs = Patient.objects.filter(
+            date_of_birth__lte=dob_upper,
+            date_of_birth__gt=dob_lower,
+        )
+        if gender:
+            qs = qs.filter(gender=gender)
+        return qs
+
+    # Kunjungan NUTRISI pada bulan ini
+    nutri_visits_month = Visit.objects.filter(
+        current_room__code='NUTRISI',
+        visit_date__date__gte=month_start,
+        visit_date__date__lt=month_end,
+    )
+
+    def count_visits(age_min_m, age_max_m, gender, qs=None):
+        if qs is None:
+            qs = nutri_visits_month
+        dob_upper = today - relativedelta(months=age_min_m)
+        dob_lower = today - relativedelta(months=age_max_m)
+        return qs.filter(
+            patient__date_of_birth__lte=dob_upper,
+            patient__date_of_birth__gt=dob_lower,
+            patient__gender=gender,
+        ).values('patient').distinct().count()
+
+    def count_new_visits(age_min_m, age_max_m, gender):
+        dob_upper = today - relativedelta(months=age_min_m)
+        dob_lower = today - relativedelta(months=age_max_m)
+        return nutri_visits_month.filter(
+            patient__date_of_birth__lte=dob_upper,
+            patient__date_of_birth__gt=dob_lower,
+            patient__gender=gender,
+            patient_type='FOUN',
+        ).values('patient').distinct().count()
+
+    # MUAC classification — only for visits with MUAC recorded
+    def count_muac(gender, muac_min=None, muac_max=None):
+        qs = nutri_visits_month.filter(
+            patient__date_of_birth__lte=today - relativedelta(months=6),
+            patient__date_of_birth__gt=today - relativedelta(months=59),
+            patient__gender=gender,
+            muac__isnull=False,
+        )
+        if muac_min is not None:
+            qs = qs.filter(muac__gte=muac_min)
+        if muac_max is not None:
+            qs = qs.filter(muac__lt=muac_max)
+        return qs.count()
+
+    s = {
+        # --- Registrasi (1-3) ---
+        'reg_0_23_m':  count_visits(0, 23, 'M'),
+        'reg_0_23_f':  count_visits(0, 23, 'F'),
+        'reg_24_59_m': count_visits(24, 59, 'M'),
+        'reg_24_59_f': count_visits(24, 59, 'F'),
+
+        'new_0_23_m':  count_new_visits(0, 23, 'M'),
+        'new_0_23_f':  count_new_visits(0, 23, 'F'),
+        'new_24_59_m': count_new_visits(24, 59, 'M'),
+        'new_24_59_f': count_new_visits(24, 59, 'F'),
+
+        'mon_0_23_m':  count_visits(0, 23, 'M'),
+        'mon_0_23_f':  count_visits(0, 23, 'F'),
+        'mon_24_59_m': count_visits(24, 59, 'M'),
+        'mon_24_59_f': count_visits(24, 59, 'F'),
+
+        # --- WAZ / WHZ / HAZ — belum ada data (None = tampil "—") ---
+        'waz_norm_0_23_m': None, 'waz_norm_0_23_f': None,
+        'waz_norm_24_59_m': None, 'waz_norm_24_59_f': None,
+        'waz_mod_0_23_m': None, 'waz_mod_0_23_f': None,
+        'waz_mod_24_59_m': None, 'waz_mod_24_59_f': None,
+        'waz_sev_0_23_m': None, 'waz_sev_0_23_f': None,
+        'waz_sev_24_59_m': None, 'waz_sev_24_59_f': None,
+
+        'whz_norm_0_23_m': None, 'whz_norm_0_23_f': None,
+        'whz_norm_24_59_m': None, 'whz_norm_24_59_f': None,
+        'whz_mod_0_23_m': None, 'whz_mod_0_23_f': None,
+        'whz_mod_24_59_m': None, 'whz_mod_24_59_f': None,
+        'whz_sev_0_23_m': None, 'whz_sev_0_23_f': None,
+        'whz_sev_24_59_m': None, 'whz_sev_24_59_f': None,
+        'whz_ow_0_23_m': None, 'whz_ow_0_23_f': None,
+        'whz_ow_24_59_m': None, 'whz_ow_24_59_f': None,
+        'whz_ob_0_23_m': None, 'whz_ob_0_23_f': None,
+        'whz_ob_24_59_m': None, 'whz_ob_24_59_f': None,
+
+        'haz_norm_0_23_m': None, 'haz_norm_0_23_f': None,
+        'haz_norm_24_59_m': None, 'haz_norm_24_59_f': None,
+        'haz_mod_0_23_m': None, 'haz_mod_0_23_f': None,
+        'haz_mod_24_59_m': None, 'haz_mod_24_59_f': None,
+        'haz_sev_0_23_m': None, 'haz_sev_0_23_f': None,
+        'haz_sev_24_59_m': None, 'haz_sev_24_59_f': None,
+
+        # --- Konseling (7) ---
+        'counsel_0_23_m': None, 'counsel_0_23_f': None,
+        'counsel_24_59_m': None, 'counsel_24_59_f': None,
+
+        # --- MUAC (8) — DATA TERSEDIA ---
+        'muac_norm_m': count_muac('M', muac_min=12.5),
+        'muac_norm_f': count_muac('F', muac_min=12.5),
+        'muac_mam_m':  count_muac('M', muac_min=11.5, muac_max=12.5),
+        'muac_mam_f':  count_muac('F', muac_min=11.5, muac_max=12.5),
+        'muac_sam_m':  count_muac('M', muac_max=11.5),
+        'muac_sam_f':  count_muac('F', muac_max=11.5),
+
+        # --- PTE / PTI / Suplemen — belum ada ---
+        'pte_cured_m': None, 'pte_cured_f': None,
+        'pte_not_cured_m': None, 'pte_not_cured_f': None,
+        'pte_default_m': None, 'pte_default_f': None,
+        'pte_dead_m': None, 'pte_dead_f': None,
+        'pti_m': None, 'pti_f': None,
+        'vita_6_11_m': None, 'vita_6_11_f': None,
+        'vita_12_59_m': None, 'vita_12_59_f': None,
+        'alumb_12_23_m': None, 'alumb_12_23_f': None,
+        'alumb_24_59_m': None, 'alumb_24_59_f': None,
+        'mnr_6_23_m': None, 'mnr_6_23_f': None,
+    }
+
+    return render(request, 'medical_records/nutrition_statistics.html', {
+        'selected_month': selected_month,
+        's': s,
+        'missing_fields': True,
+    })

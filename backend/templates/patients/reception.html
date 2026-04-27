@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n static %}
 
 {% block title %}{% trans "Reception Dashboard" %} - {% trans "Clinic Lanud" %}{% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
+<script src="{% static 'vendor/html5-qrcode.min.js' %}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         var startScannerBtn = document.getElementById('start-scanner-btn');
@@ -19,9 +19,10 @@
             var consoleEl = document.getElementById('tech-console');
             if (!consoleEl) return;
             var entry = document.createElement('div');
-            entry.className = "small py-1 border-bottom " + (type === 'err' ? 'text-danger' : 'text-muted');
+            entry.className = "small py-1 border-bottom " + (type === 'err' ? 'text-danger fw-bold' : (type === 'ok' ? 'text-success' : 'text-muted'));
             entry.innerHTML = "<code>[" + new Date().toLocaleTimeString() + "]</code> " + msg;
             consoleEl.prepend(entry);
+            console.log("[Scanner]", msg);
         }
 
         function updateStatus(msg, type) {
@@ -30,106 +31,175 @@
             scannerStatus.className = "small " + (type === 'err' ? 'text-danger fw-bold' : (type === 'ok' ? 'text-success fw-bold' : 'text-muted'));
         }
 
+        function checkSecureContext() {
+            if (!window.isSecureContext) {
+                techLog("CRITICAL: Connection is NOT SECURE. Camera will be blocked.", "err");
+                updateStatus("{% trans 'Error: Insecure Connection. Browser blocks camera on IP addresses.' %}", "err");
+                
+                // Show a more prominent warning
+                var reader = document.getElementById('reader');
+                if (reader) {
+                    reader.innerHTML = '<div class="p-3 text-white bg-danger text-center">' +
+                        '<h5>Security Block</h5>' +
+                        '<p>Browser blocks camera on IP addresses (e.g. 192.168.x.x).</p>' +
+                        '<p><strong>Solution:</strong> Use <u>http://localhost:8000</u> instead.</p>' +
+                        '</div>';
+                }
+                return false;
+            }
+            return true;
+        }
+
         function loadCameras() {
-            techLog("Checking hardware...");
+            if (typeof Html5Qrcode === 'undefined') {
+                techLog("ERROR: Library not loaded. Contact administrator.", "err");
+                return;
+            }
+
+            if (!checkSecureContext()) return;
             Html5Qrcode.getCameras().then(function (cameras) {
                 var select = document.getElementById('camera-select');
                 if (!select) return;
                 select.innerHTML = "";
+                
                 if (cameras && cameras.length > 0) {
-                    techLog("Cameras found: " + cameras.length);
-                    cameras.forEach(function (camera) {
+                    techLog("Found " + cameras.length + " camera(s).");
+                    cameras.forEach(function (camera, index) {
                         var opt = document.createElement('option');
                         opt.value = camera.id;
-                        opt.text = camera.label || "Camera " + (select.length + 1);
+                        opt.text = camera.label || "Camera " + (index + 1);
                         select.appendChild(opt);
                     });
                     select.classList.remove('d-none');
+                    
+                    // Try to start the first camera
+                    techLog("Starting first camera: " + (cameras[0].label || 'Default'));
+                    startScanner(cameras[0].id);
                 } else {
-                    techLog("No camera hardware found.", "err");
+                    techLog("No specific cameras found. Trying generic access...", "err");
+                    startScannerGeneric();
                 }
             }).catch(function (err) {
-                techLog("Hardware error: " + err, "err");
+                techLog("Access Error: " + err, "err");
+                techLog("Trying generic access as fallback...");
+                startScannerGeneric();
             });
         }
 
+        function startScannerGeneric() {
+            if (html5QrCode) { html5QrCode.clear(); }
+            html5QrCode = new Html5Qrcode("reader");
+            
+            var config = { fps: 10, qrbox: 250 };
+            updateStatus("{% trans 'Attempting generic camera access...' %}", "ok");
+            
+            // Try with environment facing mode (back camera) or user (front)
+            html5QrCode.start({ facingMode: "user" }, config, onScanSuccess)
+                .then(function() { techLog("Generic scanner started (User Mode)."); })
+                .catch(function(err) {
+                    techLog("Generic Fail: " + err, "err");
+                    updateStatus("{% trans 'Cannot open camera. Check permissions.' %}", "err");
+                });
+        }
+
         function onScanSuccess(decodedText) {
+            // Success feedback
+            var originalText = decodedText;
+            
+            // 1. Clean the text (remove spaces, newlines, non-printable)
+            decodedText = decodedText.trim().replace(/[^\x20-\x7E]/g, '');
+            
+            // 2. Handle URLs (if the QR contains a link, extract the last part)
+            if (decodedText.startsWith('http')) {
+                try {
+                    var parts = decodedText.split('/');
+                    // Remove trailing slash if exists
+                    if (parts[parts.length - 1] === '') parts.pop();
+                    decodedText = parts[parts.length - 1];
+                    techLog("URL Detected. Extracted ID: " + decodedText, "warn");
+                } catch(e) { techLog("URL Parse fail", "err"); }
+            }
+
+            techLog("SUCCESS! Decoded: [" + decodedText + "]", "ok");
+            if (originalText !== decodedText) {
+                techLog("Original was: " + originalText.substring(0, 20) + "...", "info");
+            }
+            
+            // Play a beep sound
+            try {
+                var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                var oscillator = audioCtx.createOscillator();
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+                oscillator.connect(audioCtx.destination);
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.1);
+            } catch(e) {}
+
             if (html5QrCode) {
                 html5QrCode.stop().then(function () {
-                    scannerWrapper.classList.add('d-none');
-                    if (searchInput) searchInput.value = decodedText;
-                    if (searchForm) searchForm.submit();
+                    if (scannerWrapper) scannerWrapper.classList.add('d-none');
+                    if (searchInput) {
+                        searchInput.value = decodedText;
+                        techLog("Searching for: " + decodedText);
+                        if (searchForm) searchForm.submit();
+                    }
+                }).catch(function() {
+                    window.location.href = window.location.pathname + "?q=" + encodeURIComponent(decodedText);
                 });
             }
         }
 
         function startScanner(cameraId) {
-            if (html5QrCode && html5QrCode.isScanning) {
+            if (!html5QrCode) {
+                html5QrCode = new Html5Qrcode("reader");
+            }
+            
+            if (html5QrCode.isScanning) {
                 html5QrCode.stop().then(function() { 
                     initScanner(cameraId); 
-                }).catch(function(err) {
-                    techLog("Stop error: " + err, "err");
+                }).catch(function() {
                     initScanner(cameraId);
                 });
             } else {
-                if (html5QrCode) { html5QrCode.clear(); }
-                html5QrCode = new Html5Qrcode("reader");
                 initScanner(cameraId);
             }
         }
 
         function initScanner(cameraId) {
-            // Support both QR Codes and common Barcodes
             var config = {
-                fps: 15,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0,
+                fps: 25, 
+                qrbox: { width: 350, height: 350 },
+                videoConstraints: {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: "environment"
+                },
+                experimentalFeatures: {
+                    useBarCodeDetectorIfSupported: true
+                },
                 formatsToSupport: [ 
                     Html5QrcodeSupportedFormats.QR_CODE,
-                    Html5QrcodeSupportedFormats.CODE_128,
-                    Html5QrcodeSupportedFormats.CODE_39,
-                    Html5QrcodeSupportedFormats.EAN_13,
-                    Html5QrcodeSupportedFormats.EAN_8
+                    Html5QrcodeSupportedFormats.CODE_128
                 ]
             };
 
-            updateStatus("{% trans 'Starting camera...' %}", "ok");
-
+            techLog("Optimizing scan loop (Stable Mode)...");
             html5QrCode.start(cameraId, config, onScanSuccess)
-                .then(function () {
-                    techLog("Camera active and scanning.");
-                    updateStatus("{% trans 'Scanner Ready! Tip: Hold the card 30cm away so it is NOT BLURRY.' %}", "ok");
+                .then(function () { 
+                    techLog("Scanner is FAST."); 
+                    updateStatus("{% trans 'Scanner Ready! High-speed mode active.' %}", "ok"); 
                 })
                 .catch(function (err) {
-                    techLog("Camera Error: " + err, "err");
-                    if (err.toString().indexOf("NotAllowedError") !== -1) {
-                        updateStatus("{% trans 'Permission Denied! Allow camera access in browser.' %}", "err");
-                    } else {
-                        updateStatus("{% trans 'Camera Error. Try restarting browser.' %}", "err");
-                    }
+                    techLog("Start Error: " + err, "err");
+                    updateStatus("{% trans 'Failed to open camera.' %}", "err");
                 });
         }
-
 
         if (startScannerBtn) {
             startScannerBtn.addEventListener('click', function () {
                 if (scannerWrapper) scannerWrapper.classList.remove('d-none');
                 loadCameras();
-                setTimeout(function () {
-                    var select = document.getElementById('camera-select');
-                    if (select && select.value) startScanner(select.value);
-                }, 1200);
-            });
-        }
-
-        var camSelect = document.getElementById('camera-select');
-        if (camSelect) {
-            camSelect.addEventListener('change', function () {
-                if (html5QrCode && html5QrCode.isScanning) {
-                    html5QrCode.stop().then(function () { startScanner(camSelect.value); });
-                } else {
-                    startScanner(this.value);
-                }
             });
         }
 
@@ -142,22 +212,40 @@
                 }
             });
         }
-
-        var urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('autostart') === '1' && startScannerBtn) {
-            setTimeout(function () { startScannerBtn.click(); }, 1000);
-        }
     });
 </script>
 <style>
     #tech-console {
-        background: #f8f9fa;
-        border: 1px solid #dee2e6;
-        height: 120px;
+        background: #000;
+        color: #00ff00;
+        border: 2px solid #444;
+        height: 160px;
         overflow-y: auto;
-        font-family: monospace;
-        padding: 8px;
-        border-radius: 4px;
+        font-family: 'Consolas', 'Courier New', monospace;
+        padding: 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        line-height: 1.4;
+        box-shadow: inset 0 2px 10px rgba(0,0,0,0.5);
+    }
+    #tech-console code {
+        color: #888;
+        margin-right: 8px;
+    }
+    .text-success { color: #00ff00 !important; font-weight: bold; }
+    .text-danger { color: #ff3333 !important; font-weight: bold; }
+    .text-muted { color: #aaaaaa !important; }
+
+    #reader {
+        width: 100% !important;
+        background: #000;
+        border: 2px solid #ddd;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    #reader video {
+        object-fit: cover !important;
     }
 </style>
 {% endblock %}
@@ -189,6 +277,11 @@
                 </div>
 
                 <div id="reader" style="width: 100%; border-radius: 8px; overflow: hidden; background: #000;"></div>
+                
+                <div class="alert alert-info mt-2 p-2 small">
+                    <i class="bi bi-info-circle me-1"></i> 
+                    <strong>Tips:</strong> Jauhkan kartu sedikit (±15cm) agar kamera bisa fokus. Jangan terlalu dekat.
+                </div>
 
                 <div class="mt-3">
                     <div class="small fw-bold text-muted mb-1">{% trans "Technical Diagnostics" %}:</div>

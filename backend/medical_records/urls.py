@@ -39,4 +39,5 @@ urlpatterns = [
     path('master/diagnosis/edit/<int:pk>/', views.DiagnosisUpdateView.as_view(), name='diagnosis_edit'),
     path('master/diagnosis/delete/<int:pk>/', views.DiagnosisDeleteView.as_view(), name='diagnosis_delete'),
     path('kia/direct-registration/', views.kia_direct_registration, name='kia_direct_registration'),
+    path('nutrition/statistics/', views.nutrition_statistics, name='nutrition_statistics'),
 ]

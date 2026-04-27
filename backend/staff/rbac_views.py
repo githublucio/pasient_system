@@ -31,7 +31,9 @@ class RolePermissionMatrixView(LoginRequiredMixin, PermissionRequiredMixin, View
                 'view_menu_specialist_hiv',
                 'view_menu_specialist_tb',
                 'view_menu_specialist_dental',
-                'view_menu_specialist_nutrition'
+                'view_menu_specialist_nutrition',
+                'view_menu_specialist_usg',
+                'view_menu_triage'
             ]),
             ('medical_records', 'room', 'Clinic Rooms', []),
             ('medical_records', 'diagnosis', 'Diagnoses', []),

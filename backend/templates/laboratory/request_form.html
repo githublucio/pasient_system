@@ -277,6 +277,7 @@
 
         <div class="physician-section">
             <strong>Requesting Physician:</strong> 
+            <input type="text" class="input-line" style="width: calc(100% - 180px);" 
                 value="{% if existing_request %}{% if existing_request.requesting_physician %}{{ existing_request.requesting_physician.get_full_name|default:existing_request.requesting_physician.username }}{% else %}---{% endif %}{% else %}{{ request.user.get_full_name|default:request.user.username }}{% endif %}" readonly>
         </div>
 

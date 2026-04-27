@@ -69,65 +69,71 @@
 
         .logo-center {
             position: absolute;
-            top: 10px;
+            top: 8px;
             left: 0;
             width: 100%;
             text-align: center;
-            line-height: 1;
+            line-height: 1.1;
         }
-        .logo-img { height: 26px; display: block; margin: 0 auto 4px; }
+        .logo-img { height: 28px; display: block; margin: 0 auto 3px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1)); }
         .clinic-header { 
             font-weight: 800; 
             font-size: 11px; 
             color: #000; 
             line-height: 1;
+            letter-spacing: 0.2px;
+            text-transform: uppercase;
         }
         .clinic-sub { 
             font-size: 7px; 
-            color: #444; 
+            color: #555; 
             font-weight: 600;
             line-height: 1;
-            margin-top: 2px;
+            margin-top: 1px;
+            letter-spacing: 0.5px;
         }
 
         .label-id {
             position: absolute;
-            top: 85px; 
+            top: 62px; 
             left: 20px;
             color: var(--primary-purple);
             font-weight: 800;
-            font-size: 8px;
+            font-size: 7.5px;
             text-transform: uppercase;
             line-height: 1;
+            letter-spacing: 0.5px;
         }
 
         .value-id {
             position: absolute;
-            top: 100px;
+            top: 72px;
             left: 18px;
             font-family: 'Orbitron', sans-serif;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 700;
             color: #000;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
             line-height: 1;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
 
         .value-name {
             position: absolute;
-            top: 135px;
+            top: 104px;
             left: 20px;
             font-size: 13px;
             font-weight: 800;
             color: #000;
             text-transform: uppercase;
-            line-height: 1;
-            width: 220px; 
+            line-height: 1.1;
+            width: 185px; 
+            letter-spacing: 0.2px;
         }
 
         .info-grid {
             position: absolute;
-            bottom: 12px;
+            top: 128px;
             left: 20px;
             display: flex;
             gap: 15px;
@@ -149,25 +155,30 @@
 
         .address-box {
             position: absolute;
-            bottom: 12px;
-            left: 170px;
-            width: 100px;
+            top: 160px;
+            left: 20px;
+            width: 185px;
         }
-        .address-box .lbl { font-size: 7px; font-weight: 800; color: #555; text-transform: uppercase; display: block; margin-bottom: 2px; }
-        .address-box .val { font-size: 9px; font-weight: 600; color: #000; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .address-box .lbl { font-size: 7px; font-weight: 800; color: #555; text-transform: uppercase; display: block; margin-bottom: 2px; letter-spacing: 0.3px; }
+        .address-box .val { font-size: 9px; font-weight: 600; color: #000; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
         .qr-box-front {
             position: absolute;
-            bottom: 10px;
+            top: 80px;
             right: 15px;
             background: white;
-            padding: 4px;
-            border-radius: 4px;
+            padding: 10px;
+            border-radius: 8px;
             text-align: center;
-            border: 1px solid #eee;
+            border: 2px solid var(--primary-purple);
         }
-        .qr-img-front { width: 45px; height: 45px; }
-        .qr-label-front { font-size: 7px; font-weight: 800; color: #333; margin-top: 2px; display: block; }
+        .qr-img-front { 
+            width: 80px; 
+            height: 80px; 
+            display: block;
+            image-rendering: auto;
+        }
+        .qr-label-front { font-size: 8px; font-weight: 800; color: var(--primary-purple); margin-top: 2px; display: block; letter-spacing: 0.5px; }
 
         /* BACK SIDE POSITIONING */
         .back-logo-box {
@@ -198,7 +209,7 @@
             position: absolute;
             top: 90px;
             left: 20px;
-            right: 80px;
+            right: 100px; /* More room for barcode */
             font-size: 7.5px;
             line-height: 1.3;
         }
@@ -208,15 +219,15 @@
 
         .barcode-box-back {
             position: absolute;
-            bottom: 8px; 
+            bottom: 12px; 
             right: 15px;
             background: white;
-            padding: 4px;
+            padding: 6px;
             border-radius: 4px;
             text-align: center;
             border: 1px solid #ddd;
         }
-        .barcode-img-back { height: 35px; width: auto; }
+        .barcode-img-back { height: 55px; width: auto; }
         .barcode-txt-back { display: none; }
 
         .footer-motto {

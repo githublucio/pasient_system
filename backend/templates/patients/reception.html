@@ -4,7 +4,7 @@
 {% block title %}{% trans "Reception Dashboard" %} - {% trans "Clinic Lanud" %}{% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/dist/html5-qrcode.min.js"></script>
+<script src="{% static 'assets/html5-qrcode.min.js' %}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         var startScannerBtn = document.getElementById('start-scanner-btn');

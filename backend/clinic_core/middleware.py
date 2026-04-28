@@ -73,17 +73,18 @@ class SecurityHeadersMiddleware:
 
     def __call__(self, request):
         response = self.get_response(request)
-        response['Content-Security-Policy'] = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; "
-            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com https://unpkg.com; "
-            "font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.gstatic.com; "
-            "img-src 'self' data: blob: https://images.unsplash.com https://*.render.com https://unpkg.com; "
-            "connect-src 'self' https://unpkg.com https://cdn.jsdelivr.net; "
-            "frame-ancestors 'none'; "
-            "base-uri 'self'; "
-            "form-action 'self'"
-        )
+        # response['Content-Security-Policy'] = (
+        #     "default-src 'self'; "
+        #     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; "
+        #     "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com https://unpkg.com; "
+        #     "font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.gstatic.com; "
+        #     "img-src 'self' data: blob: https://images.unsplash.com https://*.render.com https://unpkg.com; "
+        #     "connect-src 'self' https://unpkg.com https://cdn.jsdelivr.net; "
+        #     "frame-ancestors 'none'; "
+        #     "base-uri 'self'; "
+        #     "form-action 'self'"
+        # )
+
         response['X-Content-Type-Options'] = 'nosniff'
         response['X-Frame-Options'] = 'DENY'
         response['X-XSS-Protection'] = '1; mode=block'

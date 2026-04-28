@@ -95,12 +95,18 @@
             var config = { fps: 10, qrbox: 250 };
             updateStatus("{% trans 'Attempting generic camera access...' %}", "ok");
             
-            // Try with environment facing mode (back camera) or user (front)
-            html5QrCode.start({ facingMode: "user" }, config, onScanSuccess)
-                .then(function() { techLog("Generic scanner started (User Mode)."); })
+            // Try with environment facing mode (back camera) first
+            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+                .then(function() { techLog("Generic scanner started (Environment Mode)."); })
                 .catch(function(err) {
-                    techLog("Generic Fail: " + err, "err");
-                    updateStatus("{% trans 'Cannot open camera. Check permissions.' %}", "err");
+                    techLog("Back Cam Generic Fail: " + err, "warn");
+                    // Fallback to user (front)
+                    html5QrCode.start({ facingMode: "user" }, config, onScanSuccess)
+                        .then(function() { techLog("Generic scanner started (User Mode)."); })
+                        .catch(function(err2) {
+                            techLog("Generic Total Fail: " + err2, "err");
+                            updateStatus("{% trans 'Cannot open camera. Check permissions.' %}", "err");
+                        });
                 });
         }
 
@@ -168,27 +174,50 @@
             }
         }
 
-        function initScanner(cameraId) {
+        function initScanner(cameraId, retryCount = 0) {
             var config = {
                 fps: 15, 
                 qrbox: { width: 280, height: 280 },
                 aspectRatio: 1.0,
-                videoConstraints: {
-                    facingMode: "environment", // Prioritize back camera on phones
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
-                }
             };
 
-            techLog("Optimizing scan loop (Stable Mode)...");
+            // Attempt 0: Ideal constraints (High Res)
+            // Attempt 1: Back camera but no resolution constraint
+            // Attempt 2: Fully generic (let browser decide)
+            
+            if (retryCount === 0) {
+                config.videoConstraints = {
+                    facingMode: "environment",
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                };
+                techLog("Mode: High-Resolution (1280x720)...");
+            } else if (retryCount === 1) {
+                config.videoConstraints = {
+                    facingMode: "environment"
+                };
+                techLog("Mode: Back Camera Standard...", "warn");
+            } else {
+                config.videoConstraints = true; 
+                techLog("Mode: Generic Fallback...", "err");
+            }
+
             html5QrCode.start(cameraId, config, onScanSuccess)
                 .then(function () { 
-                    techLog("Scanner is FAST."); 
-                    updateStatus("{% trans 'Scanner Ready! High-speed mode active.' %}", "ok"); 
+                    techLog("Scanner Ready (Level " + retryCount + ")"); 
+                    updateStatus("{% trans 'Scanner Ready!' %}", "ok"); 
                 })
                 .catch(function (err) {
-                    techLog("Start Error: " + err, "err");
-                    updateStatus("{% trans 'Failed to open camera.' %}", "err");
+                    var errorMsg = err.name + ": " + err.message;
+                    techLog("Start Error: " + errorMsg, "err");
+                    
+                    if (retryCount < 2) {
+                        techLog("Retrying with lower constraints...");
+                        initScanner(cameraId, retryCount + 1);
+                    } else {
+                        updateStatus("{% trans 'Failed to open camera.' %}", "err");
+                        techLog("CRITICAL: All attempts failed. Try clearing browser cache/permissions.", "err");
+                    }
                 });
         }
 

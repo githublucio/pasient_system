@@ -90,9 +90,24 @@
 
         function startScannerGeneric() {
             if (html5QrCode) { html5QrCode.clear(); }
-            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode = new Html5Qrcode("reader", {
+                formatsToSupport: [ 
+                    Html5QrcodeSupportedFormats.QR_CODE, 
+                    Html5QrcodeSupportedFormats.CODE_128,
+                    Html5QrcodeSupportedFormats.CODE_39,
+                    Html5QrcodeSupportedFormats.EAN_13,
+                    Html5QrcodeSupportedFormats.EAN_8
+                ]
+            });
             
-            var config = { fps: 10, qrbox: 250 };
+            var config = { 
+                fps: 10, 
+                qrbox: function(viewfinderWidth, viewfinderHeight) {
+                    var w = viewfinderWidth * 0.8;
+                    var h = viewfinderHeight * 0.4;
+                    return { width: Math.max(w, 250), height: Math.max(h, 150) };
+                }
+            };
             updateStatus("{% trans 'Attempting generic camera access...' %}", "ok");
             
             // Try with environment facing mode (back camera) first
@@ -160,7 +175,15 @@
 
         function startScanner(cameraId) {
             if (!html5QrCode) {
-                html5QrCode = new Html5Qrcode("reader");
+                html5QrCode = new Html5Qrcode("reader", {
+                    formatsToSupport: [ 
+                        Html5QrcodeSupportedFormats.QR_CODE, 
+                        Html5QrcodeSupportedFormats.CODE_128,
+                        Html5QrcodeSupportedFormats.CODE_39,
+                        Html5QrcodeSupportedFormats.EAN_13,
+                        Html5QrcodeSupportedFormats.EAN_8
+                    ]
+                });
             }
             
             if (html5QrCode.isScanning) {
@@ -177,7 +200,11 @@
         function initScanner(cameraId, retryCount = 0) {
             var config = {
                 fps: 15, 
-                qrbox: { width: 280, height: 280 },
+                qrbox: function(viewfinderWidth, viewfinderHeight) {
+                    var w = viewfinderWidth * 0.8;
+                    var h = viewfinderHeight * 0.4;
+                    return { width: Math.max(w, 250), height: Math.max(h, 150) };
+                },
                 aspectRatio: 1.0,
             };
 
@@ -305,7 +332,7 @@
                 
                 <div class="alert alert-info mt-2 p-2 small">
                     <i class="bi bi-info-circle me-1"></i> 
-                    <strong>Tips:</strong> Jauhkan kartu sedikit (±15cm) agar kamera bisa fokus. Jangan terlalu dekat.
+                    <strong>Tips:</strong> Jauhkan kartu sedikit (±15cm) agar kamera bisa fokus. Scan <strong>QR Code</strong> (kotak) atau <strong>Barcode</strong> (garis).
                 </div>
 
                 <div class="mt-3">

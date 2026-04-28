@@ -54,7 +54,7 @@
                     <th>{% trans "Doctor" %}</th>
                     <th>{% trans "Allergy" %}</th>
                     <th>{% trans "Medicines Dispensed" %}</th>
-                    <th>{% trans "Time" %}</th>
+                    <th>{% trans "Date/Time" %}</th>
                     <th>{% trans "Dispensing Status" %}</th>
                     <th class="text-center">{% trans "Actions" %}</th>
                 </tr>
@@ -98,7 +98,7 @@
                             <span class="text-muted small">-</span>
                         {% endfor %}
                     </td>
-                    <td><small>{{ rx.date_created|date:"H:i" }}</small></td>
+                    <td><small>{{ rx.date_created|date:"d M H:i" }}</small></td>
                     <td>
                         {% if rx.dispensing_status == 'COLLECTED' %}
                             <span class="badge bg-success">{% trans "Collected" %}</span>

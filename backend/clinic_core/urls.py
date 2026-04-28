@@ -19,6 +19,8 @@ from django.urls import path, include
 from django.shortcuts import redirect
 from django.conf import settings
 from django.conf.urls.static import static
+from django.urls import re_path
+from django.views.static import serve
 from patients import views as patient_views
 from staff import views as staff_views
 from clinic_core import views as core_views
@@ -48,5 +50,15 @@ urlpatterns = [
     path('settings/', include('administration.urls')),
 ]
 
+# Always serve media files, even when DEBUG is False, since we are using 
+# Waitress on Windows without Nginx for this internal clinic system.
+urlpatterns += [
+    re_path(r'^media/(?P<path>.*)$', serve, {
+        'document_root': settings.MEDIA_ROOT,
+    }),
+]
+
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # Static files are handled by WhiteNoise in production, but we keep this 
+    # for development server just in case.
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

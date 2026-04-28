@@ -257,7 +257,7 @@
     {% with cat=profile.category.name.upper %}
     {% with is_admin=user.is_superuser %}
     <aside class="sidebar" id="sidebar">
-        <div class="sb-brand"><img src="/media/Logo.png" alt="Logo"><span>Bairo Pite CMS</span></div>
+        <div class="sb-brand"><img src="{% static 'assets/Logo.png' %}" alt="Logo"><span>Bairo Pite CMS</span></div>
         <ul class="sb-nav mt-2">
             <li><a href="{% url 'main_dashboard' %}"><i class="bi bi-grid-fill"></i> {% trans "Dashboard" %}</a></li>
         </ul>

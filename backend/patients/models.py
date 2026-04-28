@@ -126,25 +126,30 @@ class PatientQuerySet(models.QuerySet):
         qs = self.all()
 
         if not is_hiv_staff and not is_nutrition_staff:
+            from medical_records.models import Visit
+            igd_patient_ids = list(Visit.objects.filter(
+                Q(current_room__code__in=['IGD', 'EMERGENCY']) & 
+                (Q(visit_date__date=today) | Q(status__in=['SCH', 'IP']))
+            ).values_list('patient_id', flat=True))
+            
             # General Staff: Hide BOTH HIV and Nutrition categories
             qs = qs.filter(
                 # Condition A: Not HIV and Not Nutrition
                 (Q(is_hiv_patient=False) & Q(is_pregnant=False) & Q(is_lactating=False) & Q(date_of_birth__lt=child_limit)) |
                 # Condition B: Emergency exception (if they are in IGD today, everyone can see them for safety)
-                Q(
-                    visits__current_room__code__in=['IGD', 'EMERGENCY'],
-                    visits__visit_date__date=today
-                ) |
-                Q(
-                    visits__current_room__code__in=['IGD', 'EMERGENCY'],
-                    visits__status__in=['SCH', 'IP']
-                )
+                Q(uuid__in=igd_patient_ids)
             )
         elif is_nutrition_staff:
+            from medical_records.models import Visit
+            igd_patient_ids = list(Visit.objects.filter(
+                current_room__code__in=['IGD', 'EMERGENCY'],
+                visit_date__date=today
+            ).values_list('patient_id', flat=True))
+            
             # Nutrition Staff: Can see Nutrition patients + General patients, but NO HIV patients
             qs = qs.filter(
                 Q(is_hiv_patient=False) |
-                Q(visits__current_room__code__in=['IGD', 'EMERGENCY'], visits__visit_date__date=today)
+                Q(uuid__in=igd_patient_ids)
             )
         elif is_hiv_staff:
             # HIV Staff: Usually see everything (as per current system policy)
@@ -307,6 +312,7 @@ class Patient(models.Model):
             models.Index(fields=['-created_at'], name='idx_patient_created'),
             GinIndex(name='idx_patient_name_trgm', fields=['full_name'], opclasses=['gin_trgm_ops']),
             GinIndex(name='idx_patient_phone_trgm', fields=['phone_number'], opclasses=['gin_trgm_ops']),
+            GinIndex(name='idx_patient_id_trgm', fields=['patient_id'], opclasses=['gin_trgm_ops']),
         ]
         permissions = [
             ("can_print_card", "Can print patient ID card"),

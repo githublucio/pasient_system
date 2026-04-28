@@ -135,7 +135,7 @@
                                 <div class="fw-bold">{{ visit.patient.full_name }}</div>
                                 <small class="text-muted">{{ visit.patient.patient_id }}</small>
                             </td>
-                            <td>{{ visit.visit_date|time:"H:i" }}</td>
+                            <td>{{ visit.visit_date|date:"d M H:i" }}</td>
                             <td>
                                 <a href="{% url 'triage_input' visit.uuid %}" class="btn btn-info text-white btn-sm">
                                     <i class="bi bi-thermometer-half"></i> {% trans "Check Vitals" %}

@@ -75,9 +75,10 @@
                         <tr>
                             <th width="10%">{% trans "Queue" %}</th>
                             <th width="35%">{% trans "Patient" %}</th>
-                            <th width="20%">{% trans "Triage & Arrival" %}</th>
-                            <th width="20%">{% trans "Observation" %}</th>
-                            <th width="15%">{% trans "Action" %}</th>
+                            <th width="15%">{% trans "Triage & Arrival" %}</th>
+                            <th width="15%">{% trans "Date & Time" %}</th>
+                            <th width="15%">{% trans "Observation" %}</th>
+                            <th width="10%">{% trans "Action" %}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -137,6 +138,7 @@
                                     {% endif %}
                                 </div>
                             </td>
+                            <td><small>{{ visit.visit_date|date:"d M H:i" }}</small></td>
                             <td>
                                 <!-- Observation & Diagnostic Status Logic -->
                                 <div class="{% if visit.needs_referral %}text-danger fw-bold{% elif visit.observation_hours > 12 %}text-warning fw-bold{% else %}text-success{% endif %} mb-2">
@@ -206,7 +208,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="text-center py-5">
+                            <td colspan="6" class="text-center py-5">
                                 <div class="text-muted opacity-50">
                                     <i class="bi bi-check2-circle fs-1 d-block mb-2"></i>
                                     {% trans "No emergency patients in queue." %}

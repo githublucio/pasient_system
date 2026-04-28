@@ -83,7 +83,7 @@ class ExaminationForm(forms.ModelForm):
         fields = [
             'complaint', 'diagnosis', 'secondary_diagnoses', 'clinical_notes', 
             'lab_cbc', 'pharmacy_requested', 'refer_to_central',
-            'status', 'current_room', 'follow_up_date', 'follow_up_notes'
+            'status', 'follow_up_date', 'follow_up_notes'
         ]
         widgets = {
             'complaint': forms.Textarea(attrs={'rows': 3, 'class': 'form-control', 'placeholder': _('Reason for consultation (e.g. Persistent cough, chest pain)...')}),
@@ -98,7 +98,6 @@ class ExaminationForm(forms.ModelForm):
             'pharmacy_requested': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'refer_to_central': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
-            'current_room': forms.Select(attrs={'class': 'form-select'}),
             'follow_up_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'follow_up_notes': forms.TextInput(attrs={'class': 'form-control', 'placeholder': _('e.g. Check lab results')}),
         }
@@ -111,8 +110,15 @@ class ExaminationForm(forms.ModelForm):
         # Room referral logic
         from .models import Room
         referral_codes = ['ROOM_7', 'RADIOLOGY', 'PHARMACY', 'LAB', 'PATHOLOGY', 'IGD', 'EMERGENCY', 'TRAB', 'DENTAL', 'NUTRISI', 'KIA', 'USG']
-        self.fields['current_room'].queryset = Room.objects.filter(code__in=referral_codes).order_by('name')
-        self.fields['current_room'].required = False
+        self.fields['referral_rooms'] = forms.ModelMultipleChoiceField(
+            queryset=Room.objects.filter(code__in=referral_codes).order_by('name'),
+            widget=forms.SelectMultiple(attrs={
+                'class': 'form-select select2-multiple',
+                'data-placeholder': _('Select one or more departments...')
+            }),
+            required=False,
+            label=_('Next Room / Referrals')
+        )
 
         # If editing existing visit, combine primary and secondary into the placeholder field
         if self.instance.pk:
@@ -144,7 +150,7 @@ class EmergencyExaminationForm(forms.ModelForm):
             'complaint', 'er_bp_sys', 'er_bp_dia', 'er_spo2', 'er_pulse', 'er_rr', 
             'er_temp', 'er_weight', 'er_muac', 'vas_score', 'diagnosis', 'secondary_diagnoses', 'clinical_notes', 
             'lab_cbc', 'pharmacy_requested', 'refer_to_central',
-            'status', 'current_room', 'allergy_noted',
+            'status', 'allergy_noted',
             'follow_up_date', 'follow_up_notes',
         ]
         widgets = {
@@ -169,7 +175,6 @@ class EmergencyExaminationForm(forms.ModelForm):
             'pharmacy_requested': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'refer_to_central': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'status': forms.Select(attrs={'class': 'form-select'}),
-            'current_room': forms.Select(attrs={'class': 'form-select'}),
             'follow_up_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'follow_up_notes': forms.Textarea(attrs={'rows': 2, 'class': 'form-control', 'placeholder': _('Instructions for follow-up visit...')}),
         }
@@ -187,8 +192,15 @@ class EmergencyExaminationForm(forms.ModelForm):
         
         from .models import Room
         referral_codes = ['ROOM_7', 'RADIOLOGY', 'PHARMACY', 'LAB', 'PATHOLOGY', 'IGD', 'EMERGENCY', 'TRAB', 'KIA', 'HIV', 'TB', 'DENTAL', 'NUTRISI', 'USG']
-        self.fields['current_room'].queryset = Room.objects.filter(code__in=referral_codes).order_by('name')
-        self.fields['current_room'].required = False
+        self.fields['referral_rooms'] = forms.ModelMultipleChoiceField(
+            queryset=Room.objects.filter(code__in=referral_codes).order_by('name'),
+            widget=forms.SelectMultiple(attrs={
+                'class': 'form-select select2-multiple',
+                'data-placeholder': _('Select one or more departments...')
+            }),
+            required=False,
+            label=_('Next Room / Referrals')
+        )
 
         if self.instance.pk:
             initial_ids = []

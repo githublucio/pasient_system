@@ -178,8 +178,8 @@
                         {{ form.status }}
                     </div>
                     <div class="col-12 mt-3">
-                        <label class="form-label fw-bold text-primary">{{ form.current_room.label }}</label>
-                        {{ form.current_room }}
+                        <label class="form-label fw-bold text-primary">{{ form.referral_rooms.label }}</label>
+                        {{ form.referral_rooms }}
                         <div class="form-text">{% trans "Select where to send the patient next (Lab, Pharmacy, etc.)" %}
                         </div>
                     </div>
@@ -975,6 +975,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         initDiagnosisSearch();
+
+        // Initialize multi-select for referral rooms
+        if ($('.select2-multiple').length > 0 && typeof $.fn.select2 !== 'undefined') {
+            $('.select2-multiple').select2({
+                theme: 'bootstrap-5',
+                width: '100%',
+                closeOnSelect: false
+            });
+        }
 
         // Follow Up Registration Logic
         $(document).on('click', '.btn-followup', function(e) {

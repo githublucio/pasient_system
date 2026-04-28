@@ -14,10 +14,11 @@ def preview_card(request, uuid):
         
     return render(request, 'printing/card_preview.html', {
         'patient': patient,
-        'logo_url': '/media/Logo.png',
-        'front_bg_url': '/media/carad_bacgroun.jpeg',
-        'back_bg_url': '/media/carad_bacgroun.jpeg',
+        'logo_url': '/static/assets/Logo.png',
+        'front_bg_url': '/static/assets/carad_bacgroun.jpeg',
+        'back_bg_url': '/static/assets/carad_bacgroun.jpeg',
     })
+
 
 @login_required
 def print_card_trigger(request, uuid):

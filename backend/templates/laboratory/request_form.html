@@ -123,7 +123,7 @@
 
 <div class="row justify-content-center mb-4 no-print">
     <div class="col-md-8 d-flex justify-content-between">
-        <a href="{% url 'perform_examination' visit.uuid %}" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> {% trans "Back to Examination" %}</a>
+        <a href="javascript:history.back()" class="btn btn-outline-secondary"><i class="bi bi-arrow-left"></i> {% trans "Back" %}</a>
         <button onclick="window.print()" class="btn btn-outline-primary"><i class="bi bi-printer"></i> {% trans "Print Empty Form" %}</button>
     </div>
 </div>

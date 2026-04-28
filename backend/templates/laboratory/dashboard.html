@@ -55,7 +55,7 @@
                     <th>{% trans "Urgency" %}</th>
                     <th>{% trans "Patient Type" %}</th>
                     <th>{% trans "Tests" %}</th>
-                    <th>{% trans "Time" %}</th>
+                    <th>{% trans "Date/Time" %}</th>
                     <th>{% trans "Status" %}</th>
                     <th class="text-center">{% trans "Actions" %}</th>
                 </tr>
@@ -107,7 +107,7 @@
                             <span class="text-muted">-</span>
                         {% endif %}
                     </td>
-                    <td><small>{{ req.date_of_request|date:"H:i" }}</small></td>
+                    <td><small>{{ req.date_of_request|date:"d M H:i" }}</small></td>
                     <td>
                         {% if req.status == 'COMPLETED' %}
                             <span class="badge bg-success">{% trans "Completed" %}</span>

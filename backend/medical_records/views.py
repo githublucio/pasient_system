@@ -637,9 +637,9 @@ def perform_examination(request, visit_uuid):
         # --- Standard Main Form Handling ---
         form = FormClass(request.POST, instance=visit)
         if form.is_valid():
-            # Resolve referral target BEFORE accessing it
-            referral_room_id = form.cleaned_data.get('current_room')
-            referral_target = referral_room_id if referral_room_id else visit.current_room
+            # Process multiple referrals
+            referral_rooms = list(form.cleaned_data.get('referral_rooms', []))
+            original_room = visit.current_room
 
             if is_nurse:
                 # Nurses can only update specific fields (Vitals, Lab Request)
@@ -652,6 +652,11 @@ def perform_examination(request, visit_uuid):
                 # Doctors have full control
                 visit.doctor = request.user
                 visit = form.save(commit=False)
+                
+                # Update current_room to the first selected referral room (if any)
+                if referral_rooms:
+                    visit.current_room = referral_rooms[0]
+                    
                 visit.doctor = request.user
                 visit.save()
                 form.save_m2m()
@@ -691,9 +696,23 @@ def perform_examination(request, visit_uuid):
                 visit.source = source_tag
                 visit.save()
 
+            referred_to_lab = visit.lab_cbc
+            referred_to_rad = False
+            referred_to_pharm = getattr(visit, 'pharmacy_requested', False)
+            referred_to_patho = False
+
+            for room in referral_rooms:
+                if 'LAB' in room.name.upper() or 'LAB' in room.code.upper() or room.code == 'ROOM_7':
+                    referred_to_lab = True
+                elif 'RADIOLOGY' in room.code.upper() or 'RAD' in room.code.upper():
+                    referred_to_rad = True
+                elif 'PHARM' in room.name.upper() or 'PHARM' in room.code.upper() or room.code == 'ROOM_8':
+                    referred_to_pharm = True
+                elif 'PATHOLOGY' in room.code.upper() or 'PATHO' in room.code.upper():
+                    referred_to_patho = True
+
             # 1. Laboratory Request
-            is_lab_referral = referral_target and ('LAB' in referral_target.name.upper() or 'LAB' in referral_target.code.upper() or referral_target.code == 'ROOM_7')
-            if visit.lab_cbc or is_lab_referral:
+            if referred_to_lab:
                 from laboratory.models import LabRequest, LabTest
                 lab_req, created = LabRequest.objects.get_or_create(
                     visit=visit,
@@ -715,8 +734,7 @@ def perform_examination(request, visit_uuid):
                         pass
             
             # 2. Pharmacy / Prescription
-            is_pharmacy_referral = referral_target and ('PHARM' in referral_target.name.upper() or 'PHARM' in referral_target.code.upper() or referral_target.code == 'ROOM_8')
-            if getattr(visit, 'pharmacy_requested', False) or is_pharmacy_referral:
+            if referred_to_pharm:
                 from pharmacy.models import Prescription
                 presc, created = Prescription.objects.get_or_create(
                     visit=visit,
@@ -730,27 +748,25 @@ def perform_examination(request, visit_uuid):
                     presc.doctor = request.user
                     presc.save()
 
-            # Create RadiologyRequest if referral target is Radiology
-            is_rad_referral = referral_target and ('RADIOLOGY' in referral_target.code.upper() or 'RAD' in referral_target.code.upper())
-            if is_rad_referral:
+            # 3. Radiology Request
+            if referred_to_rad:
                 from radiology.models import RadiologyRequest
                 RadiologyRequest.objects.get_or_create(
                     visit=visit,
                     defaults={
                         'requesting_physician': request.user,
-                        'source': 'IGD' if is_emergency else 'OPD'
+                        'source': source_tag
                     }
                 )
 
-            # Create PathologyRequest if referral target is Pathology
-            is_patho_referral = referral_target and ('PATHOLOGY' in referral_target.code.upper() or 'PATHO' in referral_target.code.upper())
-            if is_patho_referral:
+            # 4. Pathology Request
+            if referred_to_patho:
                 from pathology.models import PathologyRequest
                 PathologyRequest.objects.get_or_create(
                     visit=visit,
                     defaults={
                         'requesting_physician': request.user,
-                        'source': 'IGD' if is_emergency else 'OPD'
+                        'source': source_tag
                     }
                 )
 
@@ -760,10 +776,10 @@ def perform_examination(request, visit_uuid):
                 log_visit_action(visit, 'REFERRED', request.user)
 
             if is_emergency:
-                dept_name = referral_target.name if referral_target else _("None")
+                dept_names = ", ".join([r.name for r in referral_rooms]) if referral_rooms else _("None")
                 messages.success(request, _("Data examination for %(name)s saved. Referral sent to %(dept)s. Patient remains in Emergency queue.") % {
                     'name': visit.patient.full_name,
-                    'dept': dept_name,
+                    'dept': dept_names,
                 })
             else:
                 messages.success(request, _("Examination for %(name)s saved. Patient referred to %(room)s.") % {
@@ -771,7 +787,7 @@ def perform_examination(request, visit_uuid):
                     'room': visit.current_room.name if visit.current_room else _("None")
                 })
 
-            if visit.status == 'COM' or (referral_target and referral_target != visit.current_room) or is_emergency:
+            if visit.status == 'COM' or (referral_rooms and visit.current_room != original_room) or is_emergency:
                 if is_emergency:
                     return redirect('emergency_dashboard')
                 return redirect('doctor_dashboard')

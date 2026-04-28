@@ -369,7 +369,7 @@ def lab_dashboard(request):
 
     from django.db.models import Q
     requests = LabRequest.objects.filter(
-        Q(status='PENDING') | Q(date_of_request__date=filter_date)
+        ~Q(status='COMPLETED') | Q(date_of_request__date=filter_date)
     ).select_related('visit__patient', 'requesting_physician').prefetch_related('tests').order_by('-date_of_request')
 
     pending_count = requests.exclude(status='COMPLETED').count()

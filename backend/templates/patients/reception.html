@@ -170,15 +170,14 @@
 
         function initScanner(cameraId) {
             var config = {
-                fps: 10, 
-                qrbox: { width: 300, height: 300 },
-                formatsToSupport: [ 
-                    Html5QrcodeSupportedFormats.QR_CODE,
-                    Html5QrcodeSupportedFormats.CODE_128,
-                    Html5QrcodeSupportedFormats.CODE_39,
-                    Html5QrcodeSupportedFormats.EAN_8,
-                    Html5QrcodeSupportedFormats.EAN_13
-                ]
+                fps: 15, 
+                qrbox: { width: 280, height: 280 },
+                aspectRatio: 1.0,
+                videoConstraints: {
+                    facingMode: "environment", // Prioritize back camera on phones
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
             };
 
             techLog("Optimizing scan loop (Stable Mode)...");

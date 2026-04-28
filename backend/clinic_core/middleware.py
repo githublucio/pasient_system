@@ -79,7 +79,7 @@ class SecurityHeadersMiddleware:
             "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com https://unpkg.com; "
             "font-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.gstatic.com; "
             "img-src 'self' data: blob: https://images.unsplash.com https://*.render.com https://unpkg.com; "
-            "connect-src 'self' https://unpkg.com; "
+            "connect-src 'self' https://unpkg.com https://cdn.jsdelivr.net; "
             "frame-ancestors 'none'; "
             "base-uri 'self'; "
             "form-action 'self'"

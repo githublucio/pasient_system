@@ -164,24 +164,23 @@
 
         .qr-box-front {
             position: absolute;
-            top: 75px; /* Moved up slightly to accommodate larger size */
+            top: 78px; 
             right: 15px;
             background: white;
-            padding: 8px; /* Reduced padding slightly to save space */
+            padding: 7px;
             border-radius: 8px;
             text-align: center;
             border: 2px solid var(--primary-purple);
         }
         .qr-img-front { 
-            width: 100px; /* Increased from 80px */
-            height: 100px; /* Increased from 80px */
+            width: 90px; /* Balanced size */
+            height: 90px;
             display: block;
-            /* Sharp rendering for better scanning */
             image-rendering: -webkit-optimize-contrast;
             image-rendering: crisp-edges;
             image-rendering: pixelated;
         }
-        .qr-label-front { font-size: 9px; font-weight: 800; color: var(--primary-purple); margin-top: 3px; display: block; letter-spacing: 0.5px; }
+        .qr-label-front { font-size: 8.5px; font-weight: 800; color: var(--primary-purple); margin-top: 2px; display: block; letter-spacing: 0.5px; }
 
         /* BACK SIDE POSITIONING */
         .back-logo-box {
@@ -212,7 +211,7 @@
             position: absolute;
             top: 90px;
             left: 20px;
-            right: 100px; /* More room for barcode */
+            right: 135px; /* Increased space to avoid barcode overlap */
             font-size: 7.5px;
             line-height: 1.3;
         }
@@ -231,7 +230,7 @@
             border: 1px solid #ddd;
         }
         .barcode-img-back { 
-            height: 85px; /* Increased further for better scanning */
+            height: 65px; /* Balanced height for neatness */
             width: auto;
             /* Sharp rendering for better scanning */
             image-rendering: -webkit-optimize-contrast;

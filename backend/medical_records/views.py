@@ -158,15 +158,23 @@ def triage_input(request, visit_uuid):
     if request.method == 'POST':
         form = TriageForm(request.POST, instance=visit)
         if form.is_valid():
-            visit = form.save(commit=False)
-            visit.triage_nurse = request.user
-            visit.save()
-            log_visit_action(visit, 'TRIAGE', request.user, room=visit.current_room)
-            messages.success(request, _("Triage for %(name)s completed. Patient directed to %(room)s.") % {
-                'name': visit.patient.full_name,
-                'room': visit.current_room.name
-            })
-            return redirect('triage_dashboard')
+            try:
+                visit = form.save(commit=False)
+                visit.triage_nurse = request.user
+                visit.save()
+                log_visit_action(visit, 'TRIAGE', request.user, room=visit.current_room)
+                
+                room_name = visit.current_room.name if visit.current_room else _("Doctor")
+                messages.success(request, _("Triage for %(name)s completed. Patient directed to %(room)s.") % {
+                    'name': visit.patient.full_name,
+                    'room': room_name
+                })
+                return redirect('triage_dashboard')
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Error saving triage: {str(e)}", exc_info=True)
+                messages.error(request, _("A system error occurred while saving triage: %s") % str(e))
+                return redirect('triage_input', visit_uuid=visit.uuid)
     else:
         form = TriageForm(instance=visit)
         if visit.current_room and visit.current_room.code not in ['TRIAGE', 'ROOM_2']:
@@ -638,140 +646,161 @@ def perform_examination(request, visit_uuid):
         # --- Standard Main Form Handling ---
         form = FormClass(request.POST, instance=visit)
         if form.is_valid():
-            # Process multiple referrals
-            referral_rooms = list(form.cleaned_data.get('referral_rooms', []))
-            original_room = visit.current_room
+            try:
+                # Process multiple referrals
+                referral_rooms = list(form.cleaned_data.get('referral_rooms', []))
+                original_room = visit.current_room
 
-            if is_nurse:
-                # Nurses can only update specific fields (Vitals, Lab Request)
-                # We strictly prevent them from changing Diagnosis or Clinical Notes 
-                # if those were already set by a doctor, or if they try to set them.
-                visit.diagnosis = visit.__class__.objects.get(pk=visit.pk).diagnosis
-                visit.clinical_notes = visit.__class__.objects.get(pk=visit.pk).clinical_notes
-                visit.save()
-            else:
-                # Doctors have full control
-                visit.doctor = request.user
-                visit = form.save(commit=False)
-                
-                # Update current_room to the first selected referral room (if any)
-                if referral_rooms:
-                    visit.current_room = referral_rooms[0]
+                if is_nurse:
+                    # Nurses can only update specific fields (Vitals, Lab Request)
+                    # We strictly prevent them from changing Diagnosis or Clinical Notes 
+                    # if those were already set by a doctor.
+                    # Capture current DB state first
+                    old_instance = Visit.objects.get(pk=visit.pk)
                     
-                visit.doctor = request.user
-                visit.save()
-                form.save_m2m()
+                    # Save form to apply vitals/complaint to the instance
+                    visit = form.save(commit=False)
+                    
+                    # Restore sensitive fields from DB if they were already set or if nurse tried to change them
+                    # (Unless it's an emergency where they might need to input initial notes)
+                    if old_instance.diagnosis:
+                        visit.diagnosis = old_instance.diagnosis
+                    if old_instance.clinical_notes:
+                        visit.clinical_notes = old_instance.clinical_notes
+                    
+                    visit.save()
+                    form.save_m2m()
+                else:
+                    # Doctors have full control
+                    visit = form.save(commit=False)
+                    visit.doctor = request.user
+                    
+                    # Update current_room to the first selected referral room (if any)
+                    if referral_rooms:
+                        visit.current_room = referral_rooms[0]
+                        
+                    visit.save()
+                    form.save_m2m()
 
-            if visit.follow_up_date:
-                from appointments.models import Appointment
-                import datetime
-                auto_notes = visit.follow_up_notes if visit.follow_up_notes else "Automated follow-up"
-                Appointment.objects.get_or_create(
-                    patient=visit.patient,
-                    appointment_date=visit.follow_up_date,
-                    doctor=visit.doctor,
-                    defaults={
-                        'department': visit.current_room,
-                        'appointment_time': datetime.time(9, 0),
-                        'reason': f"Follow-Up / Automated: {auto_notes}",
-                        'created_by': request.user
-                    }
-                )
+                # --- Handle Follow-up Appointment ---
+                if visit.follow_up_date:
+                    from appointments.models import Appointment
+                    import datetime
+                    auto_notes = visit.follow_up_notes if visit.follow_up_notes else "Automated follow-up"
+                    Appointment.objects.get_or_create(
+                        patient=visit.patient,
+                        appointment_date=visit.follow_up_date,
+                        doctor=visit.doctor,
+                        defaults={
+                            'department': visit.current_room,
+                            'appointment_time': datetime.time(9, 0),
+                            'reason': f"Follow-Up / Automated: {auto_notes}",
+                            'created_by': request.user
+                        }
+                    )
 
-            # --- Allergy Sync Logic ---
-            allergy_str = form.cleaned_data.get('allergy_noted')
-            if allergy_str:
-                from patients.models import PatientAllergy
-                PatientAllergy.objects.get_or_create(
-                    patient=visit.patient,
-                    allergen=allergy_str,
-                    defaults={'reaction': _('Noted during ER visit')}
-                )
-                messages.info(request, _("Allergy '%s' added to patient record.") % allergy_str)
+                # --- Allergy Sync Logic ---
+                allergy_str = form.cleaned_data.get('allergy_noted')
+                if allergy_str:
+                    from patients.models import PatientAllergy
+                    PatientAllergy.objects.get_or_create(
+                        patient=visit.patient,
+                        allergen=allergy_str,
+                        defaults={'reaction': _('Noted during ER visit')}
+                    )
+                    messages.info(request, _("Allergy '%s' added to patient record.") % allergy_str)
 
-            # --- Unified Diagnostic Referral Logic ---
-            source_tag = 'IGD' if is_emergency else 'OPD'
-            
-            # Universal source tracking on the Visit model
-            if visit.source != source_tag:
-                visit.source = source_tag
-                visit.save()
+                # --- Unified Diagnostic Referral Logic ---
+                source_tag = 'IGD' if is_emergency else 'OPD'
+                
+                # Universal source tracking on the Visit model
+                if visit.source != source_tag:
+                    visit.source = source_tag
+                    visit.save()
 
-            referred_to_lab = visit.lab_cbc
-            referred_to_rad = False
-            referred_to_pharm = getattr(visit, 'pharmacy_requested', False)
-            referred_to_patho = False
+                referred_to_lab = visit.lab_cbc
+                referred_to_rad = False
+                referred_to_pharm = getattr(visit, 'pharmacy_requested', False)
+                referred_to_patho = False
 
-            for room in referral_rooms:
-                if 'LAB' in room.name.upper() or 'LAB' in room.code.upper() or room.code == 'ROOM_7':
-                    referred_to_lab = True
-                elif 'RADIOLOGY' in room.code.upper() or 'RAD' in room.code.upper():
-                    referred_to_rad = True
-                elif 'PHARM' in room.name.upper() or 'PHARM' in room.code.upper() or room.code == 'ROOM_8':
-                    referred_to_pharm = True
-                elif 'PATHOLOGY' in room.code.upper() or 'PATHO' in room.code.upper():
-                    referred_to_patho = True
+                for room in referral_rooms:
+                    room_code_upper = room.code.upper() if room.code else ''
+                    room_name_upper = room.name.upper() if room.name else ''
+                    
+                    if 'LAB' in room_name_upper or 'LAB' in room_code_upper or room_code_upper == 'ROOM_7':
+                        referred_to_lab = True
+                    elif 'RADIOLOGY' in room_code_upper or 'RAD' in room_code_upper:
+                        referred_to_rad = True
+                    elif 'PHARM' in room_name_upper or 'PHARM' in room_code_upper or room_code_upper == 'ROOM_8':
+                        referred_to_pharm = True
+                    elif 'PATHOLOGY' in room_code_upper or 'PATHO' in room_code_upper:
+                        referred_to_patho = True
 
-            # 1. Laboratory Request
-            if referred_to_lab:
-                from laboratory.models import LabRequest, LabTest
-                lab_req, created = LabRequest.objects.get_or_create(
-                    visit=visit,
-                    defaults={
-                        'requesting_physician': request.user,
-                        'source': source_tag
-                    }
-                )
-                if not created:
-                    lab_req.source = source_tag
-                    lab_req.requesting_physician = request.user
-                    lab_req.save()
+                # 1. Laboratory Request
+                if referred_to_lab:
+                    from laboratory.models import LabRequest, LabTest
+                    lab_req, created = LabRequest.objects.get_or_create(
+                        visit=visit,
+                        defaults={
+                            'requesting_physician': request.user,
+                            'source': source_tag
+                        }
+                    )
+                    if not created:
+                        lab_req.source = source_tag
+                        lab_req.requesting_physician = request.user
+                        lab_req.save()
 
-                if visit.lab_cbc:
-                    try:
-                        cbc_test = LabTest.objects.get(name__iexact='CBC')
-                        lab_req.tests.add(cbc_test)
-                    except LabTest.DoesNotExist:
-                        pass
-            
-            # 2. Pharmacy / Prescription
-            if referred_to_pharm:
-                from pharmacy.models import Prescription
-                presc, created = Prescription.objects.get_or_create(
-                    visit=visit,
-                    defaults={
-                        'doctor': request.user,
-                        'source': source_tag
-                    }
-                )
-                if not created:
-                    presc.source = source_tag
-                    presc.doctor = request.user
-                    presc.save()
+                    if visit.lab_cbc:
+                        # Use .filter().first() instead of .get() to avoid MultipleObjectsReturned/DoesNotExist crashes
+                        cbc_test = LabTest.objects.filter(name__iexact='CBC').first()
+                        if cbc_test:
+                            lab_req.tests.add(cbc_test)
+                
+                # 2. Pharmacy / Prescription
+                if referred_to_pharm:
+                    from pharmacy.models import Prescription
+                    presc, created = Prescription.objects.get_or_create(
+                        visit=visit,
+                        defaults={
+                            'doctor': request.user,
+                            'source': source_tag
+                        }
+                    )
+                    if not created:
+                        presc.source = source_tag
+                        presc.doctor = request.user
+                        presc.save()
 
-            # 3. Radiology Request
-            if referred_to_rad:
-                from radiology.models import RadiologyRequest
-                RadiologyRequest.objects.get_or_create(
-                    visit=visit,
-                    defaults={
-                        'requesting_physician': request.user,
-                        'source': source_tag
-                    }
-                )
+                # 3. Radiology Request
+                if referred_to_rad:
+                    from radiology.models import RadiologyRequest
+                    RadiologyRequest.objects.get_or_create(
+                        visit=visit,
+                        defaults={
+                            'requesting_physician': request.user,
+                            'source': source_tag
+                        }
+                    )
 
-            # 4. Pathology Request
-            if referred_to_patho:
-                from pathology.models import PathologyRequest
-                PathologyRequest.objects.get_or_create(
-                    visit=visit,
-                    defaults={
-                        'requesting_physician': request.user,
-                        'source': source_tag
-                    }
-                )
+                # 4. Pathology Request
+                if referred_to_patho:
+                    from pathology.models import PathologyRequest
+                    PathologyRequest.objects.get_or_create(
+                        visit=visit,
+                        defaults={
+                            'requesting_physician': request.user,
+                            'source': source_tag
+                        }
+                    )
 
-            log_visit_action(visit, 'COMPLETED' if visit.status == 'COM' else 'EXAMINATION', request.user, room=visit.current_room)
+                log_visit_action(visit, 'COMPLETED' if visit.status == 'COM' else 'EXAMINATION', request.user, room=visit.current_room)
+
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Error saving examination: {str(e)}", exc_info=True)
+                messages.error(request, _("A system error occurred while saving: %s") % str(e))
+                return redirect('perform_examination', visit_uuid=visit.uuid)
 
             if visit.refer_to_central:
                 log_visit_action(visit, 'REFERRED', request.user)
@@ -824,12 +853,12 @@ def perform_examination(request, visit_uuid):
 
 def enrich_visit_diagnostic_data(visit, context):
     """Aggregates all diagnostic results, reports, and images for display."""
-    # 1. Laboratory Results (Structured)
+    # 1. Lab Results Enrichment
     lab_results = []
-    if hasattr(visit, 'lab_results'):
-        # Sort by most recent if needed, but usually linked to the visit
-        lab_results = list(visit.lab_results.all().select_related('test_parameter'))
+    # Note: 'lab_results' relation is obsolete in new schema, we now use visit.lab_request.result.result_data
+    # This block is kept for template compatibility but initialized safely as empty
     context['lab_results'] = lab_results
+
     
     # 2. Radiology Results & Images
     radiology_data = {
@@ -1557,17 +1586,18 @@ def nutrition_statistics(request):
     else:
         month_end = timezone.datetime(year, month + 1, 1).date()
 
-    today = timezone.localdate()
-
     # --- Batas usia ---
-    limit_0m  = today - relativedelta(months=0)
-    limit_24m = today - relativedelta(months=24)
-    limit_59m = today - relativedelta(months=59)
+    # NEW: Use month_end as reference so historical reports are consistent
+    reference_date = month_end 
+    
+    limit_0m  = reference_date - relativedelta(months=0)
+    limit_24m = reference_date - relativedelta(months=24)
+    limit_59m = reference_date - relativedelta(months=59)
 
     # Pasien anak berdasarkan kelompok usia
     def children_qs(age_min_m, age_max_m, gender=None):
-        dob_upper = today - relativedelta(months=age_min_m)
-        dob_lower = today - relativedelta(months=age_max_m)
+        dob_upper = reference_date - relativedelta(months=age_min_m)
+        dob_lower = reference_date - relativedelta(months=age_max_m)
         qs = Patient.objects.filter(
             date_of_birth__lte=dob_upper,
             date_of_birth__gt=dob_lower,
@@ -1586,8 +1616,8 @@ def nutrition_statistics(request):
     def count_visits(age_min_m, age_max_m, gender, qs=None):
         if qs is None:
             qs = nutri_visits_month
-        dob_upper = today - relativedelta(months=age_min_m)
-        dob_lower = today - relativedelta(months=age_max_m)
+        dob_upper = reference_date - relativedelta(months=age_min_m)
+        dob_lower = reference_date - relativedelta(months=age_max_m)
         return qs.filter(
             patient__date_of_birth__lte=dob_upper,
             patient__date_of_birth__gt=dob_lower,
@@ -1595,8 +1625,8 @@ def nutrition_statistics(request):
         ).values('patient').distinct().count()
 
     def count_new_visits(age_min_m, age_max_m, gender):
-        dob_upper = today - relativedelta(months=age_min_m)
-        dob_lower = today - relativedelta(months=age_max_m)
+        dob_upper = reference_date - relativedelta(months=age_min_m)
+        dob_lower = reference_date - relativedelta(months=age_max_m)
         return nutri_visits_month.filter(
             patient__date_of_birth__lte=dob_upper,
             patient__date_of_birth__gt=dob_lower,
@@ -1607,8 +1637,8 @@ def nutrition_statistics(request):
     # MUAC classification — only for visits with MUAC recorded
     def count_muac(gender, muac_min=None, muac_max=None):
         qs = nutri_visits_month.filter(
-            patient__date_of_birth__lte=today - relativedelta(months=6),
-            patient__date_of_birth__gt=today - relativedelta(months=59),
+            patient__date_of_birth__lte=reference_date - relativedelta(months=6),
+            patient__date_of_birth__gt=reference_date - relativedelta(months=59),
             patient__gender=gender,
             muac__isnull=False,
         )

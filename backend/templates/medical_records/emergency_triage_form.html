@@ -36,6 +36,23 @@
 
             <form method="post">
                 {% csrf_token %}
+
+                {% if form.errors %}
+                <div class="alert alert-danger rounded-4 border-0 shadow-sm mb-4">
+                    <h6 class="fw-bold mb-2"><i class="bi bi-exclamation-triangle-fill me-2"></i>{% trans "Please correct the following errors:" %}</h6>
+                    <ul class="mb-0">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
                 <div class="row g-4">
                     <!-- Vitals Entry -->
                     <div class="col-md-7">
@@ -98,16 +115,17 @@
 
                     <!-- Pain Score & Triage Level -->
                     <div class="col-md-5">
+
                         <div class="card border-0 shadow-sm rounded-4 mb-4">
                             <div class="card-header bg-white py-3 border-0 text-center">
                                 <h5 class="card-title mb-0 fw-bold"><i class="bi bi-emoji-smile text-warning me-2"></i>{% trans "Pain Score (VAS)" %}</h5>
                             </div>
                             <div class="card-body p-4 text-center">
-                                <div class="d-flex justify-content-center flex-wrap gap-3 mb-3">
+                                <div class="d-flex justify-content-center gap-3 mt-3">
                                     {% for val, label, icon, color in form.fields.vas_score.choices_data %}
                                     <div class="vas-option cursor-pointer text-center" data-val="{{ val }}" title="{{ label }}">
-                                        <div class="vas-icon rounded-circle p-2 border mb-2 shadow-sm d-flex align-items-center justify-content-center" 
-                                             style="width: 54px; height: 54px; font-size: 1.8rem;">
+                                        <div class="vas-icon rounded-circle p-2 mb-2 shadow-sm d-flex align-items-center justify-content-center" 
+                                             style="width: 48px; height: 48px; font-size: 1.5rem; background-color: {{ color }}; color: white; border: 3px solid transparent;">
                                             {{ icon|safe }}
                                         </div>
                                         <div class="small fw-bold text-muted" style="font-size: 0.65rem;">{{ label }}</div>
@@ -125,9 +143,35 @@
                             </div>
                             <div class="card-body p-4">
                                 <div class="mb-3">
-                                    <label class="form-label fw-bold text-muted small">{% trans "Current Triage Level" %}</label>
-                                    {{ form.triage_level|default:"--" }}
-                                    <p class="small text-muted mt-2 mb-0">{% trans "Assigned at registration. Update if clinical status has changed." %}</p>
+                                    <label class="form-label fw-bold text-muted small d-block mb-3">{% trans "Current Triage Level" %}</label>
+                                    <div class="row g-2 text-center mb-3">
+                                        <div class="col-3">
+                                            <button type="button" class="btn btn-outline-danger w-100 py-3 triage-level-btn" data-level="RED" title="Immediate">
+                                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                                <div class="small fw-bold mt-1">RED</div>
+                                            </button>
+                                        </div>
+                                        <div class="col-3">
+                                            <button type="button" class="btn btn-outline-warning w-100 py-3 triage-level-btn" data-level="YELLOW" title="Urgent">
+                                                <i class="bi bi-exclamation-circle-fill"></i>
+                                                <div class="small fw-bold mt-1">YEL</div>
+                                            </button>
+                                        </div>
+                                        <div class="col-3">
+                                            <button type="button" class="btn btn-outline-success w-100 py-3 triage-level-btn" data-level="GREEN" title="Stable">
+                                                <i class="bi bi-check-circle-fill"></i>
+                                                <div class="small fw-bold mt-1">GRN</div>
+                                            </button>
+                                        </div>
+                                        <div class="col-3">
+                                            <button type="button" class="btn btn-outline-dark w-100 py-3 triage-level-btn" data-level="BLACK" title="Expectant">
+                                                <i class="bi bi-slash-circle-fill"></i>
+                                                <div class="small fw-bold mt-1">BLK</div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    {{ form.triage_level }}
+                                    <p class="small text-muted mt-2 mb-0">{% trans "Update if patient priority has changed." %}</p>
                                 </div>
                                 <div class="mb-0">
                                     <label class="form-label fw-bold text-muted small">{% trans "Direct to Room" %}</label>
@@ -176,8 +220,8 @@
                         const check = o.querySelector('.check-mark');
                         if (icon) {
                             icon.style.transform = 'scale(1)';
-                            icon.style.borderColor = '#dee2e6';
-                            icon.style.backgroundColor = '#fff';
+                            icon.style.borderColor = 'transparent';
+                            icon.style.opacity = '0.6';
                         }
                         if (check) check.style.display = 'none';
                     });
@@ -186,14 +230,47 @@
                     const selectedCheck = this.querySelector('.check-mark');
                     if (selectedIcon) {
                         selectedIcon.style.transform = 'scale(1.2)';
-                        selectedIcon.style.borderColor = '#0d6efd';
-                        selectedIcon.style.backgroundColor = '#e7f1ff';
+                        selectedIcon.style.borderColor = '#000';
+                        selectedIcon.style.opacity = '1';
                     }
                     if (selectedCheck) selectedCheck.style.display = 'block';
                 });
 
                 if (vasInput.value === opt.getAttribute('data-val')) {
                     opt.click();
+                }
+            });
+        }
+
+        // Triage Level Buttons
+        const triageInput = document.getElementById('id_triage_level');
+        const triageBtns = document.querySelectorAll('.triage-level-btn');
+        
+        if (triageInput && triageBtns.length > 0) {
+            triageBtns.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const level = this.getAttribute('data-level');
+                    triageInput.value = level;
+                    
+                    triageBtns.forEach(b => {
+                        b.classList.remove('active');
+                        b.style.backgroundColor = '';
+                        b.style.color = '';
+                    });
+                    
+                    this.classList.add('active');
+                    const colorMap = {
+                        'RED': '#dc3545',
+                        'YELLOW': '#ffc107',
+                        'GREEN': '#198754',
+                        'BLACK': '#212529'
+                    };
+                    this.style.backgroundColor = colorMap[level];
+                    this.style.color = level === 'YELLOW' ? '#000' : '#fff';
+                });
+
+                if (triageInput.value === btn.getAttribute('data-level')) {
+                    btn.click();
                 }
             });
         }

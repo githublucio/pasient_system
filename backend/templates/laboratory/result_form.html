@@ -77,8 +77,37 @@
 
                     <div class="mb-4">
                         <label class="form-label fw-bold">{% trans "Attachments (Images / PDF)" %}</label>
-                        <input type="file" name="attachments" class="form-control" accept=".pdf,.jpg,.jpeg,.png" multiple>
-                        <small class="text-muted">{% trans "Select multiple files at once" %}</small>
+                        <div class="d-flex gap-2 mb-2">
+                            <label class="btn btn-outline-primary mb-0 flex-grow-1" style="cursor: pointer;">
+                                <i class="bi bi-camera-fill me-2"></i>{% trans "Take Photo" %}
+                                <input type="file" name="attachments" accept="image/*" capture="environment" multiple style="display: none;" onchange="updateFileNames()">
+                            </label>
+                            <label class="btn btn-outline-secondary mb-0 flex-grow-1" style="cursor: pointer;">
+                                <i class="bi bi-folder-fill me-2"></i>{% trans "Browse Files" %}
+                                <input type="file" name="attachments" accept=".pdf,.jpg,.jpeg,.png" multiple style="display: none;" onchange="updateFileNames()">
+                            </label>
+                        </div>
+                        <div id="file-names-display" class="small text-muted mt-1">{% trans "Select multiple files or take photos directly" %}</div>
+                        
+                        <script>
+                        function updateFileNames() {
+                            const display = document.getElementById('file-names-display');
+                            const inputs = document.querySelectorAll('input[name="attachments"]');
+                            let names = [];
+                            inputs.forEach(input => {
+                                if (input.files && input.files.length > 0) {
+                                    for (let i = 0; i < input.files.length; i++) {
+                                        names.push(input.files[i].name);
+                                    }
+                                }
+                            });
+                            if (names.length > 0) {
+                                display.innerHTML = '<span class="text-success fw-bold"><i class="bi bi-check-circle me-1"></i> ' + names.join(', ') + '</span>';
+                            } else {
+                                display.innerHTML = '{% trans "Select multiple files or take photos directly" %}';
+                            }
+                        }
+                        </script>
                         {% if existing_result and existing_result.attachments.all %}
                             <div class="mt-3">
                                 <strong class="small text-muted">{% trans "Uploaded Files" %}:</strong>

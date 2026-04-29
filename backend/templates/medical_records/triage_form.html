@@ -52,66 +52,7 @@
                         <div class="form-text">{% trans "Briefly describe the patient's main concern or symptoms." %}</div>
                     </div>
 
-                    <!-- NEW VAS SCALE UI -->
-                    <div class="col-12 mb-4 text-center">
-                        <h5 class="border-bottom pb-2 text-dark text-start"><i class="bi bi-emoji-expressionless me-2"></i> {% trans "VAS (Visual Analogue Scale)" %}</h5>
-                        {{ form.vas_score }}
-                        <div class="d-flex justify-content-between align-items-end flex-wrap mt-3 px-md-5 mx-md-5">
-                            
-                            <div class="vas-option text-center position-relative cursor-pointer" data-val="0">
-                                <div class="vas-icon vas-0 rounded-circle d-flex align-items-center justify-content-center mx-auto shadow" style="width:60px; height:60px; font-size:2rem; background-color:#28a745; color:white; border: 3px solid transparent;">
-                                    <i class="bi bi-emoji-smile"></i>
-                                    <div class="check-mark position-absolute top-0 end-0 bg-white rounded-circle shadow-sm" style="display:none; color:#198754; font-size:1.2rem; transform: translate(30%, -30%);"><i class="bi bi-check-circle-fill"></i></div>
-                                </div>
-                                <div class="fw-bold mt-2">0</div>
-                                <small class="text-muted d-block" style="font-size:0.75rem;">{% trans "No Pain" %}</small>
-                            </div>
 
-                            <div class="vas-option text-center position-relative cursor-pointer" data-val="1-3">
-                                <div class="vas-icon vas-1-3 rounded-circle d-flex align-items-center justify-content-center mx-auto shadow" style="width:60px; height:60px; font-size:2rem; background-color:#8bc34a; color:white; border: 3px solid transparent;">
-                                    <i class="bi bi-emoji-neutral"></i>
-                                    <div class="check-mark position-absolute top-0 end-0 bg-white rounded-circle shadow-sm" style="display:none; color:#198754; font-size:1.2rem; transform: translate(30%, -30%);"><i class="bi bi-check-circle-fill"></i></div>
-                                </div>
-                                <div class="fw-bold mt-2">1-3</div>
-                                <small class="text-muted d-block" style="font-size:0.75rem;">{% trans "Mild" %}</small>
-                            </div>
-
-                            <div class="vas-option text-center position-relative cursor-pointer" data-val="4-6">
-                                <div class="vas-icon vas-4-6 rounded-circle d-flex align-items-center justify-content-center mx-auto shadow" style="width:60px; height:60px; font-size:2rem; background-color:#ffc107; color:dark; border: 3px solid transparent;">
-                                    <i class="bi bi-emoji-frown"></i>
-                                    <div class="check-mark position-absolute top-0 end-0 bg-white rounded-circle shadow-sm" style="display:none; color:#198754; font-size:1.2rem; transform: translate(30%, -30%);"><i class="bi bi-check-circle-fill"></i></div>
-                                </div>
-                                <div class="fw-bold mt-2">4-6</div>
-                                <small class="text-muted d-block" style="font-size:0.75rem;">{% trans "Moderate" %}</small>
-                            </div>
-
-                            <div class="vas-option text-center position-relative cursor-pointer" data-val="7-9">
-                                <div class="vas-icon vas-7-9 rounded-circle d-flex align-items-center justify-content-center mx-auto shadow" style="width:60px; height:60px; font-size:2rem; background-color:#fd7e14; color:white; border: 3px solid transparent;">
-                                    <i class="bi bi-emoji-tear"></i>
-                                    <div class="check-mark position-absolute top-0 end-0 bg-white rounded-circle shadow-sm" style="display:none; color:#198754; font-size:1.2rem; transform: translate(30%, -30%);"><i class="bi bi-check-circle-fill"></i></div>
-                                </div>
-                                <div class="fw-bold mt-2">7-9</div>
-                                <small class="text-muted d-block" style="font-size:0.75rem;">{% trans "Severe" %}</small>
-                            </div>
-
-                            <div class="vas-option text-center position-relative cursor-pointer" data-val="10">
-                                <div class="vas-icon vas-10 rounded-circle d-flex align-items-center justify-content-center mx-auto shadow" style="width:60px; height:60px; font-size:2rem; background-color:#dc3545; color:white; border: 3px solid transparent;">
-                                    <i class="bi bi-emoji-dizzy"></i>
-                                    <div class="check-mark position-absolute top-0 end-0 bg-white rounded-circle shadow-sm" style="display:none; color:#198754; font-size:1.2rem; transform: translate(30%, -30%);"><i class="bi bi-check-circle-fill"></i></div>
-                                </div>
-                                <div class="fw-bold mt-2">10</div>
-                                <small class="text-muted d-block" style="font-size:0.75rem;">{% trans "Worst Pain" %}</small>
-                            </div>
-
-                        </div>
-                        <div class="progress mt-3 mx-md-5" style="height: 8px;">
-                            <div class="progress-bar" role="progressbar" style="width: 20%; background-color:#28a745"></div>
-                            <div class="progress-bar" role="progressbar" style="width: 20%; background-color:#8bc34a"></div>
-                            <div class="progress-bar" role="progressbar" style="width: 20%; background-color:#ffc107"></div>
-                            <div class="progress-bar" role="progressbar" style="width: 20%; background-color:#fd7e14"></div>
-                            <div class="progress-bar" role="progressbar" style="width: 20%; background-color:#dc3545"></div>
-                        </div>
-                    </div>
 
 
                     <div class="col-12 mb-4">
@@ -268,34 +209,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // VAS Scale Logic
-    const vasInput = document.getElementById('id_vas_score');
-    if(vasInput) { vasInput.type = 'hidden'; }
-    const vasOptions = document.querySelectorAll('.vas-option');
-    
-    vasOptions.forEach(opt => {
-        opt.addEventListener('click', function() {
-            const val = this.getAttribute('data-val');
-            vasInput.value = val;
-            
-            // Reset all
-            vasOptions.forEach(o => {
-                o.querySelector('.vas-icon').style.transform = 'scale(1)';
-                o.querySelector('.vas-icon').style.borderColor = 'transparent';
-                o.querySelector('.check-mark').style.display = 'none';
-            });
-            
-            // Activate selected
-            this.querySelector('.vas-icon').style.transform = 'scale(1.15)';
-            this.querySelector('.vas-icon').style.borderColor = '#000';
-            this.querySelector('.check-mark').style.display = 'block';
-        });
-
-        // Init if value exists
-        if (vasInput && vasInput.value === opt.getAttribute('data-val')) {
-            opt.click();
-        }
-    });
 });
 </script>
 <style>

@@ -32,7 +32,7 @@
         <h4>{% trans "Patient Information" %}</h4>
         <table class="info-grid">
             <tr><td class="label">{% trans "Name" %}:</td><td>{{ visit.patient.full_name }}</td><td class="label">{% trans "Patient ID" %}:</td><td>{{ visit.patient.patient_id }}</td></tr>
-            <tr><td class="label">{% trans "Date of Birth" %}:</td><td>{{ visit.patient.date_of_birth|date:"d/m/Y" }} ({{ visit.patient.age }} {% trans "years" %})</td><td class="label">{% trans "Gender" %}:</td><td>{{ visit.patient.get_gender_display }}</td></tr>
+            <tr><td class="label">{% trans "Date of Birth" %}:</td><td>{{ visit.patient.date_of_birth|date:"d/m/Y" }} ({{ visit.age_at_visit }} {% trans "years" %})</td><td class="label">{% trans "Gender" %}:</td><td>{{ visit.patient.get_gender_display }}</td></tr>
             <tr><td class="label">{% trans "Address" %}:</td><td colspan="3">{{ visit.patient.full_address }}</td></tr>
         </table>
     </div>

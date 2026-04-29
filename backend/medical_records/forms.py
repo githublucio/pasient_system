@@ -7,7 +7,7 @@ class TriageForm(forms.ModelForm):
     class Meta:
         model = Visit
         fields = [
-            'complaint', 'triage_level', 'vas_score', 'bp_sys', 'bp_dia', 'spo2', 'pulse', 'rr', 
+            'complaint', 'triage_level', 'bp_sys', 'bp_dia', 'spo2', 'pulse', 'rr', 
             'temp', 'weight', 'muac', 'current_room'
         ]
         widgets = {
@@ -35,14 +35,22 @@ class TriageForm(forms.ModelForm):
         self.fields['current_room'].label = _("Next Room (Doctor)")
         self.fields['current_room'].required = True
 
+
+
     def clean_bp_sys(self):
         val = self.cleaned_data.get('bp_sys')
+        triage_level = self.cleaned_data.get('triage_level')
+        if triage_level == 'BLACK' and val == 0:
+            return val
         if val is not None and (val < 40 or val > 300):
             raise forms.ValidationError(_("BP Systolic must be between 40 and 300 mmHg."))
         return val
 
     def clean_bp_dia(self):
         val = self.cleaned_data.get('bp_dia')
+        triage_level = self.cleaned_data.get('triage_level')
+        if triage_level == 'BLACK' and val == 0:
+            return val
         if val is not None and (val < 20 or val > 200):
             raise forms.ValidationError(_("BP Diastolic must be between 20 and 200 mmHg."))
         return val
@@ -55,18 +63,27 @@ class TriageForm(forms.ModelForm):
 
     def clean_pulse(self):
         val = self.cleaned_data.get('pulse')
+        triage_level = self.cleaned_data.get('triage_level')
+        if triage_level == 'BLACK' and val == 0:
+            return val
         if val is not None and (val < 20 or val > 300):
             raise forms.ValidationError(_("Pulse must be between 20 and 300 bpm."))
         return val
 
     def clean_rr(self):
         val = self.cleaned_data.get('rr')
+        triage_level = self.cleaned_data.get('triage_level')
+        if triage_level == 'BLACK' and val == 0:
+            return val
         if val is not None and (val < 4 or val > 60):
             raise forms.ValidationError(_("Respiratory rate must be between 4 and 60 bpm."))
         return val
 
     def clean_temp(self):
         val = self.cleaned_data.get('temp')
+        triage_level = self.cleaned_data.get('triage_level')
+        if triage_level == 'BLACK' and val == 0:
+            return val
         if val is not None and (val < 25 or val > 45):
             raise forms.ValidationError(_("Temperature must be between 25 and 45 °C."))
         return val
@@ -74,6 +91,11 @@ class TriageForm(forms.ModelForm):
     def clean_weight(self):
         val = self.cleaned_data.get('weight')
         if val is not None and (val < 0.1 or val > 500):
+            # For weight, we might still want a minimum for newborns, 
+            # but if it's 0 (maybe placeholder), let's allow 0 for BLACK too
+            triage_level = self.cleaned_data.get('triage_level')
+            if triage_level == 'BLACK' and val == 0:
+                return val
             raise forms.ValidationError(_("Weight must be between 0.1 and 500 kg."))
         return val
 
@@ -106,6 +128,7 @@ class ExaminationForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['secondary_diagnoses'].label = _('Secondary Diagnoses')
         self.fields['secondary_diagnoses'].help_text = _('Search and select as many as required. The first one will be treated as Primary.')
+        self.fields['status'].required = False
         
         # Room referral logic
         from .models import Room
@@ -147,7 +170,7 @@ class EmergencyExaminationForm(forms.ModelForm):
     class Meta:
         model = Visit
         fields = [
-            'complaint', 'er_bp_sys', 'er_bp_dia', 'er_spo2', 'er_pulse', 'er_rr', 
+            'complaint', 'triage_level', 'er_bp_sys', 'er_bp_dia', 'er_spo2', 'er_pulse', 'er_rr', 
             'er_temp', 'er_weight', 'er_muac', 'vas_score', 'diagnosis', 'secondary_diagnoses', 'clinical_notes', 
             'lab_cbc', 'pharmacy_requested', 'refer_to_central',
             'status', 'allergy_noted',
@@ -155,6 +178,7 @@ class EmergencyExaminationForm(forms.ModelForm):
         ]
         widgets = {
             'complaint': forms.Textarea(attrs={'rows': 2, 'class': 'form-control', 'placeholder': _('Main emergency complaint (e.g. Acute chest pain, Severe bleeding)...')}),
+            'triage_level': forms.HiddenInput(),
             'er_bp_sys': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': _('e.g. 120 (S)')}),
             'er_bp_dia': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': _('e.g. 80 (D)')}),
             'er_spo2': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': _('e.g. 98%')}),
@@ -189,6 +213,7 @@ class EmergencyExaminationForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['secondary_diagnoses'].label = _('Secondary Diagnoses')
         self.fields['secondary_diagnoses'].help_text = _('Search and select as many as required. The first one will be treated as Primary.')
+        self.fields['status'].required = False
         
         from .models import Room
         referral_codes = ['ROOM_7', 'RADIOLOGY', 'PHARMACY', 'LAB', 'PATHOLOGY', 'IGD', 'EMERGENCY', 'TRAB', 'KIA', 'HIV', 'TB', 'DENTAL', 'NUTRISI', 'USG']
@@ -201,6 +226,15 @@ class EmergencyExaminationForm(forms.ModelForm):
             required=False,
             label=_('Next Room / Referrals')
         )
+
+        # Custom VAS choices data for rich UI rendering
+        self.fields['vas_score'].choices_data = [
+            ('0', _('0 (No Pain)'), '<i class="bi bi-emoji-smile"></i>', '#28a745'),
+            ('1-3', _('1-3 (Mild)'), '<i class="bi bi-emoji-neutral"></i>', '#8bc34a'),
+            ('4-6', _('4-6 (Moderate)'), '<i class="bi bi-emoji-frown"></i>', '#ffc107'),
+            ('7-9', _('7-9 (Severe)'), '<i class="bi bi-emoji-tear"></i>', '#fd7e14'),
+            ('10', _('10 (Worst Pain)'), '<i class="bi bi-emoji-dizzy"></i>', '#dc3545'),
+        ]
 
         if self.instance.pk:
             initial_ids = []
@@ -224,12 +258,18 @@ class EmergencyExaminationForm(forms.ModelForm):
 
     def clean_er_bp_sys(self):
         val = self.cleaned_data.get('er_bp_sys')
+        triage_level = self.cleaned_data.get('triage_level')
+        if triage_level == 'BLACK' and val == 0:
+            return val
         if val is not None and (val < 40 or val > 300):
             raise forms.ValidationError(_("BP Systolic must be between 40 and 300 mmHg."))
         return val
 
     def clean_er_bp_dia(self):
         val = self.cleaned_data.get('er_bp_dia')
+        triage_level = self.cleaned_data.get('triage_level')
+        if triage_level == 'BLACK' and val == 0:
+            return val
         if val is not None and (val < 20 or val > 200):
             raise forms.ValidationError(_("BP Diastolic must be between 20 and 200 mmHg."))
         return val
@@ -242,24 +282,36 @@ class EmergencyExaminationForm(forms.ModelForm):
 
     def clean_er_pulse(self):
         val = self.cleaned_data.get('er_pulse')
+        triage_level = self.cleaned_data.get('triage_level')
+        if triage_level == 'BLACK' and val == 0:
+            return val
         if val is not None and (val < 20 or val > 300):
             raise forms.ValidationError(_("Pulse must be between 20 and 300 bpm."))
         return val
 
     def clean_er_rr(self):
         val = self.cleaned_data.get('er_rr')
+        triage_level = self.cleaned_data.get('triage_level')
+        if triage_level == 'BLACK' and val == 0:
+            return val
         if val is not None and (val < 4 or val > 60):
             raise forms.ValidationError(_("Respiratory rate must be between 4 and 60 bpm."))
         return val
 
     def clean_er_temp(self):
         val = self.cleaned_data.get('er_temp')
+        triage_level = self.cleaned_data.get('triage_level')
+        if triage_level == 'BLACK' and val == 0:
+            return val
         if val is not None and (val < 25 or val > 45):
             raise forms.ValidationError(_("Temperature must be between 25 and 45 °C."))
         return val
 
     def clean_er_weight(self):
         val = self.cleaned_data.get('er_weight')
+        triage_level = self.cleaned_data.get('triage_level')
+        if triage_level == 'BLACK' and val == 0:
+            return val
         if val is not None and (val < 0.1 or val > 500):
             raise forms.ValidationError(_("Weight must be between 0.1 and 500 kg."))
         return val

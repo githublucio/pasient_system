@@ -268,6 +268,16 @@ class Visit(models.Model):
     follow_up_date = models.DateField(_('Follow-up Date'), blank=True, null=True)
     follow_up_notes = models.CharField(_('Follow-up Notes'), max_length=255, blank=True, null=True)
 
+    @property
+    def age_at_visit(self):
+        """Calculates patient age at the time of this visit."""
+        if not self.patient or not self.patient.date_of_birth:
+            return 0
+        vdate = self.visit_date.date() if hasattr(self.visit_date, 'date') else self.visit_date
+        dob = self.patient.date_of_birth
+        age = vdate.year - dob.year - ((vdate.month, vdate.day) < (dob.month, dob.day))
+        return max(0, age)
+
     class Meta:
         verbose_name = _("Visit")
         verbose_name_plural = _("Visits")
@@ -275,6 +285,8 @@ class Visit(models.Model):
             models.Index(fields=['visit_date', 'status'], name='idx_visit_date_status'),
             models.Index(fields=['current_room', 'status'], name='idx_visit_room_status'),
             models.Index(fields=['patient', '-visit_date'], name='idx_visit_patient_date'),
+            models.Index(fields=['diagnosis'], name='idx_visit_diagnosis'),
+            models.Index(fields=['patient'], name='idx_visit_patient'),
             GinIndex(name='idx_visit_complaint_trgm', fields=['complaint'], opclasses=['gin_trgm_ops']),
         ]
         permissions = [

@@ -191,23 +191,25 @@ def geographical_dashboard(request):
         filter_label = _("All Timor-Leste")
 
     # 1. Patient Distribution Stats
+    # Optimized: Values first, then annotate
     geo_stats = patients.values(location_name=F(location_group)).annotate(
-        total=Count('uuid')
+        total=Count('pk')
     ).order_by('-total')[:15]
 
     # 2. Top Diseases Stats
     disease_stats = visits.values(
         'diagnosis__name', 'diagnosis__code'
     ).annotate(
-        total=Count('uuid')
+        total=Count('pk')
     ).order_by('-total')[:10]
 
     # 3. Monthly Trend (Last 6 Months)
+    # Filter by date first to reduce the working set
     six_months_ago = timezone.now() - timezone.timedelta(days=180)
     trend_stats = visits.filter(visit_date__gte=six_months_ago).values(
         'visit_date__year', 'visit_date__month'
     ).annotate(
-        total=Count('uuid')
+        total=Count('pk')
     ).order_by('visit_date__year', 'visit_date__month')
 
     # Data for Selects

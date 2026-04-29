@@ -566,8 +566,9 @@ def perform_examination(request, visit_uuid):
     
     # Role-based detection
     is_nurse = False
-    if hasattr(request.user, 'staff_profile'):
-        is_nurse = request.user.staff_profile.category.name.upper() == 'PARAMEDIS'
+    staff_profile = getattr(request.user, 'staff_profile', None)
+    if staff_profile and staff_profile.category:
+        is_nurse = staff_profile.category.name.upper() == 'PARAMEDIS'
     
     FormClass = EmergencyExaminationForm if is_emergency else ExaminationForm
 

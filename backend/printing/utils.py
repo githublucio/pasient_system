@@ -32,11 +32,11 @@ def generate_patient_assets(patient_uuid):
     # High-resolution options for better scanning
     # We remove text from the barcode image itself to ensure bars are maximum clarity
     options = {
-        'module_width': 0.4,    # Slightly narrower to fit better on card
-        'module_height': 20.0,  # Balanced height
+        'module_width': 0.3,    # Narrower to prevent text overlap
+        'module_height': 18.0,  # Slightly shorter for better vertical fit
         'quiet_zone': 5.0,
-        'write_text': False,    # Text added manually in HTML
-        'dpi': 600,             # High resolution kept
+        'write_text': False,
+        'dpi': 600,
     }
     bar = code128(patient.patient_id, writer=ImageWriter())
     

@@ -253,8 +253,8 @@
 
 <body>
     {% with profile=user.staff_profile %}
-    {% with dept=profile.department.code.upper %}
-    {% with cat=profile.category.name.upper %}
+    {% with dept=profile.department.code.upper|default:'' %}
+    {% with cat=profile.category.name.upper|default:'' %}
     {% with is_admin=user.is_superuser %}
     <aside class="sidebar" id="sidebar">
         <div class="sb-brand"><img src="{% static 'assets/Logo.png' %}" alt="Logo"><span>Bairo Pite CMS</span></div>

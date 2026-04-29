@@ -164,21 +164,24 @@
 
         .qr-box-front {
             position: absolute;
-            top: 80px;
+            top: 75px; /* Moved up slightly to accommodate larger size */
             right: 15px;
             background: white;
-            padding: 10px;
+            padding: 8px; /* Reduced padding slightly to save space */
             border-radius: 8px;
             text-align: center;
             border: 2px solid var(--primary-purple);
         }
         .qr-img-front { 
-            width: 80px; 
-            height: 80px; 
+            width: 100px; /* Increased from 80px */
+            height: 100px; /* Increased from 80px */
             display: block;
-            image-rendering: auto;
+            /* Sharp rendering for better scanning */
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
         }
-        .qr-label-front { font-size: 8px; font-weight: 800; color: var(--primary-purple); margin-top: 2px; display: block; letter-spacing: 0.5px; }
+        .qr-label-front { font-size: 9px; font-weight: 800; color: var(--primary-purple); margin-top: 3px; display: block; letter-spacing: 0.5px; }
 
         /* BACK SIDE POSITIONING */
         .back-logo-box {
@@ -219,15 +222,30 @@
 
         .barcode-box-back {
             position: absolute;
-            bottom: 12px; 
+            bottom: 10px; 
             right: 15px;
             background: white;
-            padding: 6px;
+            padding: 5px;
             border-radius: 4px;
             text-align: center;
             border: 1px solid #ddd;
         }
-        .barcode-img-back { height: 55px; width: auto; }
+        .barcode-img-back { 
+            height: 85px; /* Increased further for better scanning */
+            width: auto;
+            /* Sharp rendering for better scanning */
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+        }
+        .barcode-id-text {
+            font-size: 9px;
+            font-weight: 700;
+            color: #000;
+            margin-top: 2px;
+            letter-spacing: 1px;
+            font-family: 'Inter', sans-serif;
+        }
         .barcode-txt-back { display: none; }
 
         .footer-motto {
@@ -356,7 +374,7 @@
 
             <div class="barcode-box-back">
                 <img src="{{ patient.barcode_image.url }}" class="barcode-img-back">
-                {# Removed redundant ID text as it is already in the barcode image #}
+                <div class="barcode-id-text">{{ patient.patient_id }}</div>
             </div>
         </div>
     </div>

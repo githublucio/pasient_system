@@ -364,6 +364,7 @@
             {% endif %}
             {% if is_admin or dept == 'RJ' or dept == 'ADM' %}
             <li><a href="{% url 'disease_statistics_report' %}"><i class="bi bi-bar-chart-line"></i> {% trans "Disease Statistics" %}</a></li>
+            <li><a href="{% url 'geo_dashboard' %}"><i class="bi bi-geo-alt-fill text-danger"></i> {% trans "Geographical Dashboard" %}</a></li>
             {% endif %}
             {% if perms.billing.view_menu_billing or is_admin or dept == 'PJ' %}
             <li><a href="{% url 'billing_report' %}"><i class="bi bi-graph-up"></i> {% trans "Billing Reports" %}</a></li>

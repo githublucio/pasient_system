@@ -14,8 +14,8 @@ def generate_patient_assets(patient_uuid):
     qr_data = patient.patient_id
     qr = qrcode.QRCode(
         version=1, 
-        error_correction=qrcode.constants.ERROR_CORRECT_M, # Medium is better for simple IDs
-        box_size=10, 
+        error_correction=qrcode.constants.ERROR_CORRECT_H, # High error correction for robustness
+        box_size=15, # Increased resolution
         border=4
     )
     qr.add_data(qr_data)
@@ -29,10 +29,19 @@ def generate_patient_assets(patient_uuid):
     # 2. Generate Barcode (Code128)
     # The Barcode is used for quick lookup by ID at reception
     code128 = barcode.get_class('code128')
+    # High-resolution options for better scanning
+    # We remove text from the barcode image itself to ensure bars are maximum clarity
+    options = {
+        'module_width': 0.5,    # Thicker bars for easier scanning
+        'module_height': 25.0,  # Taller bars
+        'quiet_zone': 5.0,
+        'write_text': False,    # Remove text from image (added manually in HTML)
+        'dpi': 600,             # High DPI for crisp printing
+    }
     bar = code128(patient.patient_id, writer=ImageWriter())
     
     buffer_bar = BytesIO()
-    bar.write(buffer_bar)
+    bar.write(buffer_bar, options=options)
     patient.barcode_image.save(f'bar_{patient.patient_id}.png', ContentFile(buffer_bar.getvalue()), save=False)
     
     patient.save()

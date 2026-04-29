@@ -4,13 +4,16 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import user_passes_test
 from django.http import HttpResponse, StreamingHttpResponse
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 
 import shutil
 import tempfile
 from .models import AuditLog
+from patients.models import Patient, Municipio, PostoAdministrativo, Suco, Aldeia
+from medical_records.models import Visit, Diagnosis
+from django.db.models import Count, Q, F
 
 def get_pg_bin(command):
     path = shutil.which(command)
@@ -145,3 +148,84 @@ def get_client_ip(request):
     else:
         ip = request.META.get('REMOTE_ADDR')
     return ip
+
+@user_passes_test(is_admin)
+def geographical_dashboard(request):
+    """Management dashboard for tracking patients and diseases by location."""
+    municipio_id = request.GET.get('municipio')
+    posto_id = request.GET.get('posto')
+    suco_id = request.GET.get('suco')
+    
+    # Base Querysets
+    patients = Patient.objects.all()
+    visits = Visit.objects.filter(status='COM', diagnosis__isnull=False)
+
+    # Filtering Logic
+    current_level = 'Município'
+    filter_label = _("All Timor-Leste")
+    
+    if suco_id:
+        suco = get_object_or_404(Suco, pk=suco_id)
+        patients = patients.filter(suco=suco)
+        visits = visits.filter(patient__suco=suco)
+        location_group = 'aldeia__name'
+        current_level = 'Aldeia'
+        filter_label = suco.name
+    elif posto_id:
+        posto = get_object_or_404(PostoAdministrativo, pk=posto_id)
+        patients = patients.filter(posto_administrativo=posto)
+        visits = visits.filter(patient__posto_administrativo=posto)
+        location_group = 'suco__name'
+        current_level = 'Suco'
+        filter_label = posto.name
+    elif municipio_id:
+        municipio = get_object_or_404(Municipio, pk=municipio_id)
+        patients = patients.filter(municipio=municipio)
+        visits = visits.filter(patient__municipio=municipio)
+        location_group = 'posto_administrativo__name'
+        current_level = 'Posto'
+        filter_label = municipio.name
+    else:
+        location_group = 'municipio__name'
+        current_level = 'Município'
+        filter_label = _("All Timor-Leste")
+
+    # 1. Patient Distribution Stats
+    geo_stats = patients.values(location_name=F(location_group)).annotate(
+        total=Count('uuid')
+    ).order_by('-total')[:15]
+
+    # 2. Top Diseases Stats
+    disease_stats = visits.values(
+        'diagnosis__name', 'diagnosis__code'
+    ).annotate(
+        total=Count('uuid')
+    ).order_by('-total')[:10]
+
+    # 3. Monthly Trend (Last 6 Months)
+    six_months_ago = timezone.now() - timezone.timedelta(days=180)
+    trend_stats = visits.filter(visit_date__gte=six_months_ago).values(
+        'visit_date__year', 'visit_date__month'
+    ).annotate(
+        total=Count('uuid')
+    ).order_by('visit_date__year', 'visit_date__month')
+
+    # Data for Selects
+    municipios = Municipio.objects.all()
+    postos = PostoAdministrativo.objects.filter(municipio_id=municipio_id) if municipio_id else []
+    sucos = Suco.objects.filter(posto_id=posto_id) if posto_id else []
+
+    return render(request, 'administration/geo_dashboard.html', {
+        'geo_stats': geo_stats,
+        'disease_stats': disease_stats,
+        'trend_stats': trend_stats,
+        'municipios': municipios,
+        'postos': postos,
+        'sucos': sucos,
+        'current_municipio': municipio_id,
+        'current_posto': posto_id,
+        'current_suco': suco_id,
+        'current_level': current_level,
+        'filter_label': filter_label,
+        'location_group_field': location_group,
+    })

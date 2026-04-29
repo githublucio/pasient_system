@@ -135,7 +135,6 @@ def reception_dashboard(request):
         ).prefetch_related('identities')
 
         # 1. Exact or Cleaned Patient ID Match
-        # Try multiple variations: "PAT-001", "001", etc.
         exact_match = base_qs.filter(
             Q(patient_id__iexact=query) | 
             Q(patient_id__iexact=clean_query)
@@ -145,29 +144,31 @@ def reception_dashboard(request):
             patients.append(exact_match)
         
         # 2. Search by national / other ID number hash (exact match)
-        query_hash = hashlib.sha256(clean_query.encode()).hexdigest()
-        by_id = PatientID.objects.filter(id_search_hash=query_hash).select_related('patient').first()
-        if by_id:
-            p = by_id.patient
-            if p not in patients:
-                patients.append(p)
+        # (Only if we haven't found a primary ID match yet, or to supplement)
+        if not patients:
+            query_hash = hashlib.sha256(clean_query.encode()).hexdigest()
+            by_id = PatientID.objects.filter(id_search_hash=query_hash).select_related('patient').first()
+            if by_id:
+                p = by_id.patient
+                if p not in patients:
+                    patients.append(p)
         
-        # 3. Fuzzy search by name, ID, or phone
-        # Also try to match digits if the query is something like "PAT-123" -> search for "123"
-        numeric_query = ''.join(filter(str.isdigit, clean_query))
-        
-        fuzzy_query = Q(full_name__icontains=clean_query) | \
-                      Q(patient_id__icontains=clean_query) | \
-                      Q(phone_number__icontains=clean_query)
-        
-        if numeric_query:
-            fuzzy_query |= Q(patient_id__icontains=numeric_query)
+        # 3. Fuzzy search (Only if we still haven't found a definitive match)
+        # This prevents "test002" from showing 100 other patients when an exact match exists.
+        if not patients:
+            fuzzy_query = Q(full_name__icontains=clean_query) | \
+                          Q(patient_id__icontains=clean_query) | \
+                          Q(phone_number__icontains=clean_query)
+            
+            # Only try to match numeric sub-strings if the query is purely numeric
+            if clean_query.isdigit():
+                 fuzzy_query |= Q(patient_id__icontains=clean_query)
 
-        fuzzy_results = base_qs.filter(fuzzy_query)[:15]
-        
-        for p in fuzzy_results:
-            if p not in patients:
-                patients.append(p)
+            fuzzy_results = base_qs.filter(fuzzy_query)[:15]
+            
+            for p in fuzzy_results:
+                if p not in patients:
+                    patients.append(p)
         
         # Apply departmental filtering to search results
         if is_hiv:

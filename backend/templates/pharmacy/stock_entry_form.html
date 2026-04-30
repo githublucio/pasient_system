@@ -24,14 +24,19 @@
                             <input type="text" class="form-control" value="{{ entry.medicine.name }}" disabled>
                             <input type="hidden" name="medicine" value="{{ entry.medicine.pk }}">
                         {% else %}
-                            <select name="medicine" class="form-select" required>
-                                <option value="">-- {% trans "Select Medicine" %} --</option>
-                                {% for med in all_medicines %}
-                                <option value="{{ med.id }}" {% if request.GET.medicine == med.id|stringformat:"d" %}selected{% endif %}>
-                                    {{ med.display_name }} - {% trans "Stock" %}: {{ med.stock }}
-                                </option>
-                                {% endfor %}
-                            </select>
+                            <div class="input-group">
+                                <select name="medicine" id="medicineSelect" class="form-select select2-basic" required>
+                                    <option value="">-- {% trans "Select Medicine" %} --</option>
+                                    {% for med in all_medicines %}
+                                    <option value="{{ med.id }}" data-code="{{ med.code|default:'' }}" {% if request.GET.medicine == med.id|stringformat:"d" %}selected{% endif %}>
+                                        {{ med.display_name }} - {% trans "Stock" %}: {{ med.stock }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#scannerModal" title="{% trans 'Scan Barcode' %}">
+                                    <i class="bi bi-upc-scan fs-5"></i>
+                                </button>
+                            </div>
                         {% endif %}
                     </div>
 
@@ -111,6 +116,26 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- Scanner Modal -->
+<div class="modal fade" id="scannerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white border-0">
+                <h5 class="modal-title"><i class="bi bi-upc-scan me-2"></i>{% trans "Scan Medicine Barcode" %}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <div id="qr-reader" style="width:100%; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></div>
+                <p class="text-muted mt-3 mb-0 small">{% trans "Point camera at the medicine barcode or QR code." %}</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">{% trans "Close" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <script>
 function toggleDonorFields(sourceType) {
     const donorField = document.getElementById('donorField');
@@ -127,6 +152,69 @@ function toggleDonorFields(sourceType) {
 document.addEventListener('DOMContentLoaded', function() {
     const checked = document.querySelector('input[name="source_type"]:checked');
     if (checked) toggleDonorFields(checked.value);
+
+    // Scanner logic
+    const scannerModal = document.getElementById('scannerModal');
+    let html5QrcodeScanner = null;
+
+    if (scannerModal) {
+        scannerModal.addEventListener('shown.bs.modal', function () {
+            html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: {width: 250, height: 150} }, false);
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        });
+
+        scannerModal.addEventListener('hidden.bs.modal', function () {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear().catch(error => {
+                    console.error("Failed to clear scanner", error);
+                });
+                html5QrcodeScanner = null;
+            }
+        });
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+        if(html5QrcodeScanner) html5QrcodeScanner.pause(true);
+        
+        const select = document.getElementById('medicineSelect');
+        let found = false;
+        
+        // Loop through options to match data-code
+        Array.from(select.options).forEach(option => {
+            if(option.getAttribute('data-code') === decodedText) {
+                // If using select2, trigger change
+                $(select).val(option.value).trigger('change');
+                found = true;
+            }
+        });
+
+        if(found) {
+            // Beep sound
+            let ctx = new (window.AudioContext || window.webkitAudioContext)();
+            let osc = ctx.createOscillator();
+            let gainNode = ctx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            osc.type = "sine";
+            osc.frequency.value = 800;
+            gainNode.gain.setValueAtTime(0, ctx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.01);
+            gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.1);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.1);
+
+            // Close modal
+            var modalInstance = bootstrap.Modal.getInstance(scannerModal);
+            modalInstance.hide();
+        } else {
+            alert('{% trans "Barcode not found in your Medicine Catalog:" %} ' + decodedText);
+            if(html5QrcodeScanner) html5QrcodeScanner.resume();
+        }
+    }
+
+    function onScanFailure(error) {
+        // handle scan failure, usually better to ignore and keep scanning
+    }
 });
 </script>
 {% endblock %}

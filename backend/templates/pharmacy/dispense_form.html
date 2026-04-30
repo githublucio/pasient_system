@@ -60,9 +60,14 @@
             <div class="card mb-4 shadow-sm">
                 <div class="card-header bg-success text-white fw-bold d-flex justify-content-between align-items-center">
                     <span><i class="bi bi-capsule me-2"></i>{% trans "Medicines Dispensed" %}</span>
-                    <button type="button" class="btn btn-sm btn-light" id="addRowBtn">
-                        <i class="bi bi-plus-circle me-1"></i>{% trans "Add Medicine" %}
-                    </button>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-dark me-2" data-bs-toggle="modal" data-bs-target="#scannerModal">
+                            <i class="bi bi-upc-scan me-1"></i>{% trans "Scan Barcode" %}
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light" id="addRowBtn">
+                            <i class="bi bi-plus-circle me-1"></i>{% trans "Add Medicine" %}
+                        </button>
+                    </div>
                 </div>
                 <div class="card-body p-0">
                     <table class="table table-bordered align-middle mb-0" id="medicineTable">
@@ -84,7 +89,7 @@
                                     <select name="medicine_id" class="form-select medicine-select" required>
                                         <option value="">-- {% trans "Select Medicine" %} --</option>
                                         {% for med in all_medicines %}
-                                        <option value="{{ med.id }}" data-stock="{{ med.stock }}" data-unit="{{ med.get_unit_display }}"
+                                        <option value="{{ med.id }}" data-stock="{{ med.stock }}" data-unit="{{ med.get_unit_display }}" data-code="{{ med.code|default:'' }}"
                                             {% if med.id == item.medicine.id %}selected{% endif %}
                                             {% if med.is_low_stock %}class="text-danger"{% endif %}>
                                             {{ med.display_name }}
@@ -112,7 +117,7 @@
                                     <select name="medicine_id" class="form-select medicine-select" required>
                                         <option value="">-- {% trans "Select Medicine" %} --</option>
                                         {% for med in all_medicines %}
-                                        <option value="{{ med.id }}" data-stock="{{ med.stock }}" data-unit="{{ med.get_unit_display }}"
+                                        <option value="{{ med.id }}" data-stock="{{ med.stock }}" data-unit="{{ med.get_unit_display }}" data-code="{{ med.code|default:'' }}"
                                             {% if med.is_low_stock %}class="text-danger"{% endif %}>
                                             {{ med.display_name }}
                                         </option>
@@ -188,10 +193,10 @@
             <select name="medicine_id" class="form-select medicine-select" required>
                 <option value="">-- {% trans "Select Medicine" %} --</option>
                 {% for med in all_medicines %}
-                <option value="{{ med.id }}" data-stock="{{ med.stock }}" data-unit="{{ med.get_unit_display }}"
-                    {% if med.is_low_stock %}class="text-danger"{% endif %}>
-                    {{ med.display_name }}
-                </option>
+                                        <option value="{{ med.id }}" data-stock="{{ med.stock }}" data-unit="{{ med.get_unit_display }}" data-code="{{ med.code|default:'' }}"
+                                            {% if med.is_low_stock %}class="text-danger"{% endif %}>
+                                            {{ med.display_name }}
+                                        </option>
                 {% endfor %}
             </select>
         </td>
@@ -207,9 +212,28 @@
         </td>
     </tr>
 </template>
+<!-- Scanner Modal -->
+<div class="modal fade" id="scannerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-success text-white border-0">
+                <h5 class="modal-title"><i class="bi bi-upc-scan me-2"></i>{% trans "Scan Medicine Barcode" %}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <div id="qr-reader" style="width:100%; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></div>
+                <p class="text-muted mt-3 mb-0 small">{% trans "Point camera at the medicine barcode or QR code." %}</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">{% trans "Close" %}</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const tbody = document.getElementById('medicineBody');
@@ -263,7 +287,96 @@ document.addEventListener('DOMContentLoaded', function() {
         tbody.appendChild(clone);
         bindRow(newRow);
         renumberRows();
+        return newRow; // Return the created row for use in scanner
     });
+
+    // Scanner logic
+    const scannerModal = document.getElementById('scannerModal');
+    let html5QrcodeScanner = null;
+
+    if (scannerModal) {
+        scannerModal.addEventListener('shown.bs.modal', function () {
+            html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: {width: 250, height: 150} }, false);
+            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+        });
+
+        scannerModal.addEventListener('hidden.bs.modal', function () {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear().catch(error => {
+                    console.error("Failed to clear scanner", error);
+                });
+                html5QrcodeScanner = null;
+            }
+        });
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+        if(html5QrcodeScanner) html5QrcodeScanner.pause(true);
+        
+        let targetRow = null;
+        const rows = tbody.querySelectorAll('.medicine-row');
+        
+        // Find an empty row first
+        for (let row of rows) {
+            const select = row.querySelector('.medicine-select');
+            if (!select.value) {
+                targetRow = row;
+                break;
+            }
+        }
+        
+        // If no empty row, add one
+        if (!targetRow) {
+            const clone = template.content.cloneNode(true);
+            targetRow = clone.querySelector('tr');
+            tbody.appendChild(clone);
+            bindRow(targetRow);
+            renumberRows();
+        }
+
+        const select = targetRow.querySelector('.medicine-select');
+        let found = false;
+        
+        // Loop through options to match data-code
+        Array.from(select.options).forEach(option => {
+            if(option.getAttribute('data-code') === decodedText) {
+                select.value = option.value;
+                // Trigger change to update stock display
+                const event = new Event('change');
+                select.dispatchEvent(event);
+                found = true;
+            }
+        });
+
+        if(found) {
+            // Beep sound
+            try {
+                let ctx = new (window.AudioContext || window.webkitAudioContext)();
+                let osc = ctx.createOscillator();
+                let gainNode = ctx.createGain();
+                osc.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                osc.type = "sine";
+                osc.frequency.value = 800;
+                gainNode.gain.setValueAtTime(0, ctx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.01);
+                gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.1);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.1);
+            } catch(e) {}
+
+            // Close modal
+            var modalInstance = bootstrap.Modal.getInstance(scannerModal);
+            modalInstance.hide();
+        } else {
+            alert('{% trans "Barcode not found in your Medicine Catalog:" %} ' + decodedText);
+            if(html5QrcodeScanner) html5QrcodeScanner.resume();
+        }
+    }
+
+    function onScanFailure(error) {
+        // ignore errors
+    }
 });
 </script>
 {% endblock %}

@@ -45,7 +45,14 @@ class Medicine(models.Model):
     stock = models.PositiveIntegerField(_('Current Stock'), default=0)
     min_stock = models.PositiveIntegerField(_('Minimum Stock Alert'), default=10)
     description = models.TextField(_('Description'), blank=True, null=True)
-    is_hiv_medicine = models.BooleanField(_('HIV Specific Medicine'), default=False)
+    DEPARTMENT_CHOICES = [
+        ('GENERAL', _('General Pharmacy')),
+        ('HIV', _('HIV/AIDS Department')),
+        ('TB', _('TB Department')),
+        ('DENTAL', _('Dental Department')),
+        ('KIA', _('MCH/KIA Department')),
+    ]
+    department_category = models.CharField(_('Department Category'), max_length=20, choices=DEPARTMENT_CHOICES, default='GENERAL')
     is_active = models.BooleanField(_('Active'), default=True)
     created_at = models.DateTimeField(_('Created At'), auto_now_add=True)
     updated_at = models.DateTimeField(_('Updated At'), auto_now=True)

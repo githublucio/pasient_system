@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "HIV Department Report" %} - {% trans "Clinic Lanud" %}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="text-danger fw-bold"><i class="bi bi-virus me-2"></i>{% trans "HIV Department Reporting Dashboard" %}</h2>
+        <p class="text-muted">{% trans "Statistical overview and tracking for HIV/AIDS program." %}</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Monthly Stats -->
+    <div class="col-md-8">
+        <div class="card mb-4 shadow-sm border-0">
+            <div class="card-header bg-danger text-white fw-bold">
+                <i class="bi bi-calendar-month me-2"></i> {% trans "Monthly Registration & Treatment" %} ({{ month_name }})
+            </div>
+            <div class="card-body">
+                <div class="row text-center mb-4">
+                    <div class="col-md-3">
+                        <div class="p-3 border rounded bg-light">
+                            <h3 class="text-danger mb-0">{{ new_cases }}</h3>
+                            <small class="text-muted text-uppercase fw-bold">{% trans "New Cases" %}</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3 border rounded bg-light">
+                            <h3 class="text-warning mb-0">{{ transfer_in }}</h3>
+                            <small class="text-muted text-uppercase fw-bold">{% trans "Transfer-In" %}</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3 border rounded bg-light">
+                            <h3 class="text-success mb-0">{{ planned_art }}</h3>
+                            <small class="text-muted text-uppercase fw-bold">{% trans "Started ART" %}</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="p-3 border rounded bg-light">
+                            <h3 class="text-secondary mb-0">{{ not_planned_art }}</h3>
+                            <small class="text-muted text-uppercase fw-bold">{% trans "Not on ART" %}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <h6 class="border-bottom pb-2 mt-4 text-muted">{% trans "Prophylaxis Coverage" %}</h6>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                            <span>{% trans "INH" %}</span>
+                            <span class="badge bg-primary rounded-pill">{{ inh_count }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                            <span>{% trans "Co-trimoxazole" %}</span>
+                            <span class="badge bg-primary rounded-pill">{{ cotrim_count }}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                            <span>{% trans "Fluconazole" %}</span>
+                            <span class="badge bg-primary rounded-pill">{{ fluc_count }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Defaulters List -->
+        <div class="card mb-4 shadow-sm border-warning">
+            <div class="card-header bg-warning text-dark fw-bold">
+                <i class="bi bi-exclamation-triangle me-2"></i> {% trans "Lost to Follow-up / Defaulter Tracker" %}
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{% trans "Patient" %}</th>
+                                <th>{% trans "Phone" %}</th>
+                                <th>{% trans "Scheduled Date" %}</th>
+                                <th>{% trans "Last Doctor" %}</th>
+                                <th>{% trans "Action" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assessment in defaulters %}
+                            <tr>
+                                <td>
+                                    <strong>{{ assessment.patient.patient_id }}</strong><br>
+                                    {{ assessment.patient.full_name }}
+                                </td>
+                                <td>{{ assessment.patient.phone_number|default:"-" }}</td>
+                                <td>
+                                    <span class="text-danger fw-bold"><i class="bi bi-calendar-x me-1"></i>{{ assessment.next_visit_scheduled }}</span>
+                                </td>
+                                <td>{{ assessment.visit.doctor.get_full_name|default:"-" }}</td>
+                                <td>
+                                    <a href="{% url 'patient_dashboard' assessment.patient.uuid %}" class="btn btn-sm btn-outline-primary">{% trans "View" %}</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">
+                                    <i class="bi bi-check-circle text-success fs-4 d-block mb-2"></i>
+                                    {% trans "No patients missed their follow-up appointments." %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Sidebar Stats -->
+    <div class="col-md-4">
+        <!-- Demographics -->
+        <div class="card mb-4 shadow-sm border-0">
+            <div class="card-header bg-dark text-white fw-bold">
+                <i class="bi bi-people me-2"></i> {% trans "Lifetime Demographics" %}
+            </div>
+            <div class="card-body">
+                <h1 class="display-4 text-center text-primary mb-0">{{ total_hiv_count }}</h1>
+                <p class="text-center text-muted mb-4">{% trans "Total Active HIV Patients" %}</p>
+                
+                <div class="d-flex justify-content-between mb-3 px-3">
+                    <div class="text-center">
+                        <i class="bi bi-gender-male text-primary fs-3"></i>
+                        <h4 class="mb-0">{{ male_count }}</h4>
+                        <small class="text-muted">{% trans "Male" %}</small>
+                    </div>
+                    <div class="text-center">
+                        <i class="bi bi-gender-female text-danger fs-3"></i>
+                        <h4 class="mb-0">{{ female_count }}</h4>
+                        <small class="text-muted">{% trans "Female" %}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Geographic Data -->
+        <div class="card mb-4 shadow-sm border-0">
+            <div class="card-header bg-info text-white fw-bold">
+                <i class="bi bi-geo-alt me-2"></i> {% trans "Top Sucos (Villages)" %}
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for suco in suco_stats %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ suco.suco__name|default:"Unknown" }}
+                    <span class="badge bg-secondary rounded-pill">{{ suco.count }}</span>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-center text-muted">{% trans "No geographic data available." %}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        
+        <div class="d-grid gap-2">
+            <button class="btn btn-outline-success" onclick="window.print()">
+                <i class="bi bi-printer me-2"></i> {% trans "Print Report" %}
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

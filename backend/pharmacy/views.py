@@ -65,6 +65,21 @@ def pharmacy_dashboard(request):
         date_created__date=filter_date
     ).select_related('visit__patient', 'doctor').prefetch_related('dispensed_items__medicine').order_by('-date_created')
 
+    # ISOLATION: Filter prescriptions by department room
+    if not request.user.is_superuser:
+        if hasattr(request.user, 'staff_profile') and request.user.staff_profile.department:
+            user_dept = request.user.staff_profile.department.code.upper()
+            if user_dept in ['HIV', 'AIDS']:
+                prescriptions = prescriptions.filter(visit__current_room__code__in=['HIV', 'AIDS'])
+            elif user_dept == 'TB':
+                prescriptions = prescriptions.filter(visit__current_room__code='TB')
+            elif user_dept == 'DENTAL':
+                prescriptions = prescriptions.filter(visit__current_room__code='DENTAL')
+            else:
+                prescriptions = prescriptions.exclude(visit__current_room__code__in=['HIV', 'AIDS', 'TB'])
+        else:
+            prescriptions = prescriptions.exclude(visit__current_room__code__in=['HIV', 'AIDS', 'TB'])
+
     pending_count = prescriptions.exclude(dispensing_status__in=['DISPENSED', 'COLLECTED']).count()
     dispensed_count = prescriptions.filter(dispensing_status__in=['DISPENSED', 'COLLECTED']).count()
 
@@ -144,11 +159,20 @@ def pharmacy_dispense(request, prescription_uuid):
         messages.success(request, _("Prescription dispensing updated successfully."))
         return redirect('pharmacy_dashboard')
     
-    # ISOLATION: Filter medicine based on whether visit is HIV or not
-    is_hiv_visit = prescription.visit.current_room and prescription.visit.current_room.code == 'HIV'
+    # ISOLATION: Filter medicine based on department
+    department_code = 'GENERAL'
+    if prescription.visit.current_room:
+        room_code = prescription.visit.current_room.code.upper()
+        if room_code in ['HIV', 'AIDS']:
+            department_code = 'HIV'
+        elif room_code == 'TB':
+            department_code = 'TB'
+        elif room_code == 'DENTAL':
+            department_code = 'DENTAL'
+
     all_medicines = Medicine.objects.filter(
         is_active=True, 
-        is_hiv_medicine=is_hiv_visit
+        department_category=department_code
     ).order_by('name')
 
     existing_items = prescription.dispensed_items.select_related('medicine').all()
@@ -175,10 +199,20 @@ def medicine_list(request):
     filter_type = request.GET.get('filter', '')
     medicines = Medicine.objects.all()
     
-    # ISOLATION: Non-HIV staff cannot see HIV specific stock in general list
+    # ISOLATION: Non-admin staff only see their department's stock
     if not request.user.is_superuser:
-        if not hasattr(request.user, 'staff_profile') or request.user.staff_profile.department.code != 'HIV':
-            medicines = medicines.exclude(is_hiv_medicine=True)
+        if hasattr(request.user, 'staff_profile') and request.user.staff_profile.department:
+            user_dept = request.user.staff_profile.department.code.upper()
+            if user_dept in ['HIV', 'AIDS']:
+                medicines = medicines.filter(department_category='HIV')
+            elif user_dept == 'TB':
+                medicines = medicines.filter(department_category='TB')
+            elif user_dept == 'DENTAL':
+                medicines = medicines.filter(department_category='DENTAL')
+            else:
+                medicines = medicines.filter(department_category='GENERAL')
+        else:
+            medicines = medicines.filter(department_category='GENERAL')
 
     if q:
         medicines = medicines.filter(Q(name__icontains=q) | Q(code__icontains=q))
@@ -308,6 +342,21 @@ def medicine_delete(request, pk):
 def stock_entry_list(request):
     q = request.GET.get('q', '')
     entries = StockEntry.objects.select_related('medicine', 'created_by').all()
+    
+    # ISOLATION: Non-admin staff only see their department's stock entries
+    if not request.user.is_superuser:
+        if hasattr(request.user, 'staff_profile') and request.user.staff_profile.department:
+            user_dept = request.user.staff_profile.department.code.upper()
+            if user_dept in ['HIV', 'AIDS']:
+                entries = entries.filter(medicine__department_category='HIV')
+            elif user_dept == 'TB':
+                entries = entries.filter(medicine__department_category='TB')
+            elif user_dept == 'DENTAL':
+                entries = entries.filter(medicine__department_category='DENTAL')
+            else:
+                entries = entries.filter(medicine__department_category='GENERAL')
+        else:
+            entries = entries.filter(medicine__department_category='GENERAL')
 
     if q:
         entries = entries.filter(
@@ -315,12 +364,35 @@ def stock_entry_list(request):
         )
 
     today = timezone.localdate()
-    expired_count = StockEntry.objects.filter(expiry_date__lt=today, remaining_qty__gt=0).count()
-    expiring_soon_count = StockEntry.objects.filter(
+    
+    expired_qs = StockEntry.objects.filter(expiry_date__lt=today, remaining_qty__gt=0)
+    expiring_soon_qs = StockEntry.objects.filter(
         expiry_date__gte=today,
         expiry_date__lte=today + timezone.timedelta(days=90),
         remaining_qty__gt=0
-    ).count()
+    )
+
+    if not request.user.is_superuser:
+        if hasattr(request.user, 'staff_profile') and request.user.staff_profile.department:
+            user_dept = request.user.staff_profile.department.code.upper()
+            if user_dept in ['HIV', 'AIDS']:
+                expired_qs = expired_qs.filter(medicine__department_category='HIV')
+                expiring_soon_qs = expiring_soon_qs.filter(medicine__department_category='HIV')
+            elif user_dept == 'TB':
+                expired_qs = expired_qs.filter(medicine__department_category='TB')
+                expiring_soon_qs = expiring_soon_qs.filter(medicine__department_category='TB')
+            elif user_dept == 'DENTAL':
+                expired_qs = expired_qs.filter(medicine__department_category='DENTAL')
+                expiring_soon_qs = expiring_soon_qs.filter(medicine__department_category='DENTAL')
+            else:
+                expired_qs = expired_qs.filter(medicine__department_category='GENERAL')
+                expiring_soon_qs = expiring_soon_qs.filter(medicine__department_category='GENERAL')
+        else:
+            expired_qs = expired_qs.filter(medicine__department_category='GENERAL')
+            expiring_soon_qs = expiring_soon_qs.filter(medicine__department_category='GENERAL')
+
+    expired_count = expired_qs.count()
+    expiring_soon_count = expiring_soon_qs.count()
 
     from django.core.paginator import Paginator
     paginator = Paginator(entries, 50)
@@ -376,7 +448,21 @@ def stock_entry_add(request):
         })
         return redirect('stock_entry_list')
 
+    # ISOLATION
     all_medicines = Medicine.objects.filter(is_active=True).order_by('name')
+    if not request.user.is_superuser:
+        if hasattr(request.user, 'staff_profile') and request.user.staff_profile.department:
+            user_dept = request.user.staff_profile.department.code.upper()
+            if user_dept in ['HIV', 'AIDS']:
+                all_medicines = all_medicines.filter(department_category='HIV')
+            elif user_dept == 'TB':
+                all_medicines = all_medicines.filter(department_category='TB')
+            elif user_dept == 'DENTAL':
+                all_medicines = all_medicines.filter(department_category='DENTAL')
+            else:
+                all_medicines = all_medicines.filter(department_category='GENERAL')
+        else:
+            all_medicines = all_medicines.filter(department_category='GENERAL')
     return render(request, 'pharmacy/stock_entry_form.html', {
         'title': _('Add Stock Entry (Obat Masuk)'),
         'entry': None,
@@ -414,7 +500,21 @@ def stock_entry_edit(request, pk):
         messages.success(request, _("Stock entry updated."))
         return redirect('stock_entry_list')
 
+    # ISOLATION
     all_medicines = Medicine.objects.filter(is_active=True).order_by('name')
+    if not request.user.is_superuser:
+        if hasattr(request.user, 'staff_profile') and request.user.staff_profile.department:
+            user_dept = request.user.staff_profile.department.code.upper()
+            if user_dept in ['HIV', 'AIDS']:
+                all_medicines = all_medicines.filter(department_category='HIV')
+            elif user_dept == 'TB':
+                all_medicines = all_medicines.filter(department_category='TB')
+            elif user_dept == 'DENTAL':
+                all_medicines = all_medicines.filter(department_category='DENTAL')
+            else:
+                all_medicines = all_medicines.filter(department_category='GENERAL')
+        else:
+            all_medicines = all_medicines.filter(department_category='GENERAL')
     return render(request, 'pharmacy/stock_entry_form.html', {
         'title': _('Edit Stock Entry'),
         'entry': entry,

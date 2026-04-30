@@ -310,14 +310,21 @@
                 <li><a href="{% url 'doctor_dashboard' %}?room=HIV"><i class="bi bi-virus"></i> {% trans "Specialist: HIV / AIDS" %}</a></li>
                 <li><a href="{% url 'hiv_appointment_calendar' %}" class="ps-5 small" style="color: #d63a5a;"><i class="bi bi-calendar-heart"></i> {% trans "HIV Appointments" %}</a></li>
                 <li><a href="{% url 'department_completed_list' %}?dept=HIV" class="ps-5 small opacity-75"><i class="bi bi-clock-history"></i> {% trans "HIV Visit History" %}</a></li>
+                <li><a href="{% url 'hiv_report_dashboard' %}" class="ps-5 small" style="color:#ffc107;"><i class="bi bi-bar-chart-steps"></i> {% trans "HIV Report (TLHIS)" %}</a></li>
+                <li><a href="{% url 'pharmacy_dashboard' %}" class="ps-5 small text-info"><i class="bi bi-capsule-pill"></i> {% trans "Mini Farmásia (Distribui)" %}</a></li>
+                <li><a href="{% url 'medicine_list' %}" class="ps-5 small text-info"><i class="bi bi-box-seam"></i> {% trans "Stock Aimoruk ARV" %}</a></li>
                 {% endif %}
                 {% if is_admin or dept == 'TB' or perms.medical_records.view_menu_specialist_tb %}
                 <li><a href="{% url 'doctor_dashboard' %}?room=TB"><i class="bi bi-lungs"></i> {% trans "Specialist: TB" %}</a></li>
                 <li><a href="{% url 'department_completed_list' %}?dept=TB" class="ps-5 small opacity-75"><i class="bi bi-clock-history"></i> {% trans "TB Visit History" %}</a></li>
+                <li><a href="{% url 'pharmacy_dashboard' %}" class="ps-5 small text-info"><i class="bi bi-capsule-pill"></i> {% trans "Mini Farmásia (Distribui)" %}</a></li>
+                <li><a href="{% url 'medicine_list' %}" class="ps-5 small text-info"><i class="bi bi-box-seam"></i> {% trans "Stock Aimoruk TB" %}</a></li>
                 {% endif %}
                 {% if is_admin or dept == 'DENTAL' or perms.medical_records.view_menu_specialist_dental %}
                 <li><a href="{% url 'doctor_dashboard' %}?room=DENTAL"><i class="bi bi-emoji-smile"></i> {% trans "Specialist: Dental" %}</a></li>
                 <li><a href="{% url 'department_completed_list' %}?dept=DENTAL" class="ps-5 small opacity-75"><i class="bi bi-clock-history"></i> {% trans "Dental Visit History" %}</a></li>
+                <li><a href="{% url 'pharmacy_dashboard' %}" class="ps-5 small text-info"><i class="bi bi-capsule-pill"></i> {% trans "Mini Farmásia (Distribui)" %}</a></li>
+                <li><a href="{% url 'medicine_list' %}" class="ps-5 small text-info"><i class="bi bi-box-seam"></i> {% trans "Stock Aimoruk Dental" %}</a></li>
                 {% endif %}
                 {% if is_admin or dept == 'NUTRISI' or perms.medical_records.view_menu_specialist_nutrition %}
                 <li><a href="{% url 'doctor_dashboard' %}?room=NUTRISI"><i class="bi bi-egg-fried"></i> {% trans "Specialist: Nutrition" %}</a></li>

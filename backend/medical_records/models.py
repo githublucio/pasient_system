@@ -69,32 +69,27 @@ class VisitQuerySet(models.QuerySet):
     def visible_to(self, user):
         """
         Visibility logic for visits:
-        - Superadmins: Full access.
+        - Superadmins, HIV Staff, OPD/IGD Doctors: Full access.
         - Everyone else: Can see the existence of visits for statistical purposes, 
-          but HIV visits are filtered out from general views to prevent room disclosure.
-        - Privacy of medical content is handled at the model level (can_view_medical_data).
+          but HIV visits are filtered out from general views.
         """
         if user.is_superuser:
             return self
         
-        # Robust check for HIV staff status
-        is_hiv = False
+        is_hiv_staff = False
+        is_opd_igd_staff = False
         staff_profile = getattr(user, 'staff_profile', None)
-        if staff_profile:
-            # Check department code directly to avoid property overhead/crashes
+        if staff_profile and staff_profile.department:
             try:
                 dept_code = staff_profile.department.code.upper()
-                is_hiv = dept_code in ['HIV', 'AIDS']
+                is_hiv_staff = dept_code in ['HIV', 'AIDS']
+                is_opd_igd_staff = dept_code in ['DOKTER', 'OPD', 'IGD', 'EMERGENCY']
             except AttributeError:
                 pass
 
-        if is_hiv:
-            # HIV staff can see everything (sensitive and general)
+        if is_hiv_staff or is_opd_igd_staff:
             return self
         else:
-            # General staff see everything EXCEPT visits from HIV patients.
-            # EXCEPTION (Option 1 modified): Allow visibility ONLY if it's an ACTIVE or TODAY's emergency visit.
-            # Past ER visits of HIV patients are fully hidden.
             from django.utils import timezone
             today = timezone.localdate()
             return self.filter(
@@ -142,21 +137,27 @@ class Visit(models.Model):
     def can_view_medical_data(self, user):
         """
         Determines if the user is allowed to see clinical details (diagnosis, notes, vitals).
-        - Superadmin: Always.
-        - HIV Staff: Always (if it's their patient or general history).
+        - Superadmin, HIV Staff, OPD/IGD Doctors: Always.
         - Others: ONLY if the patient has NO HIV history and it's not an HIV visit.
         """
         if user.is_superuser:
             return True
         
         is_hiv_staff = False
-        if hasattr(user, 'staff_profile'):
-            is_hiv_staff = user.staff_profile.is_hiv_staff
+        is_opd_igd_staff = False
+        staff_profile = getattr(user, 'staff_profile', None)
+        if staff_profile and staff_profile.department:
+            try:
+                dept_code = staff_profile.department.code.upper()
+                is_hiv_staff = dept_code in ['HIV', 'AIDS']
+                is_opd_igd_staff = dept_code in ['DOKTER', 'OPD', 'IGD', 'EMERGENCY']
+            except AttributeError:
+                pass
         
-        if is_hiv_staff:
+        if is_hiv_staff or is_opd_igd_staff:
             return True
         
-        # Non-HIV staff: strictly blocked from viewing the clinical details of any HIV-specific visit
+        # Non-HIV/OPD staff: strictly blocked from viewing the clinical details of any HIV-specific visit
         if self.current_room and self.current_room.code == 'HIV':
             return False
             
@@ -427,3 +428,54 @@ class EmergencyMedication(models.Model):
         verbose_name = _('Emergency Medication')
         verbose_name_plural = _('Emergency Medications')
         ordering = ['-given_at']
+
+class HIVAssessment(models.Model):
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='hiv_assessments', verbose_name=_('Patient'))
+    visit = models.ForeignKey(Visit, on_delete=models.SET_NULL, null=True, blank=True, related_name='hiv_assessments', verbose_name=_('Visit'))
+    
+    # Registration Details specific to HIV
+    date_registered_at_bpc = models.DateField(_('Date of registration at BPC'), default=timezone.localdate)
+    PATIENT_TYPE_CHOICES = [
+        ('NEW', _('New patient')),
+        ('TRANSFER', _('Transfer in')),
+    ]
+    patient_type = models.CharField(_('Patient Type'), max_length=10, choices=PATIENT_TYPE_CHOICES, default='NEW')
+    previous_registrations = models.CharField(_('Previous registrations (if applicable)'), max_length=255, blank=True, null=True)
+    previous_art = models.CharField(_('Previous ART (if applicable)'), max_length=255, blank=True, null=True)
+    
+    # Diagnosis Details
+    first_positive_test_date = models.DateField(_('Date of first positive test'), blank=True, null=True)
+    confirmation_test_seen = models.BooleanField(_('Confirmation test seen?'), default=False)
+    where_test_done = models.CharField(_('Where test done'), max_length=255, blank=True, null=True)
+    
+    # Decision made re: prophylaxis
+    prophylaxis_inh = models.BooleanField(_('INH'), default=False, help_text=_('All new patients unless active TB'))
+    prophylaxis_cotrimoxazole = models.BooleanField(_('Co-trimoxazole'), default=False, help_text=_('adults CD4<350 or TB, children <5'))
+    prophylaxis_fluconazole = models.BooleanField(_('Fluconazole'), default=False, help_text=_('crypto meningitis treated or CD4<100 and CrAg+'))
+    
+    # Further investigation & Plans
+    investigation_tb_needed = models.TextField(_('Further investigation for TB needed?'), blank=True, null=True)
+    contraception_plans = models.TextField(_('Plans for contraception'), blank=True, null=True)
+    
+    # ART
+    planned_for_art = models.BooleanField(_('Is the patient planned for ART?'), default=False)
+    art_regime = models.CharField(_('ART Regime'), max_length=255, blank=True, null=True)
+    
+    # Next Visit & Others
+    next_visit_scheduled = models.DateField(_('Next visit scheduled'), blank=True, null=True)
+    other_plans = models.TextField(_('Plans / investigations / others'), blank=True, null=True)
+    
+    # Admin
+    completed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_('Completed by'))
+    created_at = models.DateTimeField(_('Created At'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('Updated At'), auto_now=True)
+
+    class Meta:
+        verbose_name = _('HIV Assessment')
+        verbose_name_plural = _('HIV Assessments')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"HIV Assessment for {self.patient.full_name} on {self.created_at.date()}"
+

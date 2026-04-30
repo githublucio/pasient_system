@@ -11,7 +11,9 @@ class PatientRegistrationForm(forms.ModelForm):
             'father_name', 'mother_name',
             'municipio', 'posto_administrativo', 'suco', 'aldeia',
             'address',
-            'phone_number', 'emergency_contact_name', 'emergency_contact_phone',
+            'phone_number', 
+            'emergency_contact_name', 'emergency_contact_relation', 
+            'emergency_contact_phone', 'emergency_contact_address',
             'registration_fee', 'is_pregnant', 'is_lactating'
         ]
         widgets = {
@@ -27,8 +29,10 @@ class PatientRegistrationForm(forms.ModelForm):
             'aldeia': forms.Select(attrs={'class': 'form-select', 'id': 'id_aldeia', 'disabled': 'disabled'}),
             'address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': _('Additional address / house number (optional)')}),
             'phone_number': forms.TextInput(attrs={'class': 'form-control'}),
-            'emergency_contact_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'emergency_contact_phone': forms.TextInput(attrs={'class': 'form-control'}),
+            'emergency_contact_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': _('Name')}),
+            'emergency_contact_relation': forms.TextInput(attrs={'class': 'form-control', 'placeholder': _('Relationship (e.g. Spouse, Sibling)')}),
+            'emergency_contact_phone': forms.TextInput(attrs={'class': 'form-control', 'placeholder': _('Phone number')}),
+            'emergency_contact_address': forms.TextInput(attrs={'class': 'form-control', 'placeholder': _('Address')}),
             'registration_fee': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': '0.00'}),
             'father_name': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_father_name'}),
             'mother_name': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_mother_name'}),

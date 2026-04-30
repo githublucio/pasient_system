@@ -147,8 +147,119 @@
                         {{ form.emergency_contact_address }}
                     </div>
                 </div>
-                <div class="d-grid gap-2">
-                    <button type="submit" class="btn btn-primary btn-lg mt-3">{% trans "Register Patient" %}</button>
+
+                <!-- HIV Assessment Section -->
+                <div class="mt-5 p-4 border border-danger rounded bg-light">
+                    <h4 class="text-danger mb-4"><i class="bi bi-clipboard2-pulse me-2"></i>{% trans "Patient Assessment at Diagnosis or Transfer" %}</h4>
+                    
+                    <h5 class="text-secondary border-bottom pb-2">{% trans "Registration Details" %}</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label font-weight-bold">{% trans "Patient Type" %}</label>
+                            {{ assessment_form.patient_type }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% trans "Date Registered at BPC" %}</label>
+                            {{ assessment_form.date_registered_at_bpc }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% trans "Previous Registrations (if applicable)" %}</label>
+                            {{ assessment_form.previous_registrations }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% trans "Previous ART (if applicable)" %}</label>
+                            {{ assessment_form.previous_art }}
+                        </div>
+                    </div>
+
+                    <h5 class="mt-4 text-secondary border-bottom pb-2">{% trans "Diagnosis Details" %}</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% trans "First Positive Test Date" %}</label>
+                            {{ assessment_form.first_positive_test_date }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% trans "Where Test Done" %}</label>
+                            {{ assessment_form.where_test_done }}
+                        </div>
+                    </div>
+                    <div class="mb-3 form-check form-switch ms-2">
+                        {{ assessment_form.confirmation_test_seen }}
+                        <label class="form-check-label fw-bold text-success" for="{{ assessment_form.confirmation_test_seen.id_for_label }}">
+                            <i class="bi bi-check-circle me-1"></i> {% trans "Confirmation Test Seen?" %}
+                        </label>
+                    </div>
+
+                    <h5 class="mt-4 text-secondary border-bottom pb-2">{% trans "Decision made re: prophylaxis" %}</h5>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <div class="form-check form-switch ms-2">
+                                {{ assessment_form.prophylaxis_inh }}
+                                <label class="form-check-label fw-bold" for="{{ assessment_form.prophylaxis_inh.id_for_label }}">INH</label>
+                                <small class="d-block text-muted">All new patients unless active TB</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch ms-2">
+                                {{ assessment_form.prophylaxis_cotrimoxazole }}
+                                <label class="form-check-label fw-bold" for="{{ assessment_form.prophylaxis_cotrimoxazole.id_for_label }}">Co-trimoxazole</label>
+                                <small class="d-block text-muted">CD4&lt;350 or TB, children &lt;5</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check form-switch ms-2">
+                                {{ assessment_form.prophylaxis_fluconazole }}
+                                <label class="form-check-label fw-bold" for="{{ assessment_form.prophylaxis_fluconazole.id_for_label }}">Fluconazole</label>
+                                <small class="d-block text-muted">crypto meningitis treated or CD4&lt;100 & CrAg+</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5 class="mt-4 text-secondary border-bottom pb-2">{% trans "Further investigation / Plans" %}</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% trans "Further investigation for TB needed?" %}</label>
+                            {{ assessment_form.investigation_tb_needed }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% trans "Plans for contraception" %}</label>
+                            {{ assessment_form.contraception_plans }}
+                        </div>
+                    </div>
+
+                    <h5 class="mt-4 text-secondary border-bottom pb-2">{% trans "ART Treatment" %}</h5>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="form-check form-switch mt-4 ms-2">
+                                {{ assessment_form.planned_for_art }}
+                                <label class="form-check-label fw-bold text-primary" for="{{ assessment_form.planned_for_art.id_for_label }}">
+                                    <i class="bi bi-capsule me-1"></i> {% trans "Planned for ART?" %}
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">{% trans "ART Regime" %}</label>
+                            {{ assessment_form.art_regime }}
+                        </div>
+                    </div>
+
+                    <h5 class="mt-4 text-secondary border-bottom pb-2">{% trans "Scheduling & Others" %}</h5>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label text-primary fw-bold"><i class="bi bi-calendar-check me-1"></i> {% trans "Next Visit Scheduled" %}</label>
+                            {{ assessment_form.next_visit_scheduled }}
+                        </div>
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">{% trans "Other Plans / Investigations" %}</label>
+                            {{ assessment_form.other_plans }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 mt-4">
+                    <button type="submit" class="btn btn-danger btn-lg"><i class="bi bi-save me-2"></i>{% trans "Save HIV Patient & Assessment" %}</button>
                 </div>
             </form>
         </div>

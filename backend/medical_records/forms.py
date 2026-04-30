@@ -132,7 +132,7 @@ class ExaminationForm(forms.ModelForm):
         
         # Room referral logic
         from .models import Room
-        referral_codes = ['ROOM_7', 'RADIOLOGY', 'PHARMACY', 'LAB', 'PATHOLOGY', 'IGD', 'EMERGENCY', 'TRAB', 'DENTAL', 'NUTRISI', 'KIA', 'USG']
+        referral_codes = ['ROOM_7', 'RADIOLOGY', 'PHARMACY', 'LAB', 'PATHOLOGY', 'IGD', 'EMERGENCY', 'TRAB', 'DENTAL', 'NUTRISI', 'KIA', 'USG', 'HIV', 'TB']
         self.fields['referral_rooms'] = forms.ModelMultipleChoiceField(
             queryset=Room.objects.filter(code__in=referral_codes).order_by('name'),
             widget=forms.SelectMultiple(attrs={
@@ -394,4 +394,35 @@ class EmergencyDischargeForm(forms.ModelForm):
             'discharge_summary': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
             'follow_up_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'follow_up_notes': forms.TextInput(attrs={'class': 'form-control', 'placeholder': _('e.g. Check lab results')}),
+        }
+
+class HIVAssessmentForm(forms.ModelForm):
+    class Meta:
+        from .models import HIVAssessment
+        model = HIVAssessment
+        fields = [
+            'patient_type', 'date_registered_at_bpc', 'previous_registrations', 'previous_art',
+            'first_positive_test_date', 'confirmation_test_seen', 'where_test_done',
+            'prophylaxis_inh', 'prophylaxis_cotrimoxazole', 'prophylaxis_fluconazole',
+            'investigation_tb_needed', 'contraception_plans',
+            'planned_for_art', 'art_regime',
+            'next_visit_scheduled', 'other_plans'
+        ]
+        widgets = {
+            'patient_type': forms.Select(attrs={'class': 'form-select'}),
+            'date_registered_at_bpc': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'previous_registrations': forms.TextInput(attrs={'class': 'form-control'}),
+            'previous_art': forms.TextInput(attrs={'class': 'form-control'}),
+            'first_positive_test_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'confirmation_test_seen': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'where_test_done': forms.TextInput(attrs={'class': 'form-control'}),
+            'prophylaxis_inh': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'prophylaxis_cotrimoxazole': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'prophylaxis_fluconazole': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'investigation_tb_needed': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'contraception_plans': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'planned_for_art': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'art_regime': forms.TextInput(attrs={'class': 'form-control'}),
+            'next_visit_scheduled': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'other_plans': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }

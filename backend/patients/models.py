@@ -104,58 +104,44 @@ class PatientQuerySet(models.QuerySet):
             return self
         
         is_hiv_staff = False
-        is_nutrition_staff = False
+        is_opd_igd_staff = False
         staff_profile = getattr(user, 'staff_profile', None)
         if staff_profile and staff_profile.department:
             try:
                 dept_code = staff_profile.department.code.upper()
                 is_hiv_staff = dept_code in ['HIV', 'AIDS']
-                is_nutrition_staff = dept_code == 'NUTRISI'
+                # Grant HIV visibility to OPD, IGD, EMERGENCY, DOKTER
+                is_opd_igd_staff = dept_code in ['DOKTER', 'OPD', 'IGD', 'EMERGENCY']
             except AttributeError:
                 pass
         
-        # Superadmins, HIV Staff, and Nutrition Staff see their respective patients
         if user.is_superuser:
             return self
             
         today = timezone.localdate()
-        child_limit = today - relativedelta(months=59)
 
-        # Base filter: Exclude HIV and Nutrition patients from general view
-        # Unless they have an active/today's visit in the current user's permitted areas (like IGD)
+        # If user is HIV staff OR OPD/IGD Doctor, they can see HIV patients.
+        # Otherwise, they CANNOT see HIV patients (unless they are in IGD today).
+        
         qs = self.all()
-
-        if not is_hiv_staff and not is_nutrition_staff:
-            from medical_records.models import Visit
-            igd_patient_ids = list(Visit.objects.filter(
-                Q(current_room__code__in=['IGD', 'EMERGENCY']) & 
-                (Q(visit_date__date=today) | Q(status__in=['SCH', 'IP']))
-            ).values_list('patient_id', flat=True))
-            
-            # General Staff: Hide BOTH HIV and Nutrition categories
-            qs = qs.filter(
-                # Condition A: Not HIV and Not Nutrition
-                (Q(is_hiv_patient=False) & Q(is_pregnant=False) & Q(is_lactating=False) & Q(date_of_birth__lt=child_limit)) |
-                # Condition B: Emergency exception (if they are in IGD today, everyone can see them for safety)
-                Q(uuid__in=igd_patient_ids)
-            )
-        elif is_nutrition_staff:
+        
+        if is_hiv_staff or is_opd_igd_staff:
+            return qs.distinct()
+        else:
             from medical_records.models import Visit
             igd_patient_ids = list(Visit.objects.filter(
                 current_room__code__in=['IGD', 'EMERGENCY'],
                 visit_date__date=today
             ).values_list('patient_id', flat=True))
             
-            # Nutrition Staff: Can see Nutrition patients + General patients, but NO HIV patients
+            # For general staff (Loket, Pharmacy, Nutrition, etc.):
+            # They can see ALL patients (General, Nutrition, TB, etc.) 
+            # BUT THEY CANNOT SEE HIV PATIENTS (unless the HIV patient is in IGD today)
             qs = qs.filter(
                 Q(is_hiv_patient=False) |
                 Q(uuid__in=igd_patient_ids)
             )
-        elif is_hiv_staff:
-            # HIV Staff: Usually see everything (as per current system policy)
-            return self
-
-        return qs.distinct()
+            return qs.distinct()
 
 class PatientManager(models.Manager):
     def get_queryset(self):
@@ -219,7 +205,9 @@ class Patient(models.Model):
 
     phone_number = EncryptedTextField(_('Phone Number'), max_length=255, blank=True, null=True)
     emergency_contact_name = models.CharField(_('Emergency Contact Name'), max_length=255, blank=True, null=True)
+    emergency_contact_relation = models.CharField(_('Emergency Contact Relation'), max_length=100, blank=True, null=True)
     emergency_contact_phone = EncryptedTextField(_('Emergency Contact Phone'), max_length=255, blank=True, null=True)
+    emergency_contact_address = models.TextField(_('Emergency Contact Address'), blank=True, null=True)
 
     # Images for Card
     qr_code_image = models.ImageField(upload_to='qrcodes/', blank=True, null=True)

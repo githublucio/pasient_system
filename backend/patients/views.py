@@ -37,11 +37,16 @@ def register_patient(request):
 def hiv_register_patient(request):
     """
     Simplified registration for HIV clinic staff.
-    Bypasses registration fee and automatically creates a visit record in the 'HIV' room.
+    Bypasses registration fee and automatically creates a visit record and HIV Assessment.
     """
+    from medical_records.forms import HIVAssessmentForm
+    from medical_records.models import HIVAssessment
+    
     if request.method == 'POST':
         form = PatientRegistrationForm(request.POST, is_hiv=True)
-        if form.is_valid():
+        assessment_form = HIVAssessmentForm(request.POST, prefix='hiv')
+        
+        if form.is_valid() and assessment_form.is_valid():
             patient = form.save(commit=False)
             
             # Re-calculate at save time
@@ -53,7 +58,6 @@ def hiv_register_patient(request):
             from medical_records.models import Room
             hiv_room = Room.objects.filter(code='HIV').first()
             if not hiv_room:
-                 # Fallback if room not found (should be handled by admin setup)
                  messages.warning(request, _("Patient registered, but HIV Room not found for automatic check-in."))
                  return redirect('patient_dashboard', uuid=patient.uuid)
 
@@ -66,7 +70,7 @@ def hiv_register_patient(request):
             visit = Visit.objects.create(
                 patient=patient,
                 queue_number=queue_number,
-                status='SCH',
+                status='IP', # Set directly to In Progress since they are registering them in the room
                 current_room=hiv_room,
                 visit_fee=0.00,
                 patient_type='FOUN', # New patient
@@ -76,17 +80,80 @@ def hiv_register_patient(request):
             from medical_records.utils import log_visit_action
             log_visit_action(visit, 'CHECK_IN', request.user, room=hiv_room)
 
-            messages.success(request, _("Patient registered and added to HIV queue successfully."))
+            # Save the HIV Assessment
+            assessment = assessment_form.save(commit=False)
+            assessment.patient = patient
+            assessment.visit = visit
+            assessment.completed_by = request.user
+            assessment.save()
+
+            messages.success(request, _("Patient registered and HIV Assessment saved successfully."))
             return redirect('doctor_dashboard')
     else:
         next_id = Patient.generate_next_id()
         form = PatientRegistrationForm(is_hiv=True, initial={'patient_id': next_id})
+        assessment_form = HIVAssessmentForm(prefix='hiv')
     
-    return render(request, 'patients/register.html', {
+    return render(request, 'patients/register_hiv.html', {
         'form': form, 
+        'assessment_form': assessment_form,
         'title': _('Register New HIV Patient (Free)'),
         'is_hiv': True
     })
+
+@login_required
+def hiv_report_dashboard(request):
+    is_hiv_staff = hasattr(request.user, 'staff_profile') and getattr(request.user.staff_profile.department, 'code', '').upper() in ['HIV', 'AIDS']
+    if not (request.user.is_superuser or is_hiv_staff):
+        from django.core.exceptions import PermissionDenied
+        raise PermissionDenied("Only HIV staff can view this report.")
+
+    from django.db.models import Count
+    from medical_records.models import HIVAssessment
+    from django.utils import timezone
+    today = timezone.localdate()
+    start_of_month = today.replace(day=1)
+    
+    assessments_this_month = HIVAssessment.objects.filter(visit__visit_date__date__gte=start_of_month)
+    
+    new_cases = assessments_this_month.filter(patient_type='NEW').count()
+    transfer_in = assessments_this_month.filter(patient_type='TRANSFER_IN').count()
+    
+    planned_art = assessments_this_month.filter(planned_for_art=True).count()
+    not_planned_art = assessments_this_month.filter(planned_for_art=False).count()
+    
+    inh_count = assessments_this_month.filter(prophylaxis_inh=True).count()
+    cotrim_count = assessments_this_month.filter(prophylaxis_cotrimoxazole=True).count()
+    fluc_count = assessments_this_month.filter(prophylaxis_fluconazole=True).count()
+    
+    # Lost to follow up (all time)
+    defaulters = HIVAssessment.objects.filter(next_visit_scheduled__lt=today).select_related('patient', 'visit__doctor')
+    
+    # Demographics & Geography (all time)
+    total_hiv_patients = Patient.objects.filter(is_hiv_patient=True)
+    total_hiv_count = total_hiv_patients.count()
+    male_count = total_hiv_patients.filter(gender='M').count()
+    female_count = total_hiv_patients.filter(gender='F').count()
+    
+    suco_stats = total_hiv_patients.values('suco__name').annotate(count=Count('uuid')).order_by('-count')[:10]
+    
+    context = {
+        'month_name': today.strftime('%B %Y'),
+        'new_cases': new_cases,
+        'transfer_in': transfer_in,
+        'planned_art': planned_art,
+        'not_planned_art': not_planned_art,
+        'inh_count': inh_count,
+        'cotrim_count': cotrim_count,
+        'fluc_count': fluc_count,
+        'total_hiv_count': total_hiv_count,
+        'male_count': male_count,
+        'female_count': female_count,
+        'suco_stats': suco_stats,
+        'defaulters': defaulters,
+    }
+    
+    return render(request, 'patients/hiv_report.html', context)
 
 @login_required
 @permission_required('patients.change_patient', raise_exception=True)

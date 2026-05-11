@@ -1,0 +1,363 @@
+﻿
+> medical_records\models.py:68:class VisitQuerySet(models.QuerySet):
+  medical_records\models.py:69:    def visible_to(self, user):
+  medical_records\models.py:70:        """
+  medical_records\models.py:71:        Visibility logic for visits:
+  medical_records\models.py:72:        - Superadmins, HIV Staff, OPD/IGD Doctors: Full access.
+  medical_records\models.py:73:        - Everyone else: Can see the existence of visits for statistical purposes, 
+  medical_records\models.py:74:          but HIV visits are filtered out from general views.
+  medical_records\models.py:75:        """
+  medical_records\models.py:76:        if user.is_superuser:
+  medical_records\models.py:77:            return self
+  medical_records\models.py:78:        
+  medical_records\models.py:79:        is_hiv_staff = False
+  medical_records\models.py:80:        is_opd_igd_staff = False
+  medical_records\models.py:81:        staff_profile = getattr(user, 'staff_profile', None)
+  medical_records\models.py:82:        if staff_profile and staff_profile.department:
+  medical_records\models.py:83:            try:
+  medical_records\models.py:84:                dept_code = staff_profile.department.code.upper()
+  medical_records\models.py:85:                is_hiv_staff = dept_code in ['HIV', 'AIDS']
+  medical_records\models.py:86:                is_opd_igd_staff = dept_code in ['DOKTER', 'OPD', 'IGD', 'EMERGENCY']
+  medical_records\models.py:87:            except AttributeError:
+  medical_records\models.py:88:                pass
+  medical_records\models.py:89:
+  medical_records\models.py:90:        if is_hiv_staff or is_opd_igd_staff:
+  medical_records\models.py:91:            return self
+  medical_records\models.py:92:        else:
+  medical_records\models.py:93:            from django.utils import timezone
+  medical_records\models.py:94:            today = timezone.localdate()
+  medical_records\models.py:95:            return self.filter(
+  medical_records\models.py:96:                Q(patient__is_hiv_patient=False) |
+  medical_records\models.py:97:                Q(
+  medical_records\models.py:98:                    current_room__code__in=['IGD', 'EMERGENCY'],
+  medical_records\models.py:99:                    status__in=['SCH', 'IP']
+  medical_records\models.py:100:                ) |
+  medical_records\models.py:101:                Q(
+  medical_records\models.py:102:                    current_room__code__in=['IGD', 'EMERGENCY'],
+  medical_records\models.py:103:                    visit_date__date=today
+  medical_records\models.py:104:                )
+  medical_records\models.py:105:            ).distinct()
+  medical_records\models.py:106:
+> medical_records\models.py:107:class VisitManager(models.Manager):
+  medical_records\models.py:108:    def get_queryset(self):
+  medical_records\models.py:109:        return VisitQuerySet(self.model, using=self._db)
+  medical_records\models.py:110:
+  medical_records\models.py:111:    def visible_to(self, user):
+  medical_records\models.py:112:        return self.get_queryset().visible_to(user)
+  medical_records\models.py:113:
+> medical_records\models.py:114:class Visit(models.Model):
+  medical_records\models.py:115:    STATUS_CHOICES = [
+  medical_records\models.py:116:        ('SCH', _('Scheduled')),
+  medical_records\models.py:117:        ('IP', _('In Progress')),
+  medical_records\models.py:118:        ('COM', _('Completed')),
+  medical_records\models.py:119:        ('CAN', _('Cancelled')),
+  medical_records\models.py:120:        ('UNC', _('Uncompleted/Expired')),
+  medical_records\models.py:121:    ]
+  medical_records\models.py:122:
+  medical_records\models.py:123:    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+  medical_records\models.py:124:    patient = models.ForeignKey(Patient, on_delete=models.PROTECT, 
+related_name='visits', verbose_name=_('Patient'))
+  medical_records\models.py:125:    
+  medical_records\models.py:126:    objects = VisitManager()
+  medical_records\models.py:127:
+  medical_records\models.py:128:    doctor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, 
+related_name='doctor_visits', verbose_name=_('Doctor'))
+  medical_records\models.py:129:    visit_date = models.DateTimeField(_('Visit Date'), auto_now_add=True)
+  medical_records\models.py:130:    queue_number = models.PositiveIntegerField(_('Queue Number'))
+  medical_records\models.py:131:
+  medical_records\models.py:132:    @property
+  medical_records\models.py:133:    def has_hiv_history(self):
+  medical_records\models.py:134:        """Check if this patient has ANY recorded visit in the HIV department."""
+  medical_records\models.py:135:        return Visit.objects.filter(patient=self.patient, 
+current_room__code='HIV').exists()
+  medical_records\models.py:136:
+  medical_records\models.py:137:    def can_view_medical_data(self, user):
+  medical_records\models.py:138:        """
+  medical_records\models.py:139:        Determines if the user is allowed to see clinical details (diagnosis, notes, 
+vitals).
+  medical_records\models.py:140:        - Superadmin, HIV Staff, OPD/IGD Doctors: Always.
+  medical_records\models.py:141:        - Others: ONLY if the patient has NO HIV history and it's not an HIV visit.
+  medical_records\models.py:142:        """
+  medical_records\models.py:143:        if user.is_superuser:
+  medical_records\models.py:144:            return True
+  medical_records\models.py:145:        
+  medical_records\models.py:146:        is_hiv_staff = False
+  medical_records\models.py:147:        is_opd_igd_staff = False
+  medical_records\models.py:148:        staff_profile = getattr(user, 'staff_profile', None)
+  medical_records\models.py:149:        if staff_profile and staff_profile.department:
+  medical_records\models.py:150:            try:
+  medical_records\models.py:151:                dept_code = staff_profile.department.code.upper()
+  medical_records\models.py:152:                is_hiv_staff = dept_code in ['HIV', 'AIDS']
+  medical_records\models.py:153:                is_opd_igd_staff = dept_code in ['DOKTER', 'OPD', 'IGD', 'EMERGENCY']
+  medical_records\models.py:154:            except AttributeError:
+  medical_records\models.py:155:                pass
+  medical_records\models.py:156:        
+  medical_records\models.py:157:        if is_hiv_staff or is_opd_igd_staff:
+  medical_records\models.py:158:            return True
+  medical_records\models.py:159:        
+  medical_records\models.py:160:        # Non-HIV/OPD staff: strictly blocked from viewing the clinical details of any 
+HIV-specific visit
+  medical_records\models.py:161:        if self.current_room and self.current_room.code == 'HIV':
+  medical_records\models.py:162:            return False
+  medical_records\models.py:163:            
+  medical_records\models.py:164:        return True
+  medical_records\models.py:165:    
+  medical_records\models.py:166:    # Workflow
+  medical_records\models.py:167:    current_room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, 
+blank=True, related_name='current_visits', verbose_name=_('Current Room'))
+  medical_records\models.py:168:    visit_fee = models.DecimalField(_('Visit Fee (USD)'), max_digits=10, 
+decimal_places=2, default=0.00)
+  medical_records\models.py:169:
+  medical_records\models.py:170:    # Clinical Data (Chief Complaint remains here as core part of visit)
+  medical_records\models.py:171:    complaint = models.TextField(_('Chief Complaint'), blank=True, null=True)
+  medical_records\models.py:172:    
+  medical_records\models.py:173:    # NOTE: Vital signs are now moved to VitalSigns model (1:1 with Visit)
+  medical_records\models.py:174:    # NOTE: Diagnoses are now moved to VisitDiagnosis model (M:M with Visit)
+  medical_records\models.py:175:    
+  medical_records\models.py:176:    clinical_notes = EncryptedTextField(_('Clinical Notes'), blank=True, null=True)
+  medical_records\models.py:177:    
+  medical_records\models.py:178:    # Quick Requests for Rooms 3-6
+  medical_records\models.py:179:    lab_cbc = models.BooleanField(_('Request CBC (Lab)'), default=False)
+  medical_records\models.py:180:    pharmacy_requested = models.BooleanField(_('Request Pharmacy'), default=False)
+  medical_records\models.py:181:    refer_to_central = models.BooleanField(_('Refer to Central Facility'), 
+default=False)
+  medical_records\models.py:182:    
+  medical_records\models.py:183:    PATIENT_TYPE_CHOICES = [
+  medical_records\models.py:184:        ('FOUN', _('New Patient')),
+  medical_records\models.py:185:        ('TUAN', _('Returning Patient')),
+  medical_records\models.py:186:    ]
+  medical_records\models.py:187:    patient_type = models.CharField(_('Patient Type'), max_length=4, 
+choices=PATIENT_TYPE_CHOICES, default='FOUN')
+  medical_records\models.py:188:    
+  medical_records\models.py:189:    status = models.CharField(_('Status'), max_length=3, choices=STATUS_CHOICES, 
+default='SCH')
+  medical_records\models.py:190:
+  medical_records\models.py:191:    SOURCE_CHOICES = [
+  medical_records\models.py:192:        ('OPD', _('OPD (Outpatient)')),
+  medical_records\models.py:193:        ('IGD', _('IGD (Emergency)')),
+  medical_records\models.py:194:    ]
+  medical_records\models.py:195:    source = models.CharField(_('Source'), max_length=3, choices=SOURCE_CHOICES, 
+default='OPD')
+  medical_records\models.py:196:
+  medical_records\models.py:197:    # Staff tracking
+  medical_records\models.py:198:    checked_in_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, 
+blank=True, related_name='checkin_visits', verbose_name=_('Checked In By'))
+  medical_records\models.py:199:    triage_nurse = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, 
+blank=True, related_name='triage_visits', verbose_name=_('Triage Nurse'))
+  medical_records\models.py:200:
+  medical_records\models.py:201:    # Emergency & Triage Specifics
+  medical_records\models.py:202:    TRIAGE_CHOICES = [
+  medical_records\models.py:203:        ('RED', _('RED (Immediate/Critical)')),
+  medical_records\models.py:204:        ('YELLOW', _('YELLOW (Urgent/Observation)')),
+  medical_records\models.py:205:        ('GREEN', _('GREEN (Stable/Walking)')),
+  medical_records\models.py:206:        ('BLACK', _('BLACK (Deceased/Non-viable)')),
+  medical_records\models.py:207:    ]
+  medical_records\models.py:208:    triage_level = models.CharField(_('Triage Level'), max_length=10, 
+choices=TRIAGE_CHOICES, blank=True, null=True)
+  medical_records\models.py:209:    
+  medical_records\models.py:210:    ARRIVAL_CHOICES = [
+  medical_records\models.py:211:        ('AMBULANCE', _('Ambulance')),
+  medical_records\models.py:212:        ('PRIVATE', _('Private Vehicle')),
+  medical_records\models.py:213:        ('POLICE', _('Police/Military')),
+  medical_records\models.py:214:        ('G_SUCO', _('Government/Suco Vehicle')),
+> medical_records\models.py:313:class VisitDiagnosis(models.Model):
+  medical_records\models.py:314:    """
+  medical_records\models.py:315:    ERD FINAL: Many-to-Many relation for multiple diagnoses per visit.
+  medical_records\models.py:316:    """
+  medical_records\models.py:317:    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+  medical_records\models.py:318:    visit = models.ForeignKey(Visit, on_delete=models.CASCADE, 
+related_name='visit_diagnoses')
+  medical_records\models.py:319:    diagnosis = models.ForeignKey(Diagnosis, on_delete=models.PROTECT, 
+related_name='visit_records')
+  medical_records\models.py:320:    is_primary = models.BooleanField(_('Primary Diagnosis'), default=False)
+  medical_records\models.py:321:    notes = models.TextField(_('Specific Diagnosis Notes'), blank=True, null=True)
+  medical_records\models.py:322:    created_at = models.DateTimeField(auto_now_add=True)
+  medical_records\models.py:323:
+  medical_records\models.py:324:    class Meta:
+  medical_records\models.py:325:        verbose_name = _('Visit Diagnosis')
+  medical_records\models.py:326:        verbose_name_plural = _('Visit Diagnoses')
+  medical_records\models.py:327:        unique_together = ('visit', 'diagnosis')
+  medical_records\models.py:328:
+  medical_records\models.py:329:    def __str__(self):
+  medical_records\models.py:330:        return f"{self.visit} - {self.diagnosis} ({'Primary' if self.is_primary else 
+'Secondary'})"
+  medical_records\models.py:331:
+  medical_records\models.py:332:
+  medical_records\models.py:333:class VitalSigns(models.Model):
+  medical_records\models.py:334:    """
+  medical_records\models.py:335:    ERD FINAL: Dedicated model for vital signs (1:1 with Visit).
+  medical_records\models.py:336:    """
+  medical_records\models.py:337:    VAS_CHOICES = [
+  medical_records\models.py:338:        ('0', _('0 (No Pain)')),
+  medical_records\models.py:339:        ('1-3', _('1-3 (Mild)')),
+  medical_records\models.py:340:        ('4-6', _('4-6 (Moderate)')),
+  medical_records\models.py:341:        ('7-9', _('7-9 (Severe)')),
+  medical_records\models.py:342:        ('10', _('10 (Worst Pain)')),
+  medical_records\models.py:343:    ]
+  medical_records\models.py:344:
+  medical_records\models.py:345:    visit = models.OneToOneField(Visit, on_delete=models.CASCADE, 
+related_name='vital_signs_record', verbose_name=_('Visit'), null=True, blank=True)
+  medical_records\models.py:346:    
+  medical_records\models.py:347:    # Core Vitals
+  medical_records\models.py:348:    bp_sys = models.IntegerField(_('BP Systolic'), blank=True, null=True)
+  medical_records\models.py:349:    bp_dia = models.IntegerField(_('BP Diastolic'), blank=True, null=True)
+  medical_records\models.py:350:    spo2 = models.IntegerField(_('SPO2 (%)'), blank=True, null=True)
+  medical_records\models.py:351:    pulse = models.IntegerField(_('Pulse (bpm)'), blank=True, null=True)
+  medical_records\models.py:352:    rr = models.IntegerField(_('Respiratory Rate (bpm)'), blank=True, null=True)
+  medical_records\models.py:353:    temp = models.DecimalField(_('Temperature (°C)'), max_digits=4, decimal_places=1, 
+blank=True, null=True)
+  medical_records\models.py:354:    weight = models.DecimalField(_('Weight (kg)'), max_digits=5, decimal_places=1, 
+blank=True, null=True)
+  medical_records\models.py:355:    height_cm = models.DecimalField(_('Height (cm)'), max_digits=5, decimal_places=1, 
+blank=True, null=True)
+  medical_records\models.py:356:    muac = models.DecimalField(_('MUAC (cm)'), max_digits=4, decimal_places=1, 
+blank=True, null=True)
+  medical_records\models.py:357:    vas_score = models.CharField(_('VAS Pain Score'), max_length=5, 
+choices=VAS_CHOICES, blank=True, null=True)
+  medical_records\models.py:358:    
+  medical_records\models.py:359:    # MCH / KIA specific
+  medical_records\models.py:360:    kia_category = models.CharField(_('MCH Category'), max_length=20, blank=True, 
+null=True)
+  medical_records\models.py:361:    
+  medical_records\models.py:362:    # Emergency Specifics (Re-checks)
+  medical_records\models.py:363:    er_bp_sys = models.IntegerField(_('ER BP Systolic'), blank=True, null=True)
+  medical_records\models.py:364:    er_bp_dia = models.IntegerField(_('ER BP Diastolic'), blank=True, null=True)
+  medical_records\models.py:365:    er_spo2 = models.IntegerField(_('ER SPO2 (%)'), blank=True, null=True)
+  medical_records\models.py:366:    er_pulse = models.IntegerField(_('ER Pulse (bpm)'), blank=True, null=True)
+  medical_records\models.py:367:    er_temp = models.DecimalField(_('ER Temperature (°C)'), max_digits=4, 
+decimal_places=1, blank=True, null=True)
+  medical_records\models.py:368:    
+  medical_records\models.py:369:    notes = models.TextField(_('Vitals Notes'), blank=True, null=True)
+  medical_records\models.py:370:    taken_at = models.DateTimeField(_('Time Taken'), auto_now_add=True)
+  medical_records\models.py:371:
+  medical_records\models.py:372:    class Meta:
+  medical_records\models.py:373:        verbose_name = _('Vital Signs')
+  medical_records\models.py:374:        verbose_name_plural = _('Vital Signs')
+  medical_records\models.py:375:
+  medical_records\models.py:376:    def __str__(self):
+  medical_records\models.py:377:        return f"Vitals for {self.visit}"
+  medical_records\models.py:378:
+  medical_records\models.py:379:
+> medical_records\models.py:380:class VisitLog(models.Model):
+  medical_records\models.py:381:    ACTION_CHOICES = [
+  medical_records\models.py:382:        ('CHECK_IN', _('Check-In')),
+  medical_records\models.py:383:        ('TRIAGE', _('Triage')),
+  medical_records\models.py:384:        ('EXAMINATION', _('Doctor Examination')),
+  medical_records\models.py:385:        ('LAB_REQUEST', _('Lab Request Created')),
+  medical_records\models.py:386:        ('LAB_RESULT', _('Lab Result Entered')),
+  medical_records\models.py:387:        ('RAD_REQUEST', _('Radiology Request Created')),
+  medical_records\models.py:388:        ('RAD_RESULT', _('Radiology Result Entered')),
+  medical_records\models.py:389:        ('PATHO_REQUEST', _('Pathology Request Created')),
+  medical_records\models.py:390:        ('PATHO_RESULT', _('Pathology Result Entered')),
+  medical_records\models.py:391:        ('PRESCRIPTION', _('Prescription Created')),
+  medical_records\models.py:392:        ('DISPENSED', _('Medicine Dispensed')),
+  medical_records\models.py:393:        ('REFERRED', _('Referred to National')),
+  medical_records\models.py:394:        ('COMPLETED', _('Visit Completed')),
+  medical_records\models.py:395:        ('STATUS_CHANGE', _('Status Changed')),
+  medical_records\models.py:396:    ]
+  medical_records\models.py:397:
+  medical_records\models.py:398:    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+  medical_records\models.py:399:    visit = models.ForeignKey(Visit, on_delete=models.CASCADE, related_name='logs', 
+verbose_name=_('Visit'))
+  medical_records\models.py:400:    action = models.CharField(_('Action'), max_length=20, choices=ACTION_CHOICES)
+  medical_records\models.py:401:    performed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, 
+verbose_name=_('Performed By'))
+  medical_records\models.py:402:    timestamp = models.DateTimeField(_('Timestamp'), auto_now_add=True)
+  medical_records\models.py:403:    room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True, 
+verbose_name=_('Room'))
+  medical_records\models.py:404:    notes = models.TextField(_('Notes'), blank=True, default='')
+  medical_records\models.py:405:
+  medical_records\models.py:406:    class Meta:
+  medical_records\models.py:407:        verbose_name = _('Visit Log')
+  medical_records\models.py:408:        verbose_name_plural = _('Visit Logs')
+  medical_records\models.py:409:        ordering = ['timestamp']
+  medical_records\models.py:410:        indexes = [
+  medical_records\models.py:411:            models.Index(fields=['visit', 'timestamp'], name='idx_visitlog_visit_ts'),
+  medical_records\models.py:412:        ]
+  medical_records\models.py:413:
+  medical_records\models.py:414:    def __str__(self):
+  medical_records\models.py:415:        return f"{self.get_action_display()} by {self.performed_by} at 
+{self.timestamp}"
+  medical_records\models.py:416:
+  medical_records\models.py:417:
+  medical_records\models.py:418:class EmergencyObservation(models.Model):
+  medical_records\models.py:419:    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+  medical_records\models.py:420:    visit = models.ForeignKey(Visit, on_delete=models.CASCADE, 
+related_name='observations', verbose_name=_('Visit'))
+  medical_records\models.py:421:    check_time = models.DateTimeField(_('Observation Time'), default=timezone.now)
+  medical_records\models.py:422:    
+  medical_records\models.py:423:    # Periodic Vitals
+  medical_records\models.py:424:    bp_sys = models.IntegerField(_('BP Systolic'), blank=True, null=True)
+  medical_records\models.py:425:    bp_dia = models.IntegerField(_('BP Diastolic'), blank=True, null=True)
+  medical_records\models.py:426:    spo2 = models.IntegerField(_('SPO2 (%)'), blank=True, null=True)
+  medical_records\models.py:427:    pulse = models.IntegerField(_('Pulse (bpm)'), blank=True, null=True)
+  medical_records\models.py:428:    rr = models.IntegerField(_('Respiratory Rate (bpm)'), blank=True, null=True)
+  medical_records\models.py:429:    temp = models.DecimalField(_('Temperature (°C)'), max_digits=4, decimal_places=1, 
+blank=True, null=True)
+  medical_records\models.py:430:    vas_score = models.CharField(_('VAS Pain Score'), max_length=5, 
+choices=VitalSigns.VAS_CHOICES, blank=True, null=True)
+  medical_records\models.py:431:    
+  medical_records\models.py:432:    clinical_notes = models.TextField(_('Observation Progress Notes'), blank=True, 
+null=True)
+  medical_records\models.py:433:    checked_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, 
+blank=True, verbose_name=_('Monitored By'))
+  medical_records\models.py:434:
+  medical_records\models.py:435:    class Meta:
+  medical_records\models.py:436:        verbose_name = _('Emergency Observation')
+  medical_records\models.py:437:        verbose_name_plural = _('Emergency Observations')
+  medical_records\models.py:438:        ordering = ['-check_time']
+  medical_records\models.py:439:
+  medical_records\models.py:440:
+  medical_records\models.py:441:class EmergencyMedication(models.Model):
+  medical_records\models.py:442:    ADMIN_TYPE_CHOICES = [
+  medical_records\models.py:443:        ('ORAL', _('Oral')),
+  medical_records\models.py:444:        ('INJECTION', _('Injection')),
+  medical_records\models.py:445:        ('OXYGEN', _('Oxygen')),
+  medical_records\models.py:446:        ('IV_FLUIDS', _('IV Fluids')),
+  medical_records\models.py:447:        ('TOPICAL', _('Topical')),
+  medical_records\models.py:448:    ]
+  medical_records\models.py:449:
+  medical_records\models.py:450:    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+  medical_records\models.py:451:    visit = models.ForeignKey(Visit, on_delete=models.CASCADE, 
+related_name='emergency_medications', verbose_name=_('Visit'))
+  medical_records\models.py:452:    
+  medical_records\models.py:453:    medicine = models.ForeignKey('pharmacy.Medicine', on_delete=models.PROTECT, 
+related_name='emergency_administrations', verbose_name=_('Medicine'))
+  medical_records\models.py:454:    
+  medical_records\models.py:455:    quantity = models.PositiveIntegerField(_('Quantity Given'))
+  medical_records\models.py:456:    admin_type = models.CharField(_('Administration Type'), max_length=20, 
+choices=ADMIN_TYPE_CHOICES, default='ORAL')
+  medical_records\models.py:457:    dosage_instruction = models.CharField(_('Dose & Instruction'), max_length=255, 
+help_text=_("e.g. 500mg, 1 ampoule, 2L/min"))
+  medical_records\models.py:458:    
+  medical_records\models.py:459:    ordered_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, 
+blank=True, related_name='emergency_prescriptions', verbose_name=_('Ordered By (Doctor)'))
+  medical_records\models.py:460:    given_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, 
+blank=True, verbose_name=_('Administered By (Nurse)'))
+  medical_records\models.py:461:    given_at = models.DateTimeField(_('Time Administered'), auto_now_add=True)
+  medical_records\models.py:462:
+  medical_records\models.py:463:    class Meta:
+  medical_records\models.py:464:        verbose_name = _('Emergency Medication')
+  medical_records\models.py:465:        verbose_name_plural = _('Emergency Medications')
+  medical_records\models.py:466:        ordering = ['-given_at']
+  medical_records\models.py:467:
+  medical_records\models.py:468:class HIVAssessment(models.Model):
+  medical_records\models.py:469:    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+  medical_records\models.py:470:    patient = models.ForeignKey(Patient, on_delete=models.PROTECT, 
+related_name='hiv_assessments', verbose_name=_('Patient'))
+  medical_records\models.py:471:    visit = models.ForeignKey(Visit, on_delete=models.SET_NULL, null=True, blank=True, 
+related_name='hiv_assessments', verbose_name=_('Visit'))
+  medical_records\models.py:472:    
+  medical_records\models.py:473:    # Registration Details specific to HIV
+  medical_records\models.py:474:    date_registered_at_bpc = models.DateField(_('Date of registration at BPC'), 
+default=timezone.localdate)
+  medical_records\models.py:475:    PATIENT_TYPE_CHOICES = [
+  medical_records\models.py:476:        ('NEW', _('New patient')),
+  medical_records\models.py:477:        ('TRANSFER', _('Transfer in')),
+  medical_records\models.py:478:    ]
+  medical_records\models.py:479:    patient_type = models.CharField(_('Patient Type'), max_length=10, 
+choices=PATIENT_TYPE_CHOICES, default='NEW')
+  medical_records\models.py:480:    previous_registrations = models.CharField(_('Previous registrations (if 
+applicable)'), max_length=255, blank=True, null=True)
+
+

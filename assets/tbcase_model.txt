@@ -1,0 +1,75 @@
+﻿
+> backend\medical_records\models.py:587:class TBCase(models.Model):
+  backend\medical_records\models.py:588:    """
+  backend\medical_records\models.py:589:    Master record for a TB treatment episode (TB Treatment Card).
+  backend\medical_records\models.py:590:    """
+  backend\medical_records\models.py:591:    CASE_TYPES = [
+  backend\medical_records\models.py:592:        ('PTB_POS', _('PTB+ (Pulmonary TB Sputum Positive)')),
+  backend\medical_records\models.py:593:        ('PTB_NEG', _('PTB- (Pulmonary TB Sputum Negative)')),
+  backend\medical_records\models.py:594:        ('EPTB', _('EPTB (Extra-Pulmonary TB)')),
+  backend\medical_records\models.py:595:    ]
+  backend\medical_records\models.py:596:    CATEGORIES = [
+  backend\medical_records\models.py:597:        ('CAT_I', _('Category I (New Cases)')),
+  backend\medical_records\models.py:598:        ('CAT_II', _('Category II (Previously Treated)')),
+  backend\medical_records\models.py:599:        ('CAT_P', _('Pediatric (Children)')),
+  backend\medical_records\models.py:600:        ('CAT_MDR', _('MDR-TB')),
+  backend\medical_records\models.py:601:    ]
+  backend\medical_records\models.py:602:    OUTCOMES = [
+  backend\medical_records\models.py:603:        ('PENDING', _('Still on Treatment')),
+  backend\medical_records\models.py:604:        ('CURED', _('Cured')),
+  backend\medical_records\models.py:605:        ('COMPLETED', _('Treatment Completed')),
+  backend\medical_records\models.py:606:        ('DIED', _('Died')),
+  backend\medical_records\models.py:607:        ('FAILED', _('Treatment Failed')),
+  backend\medical_records\models.py:608:        ('LOST', _('Lost to Follow-up')),
+  backend\medical_records\models.py:609:        ('TRANSFERRED', _('Transferred Out')),
+  backend\medical_records\models.py:610:    ]
+  backend\medical_records\models.py:611:
+  backend\medical_records\models.py:612:    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, 
+editable=False)
+  backend\medical_records\models.py:613:    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, 
+related_name='tb_cases', verbose_name=_('Patient'))
+  backend\medical_records\models.py:614:    tb_registration_number = models.CharField(_('TB Reg Number'), 
+max_length=50, unique=True, help_text=_("National TB Program Number"))
+  backend\medical_records\models.py:615:    
+  backend\medical_records\models.py:616:    date_started = models.DateField(_('Treatment Start Date'))
+  backend\medical_records\models.py:617:    case_type = models.CharField(_('Case Type'), max_length=10, 
+choices=CASE_TYPES)
+  backend\medical_records\models.py:618:    category = models.CharField(_('Treatment Category'), max_length=10, 
+choices=CATEGORIES)
+  backend\medical_records\models.py:619:    
+  backend\medical_records\models.py:620:    # Diagnosis details
+  backend\medical_records\models.py:621:    initial_weight = models.DecimalField(_('Weight at Start (kg)'), 
+max_digits=5, decimal_places=2)
+  backend\medical_records\models.py:622:    
+  backend\medical_records\models.py:623:    # Clinical Classification
+  backend\medical_records\models.py:624:    CLASSIFICATION_CHOICES = [
+  backend\medical_records\models.py:625:        ('P', _('Pulmonar')),
+  backend\medical_records\models.py:626:        ('EP', _('Estra-Pulmuar')),
+  backend\medical_records\models.py:627:    ]
+  backend\medical_records\models.py:628:    classification = models.CharField(max_length=2, 
+choices=CLASSIFICATION_CHOICES, default='P')
+  backend\medical_records\models.py:629:    site_of_eptb = models.CharField(max_length=255, blank=True, null=True)
+  backend\medical_records\models.py:630:    
+  backend\medical_records\models.py:631:    # Patient Type
+  backend\medical_records\models.py:632:    TYPE_CHOICES = [
+  backend\medical_records\models.py:633:        ('FOUN', _('Foun (New)')),
+  backend\medical_records\models.py:634:        ('RELAPSU', _('Relapsu (Relapse)')),
+  backend\medical_records\models.py:635:        ('DEPOIS_LAKON', _('Depois lakon (After loss to follow up)')),
+  backend\medical_records\models.py:636:        ('FALHA', _('Falha (Failure)')),
+  backend\medical_records\models.py:637:        ('OUTRU', _('Outru (Other)')),
+  backend\medical_records\models.py:638:    ]
+  backend\medical_records\models.py:639:    patient_type = models.CharField(max_length=20, choices=TYPE_CHOICES, 
+default='FOUN')
+  backend\medical_records\models.py:640:    
+  backend\medical_records\models.py:641:    # Treatment Regimen
+  backend\medical_records\models.py:642:    regimen = models.CharField(max_length=255, blank=True, null=True, 
+help_text="e.g., RHZE (150/75/400/275 mg)")
+  backend\medical_records\models.py:643:    
+  backend\medical_records\models.py:644:    # Co-morbidities
+  backend\medical_records\models.py:645:    hiv_status = models.CharField(max_length=50, blank=True, null=True, 
+help_text="Teste HIV / Data / Rezultadu")
+  backend\medical_records\models.py:646:    diabetes_status = models.CharField(max_length=50, blank=True, null=True, 
+help_text="Diabetes Status (FBS/RBG)")
+  backend\medical_records\models.py:647:    
+
+

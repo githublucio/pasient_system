@@ -1,46 +1,43 @@
 from django.test import TestCase, Client
 from django.contrib.auth.models import User
-from .models import Medicine, StockEntry, Prescription, DispensedItem
-from medical_records.models import Visit, Room
-from patients.models import Patient
-from datetime import date
-from django.utils import timezone
+from .models import Medicine, StockBatch, Prescription, DispensedItem
 
 
 class MedicineModelTest(TestCase):
     def test_medicine_creation(self):
-        med = Medicine.objects.create(name='Paracetamol', strength='500mg', form='TABLET', unit='TABLET', stock=100)
-        self.assertEqual(str(med), f"{med.display_name} - Stock: 100")
-        self.assertFalse(med.is_low_stock)
-
-    def test_low_stock_alert(self):
-        med = Medicine.objects.create(name='Amoxicillin', unit='CAPSULE', stock=5, min_stock=10)
+        med = Medicine.objects.create(name='Paracetamol', strength='500mg', form='TABLET', unit='TABLET')
+        self.assertEqual(str(med), f"{med.display_name} - Stock: 0")
         self.assertTrue(med.is_low_stock)
 
-    def test_stock_not_negative(self):
-        med = Medicine.objects.create(name='Test Med', stock=0, min_stock=10)
-        self.assertEqual(med.stock, 0)
+    def test_stock_calculation(self):
+        med = Medicine.objects.create(name='Amoxicillin', unit='CAPSULE', min_stock=10)
+        StockBatch.objects.create(
+            medicine=med, quantity_received=50, quantity_remaining=50,
+            purchase_date=timezone.localdate()
+        )
+        self.assertEqual(med.total_stock, 50)
+        self.assertFalse(med.is_low_stock)
 
 
-class StockEntryTest(TestCase):
+class StockBatchTest(TestCase):
     def setUp(self):
-        self.medicine = Medicine.objects.create(name='Ibuprofen', stock=0, min_stock=10)
+        self.medicine = Medicine.objects.create(name='Ibuprofen', min_stock=10)
 
-    def test_stock_entry_updates_medicine_stock(self):
-        """Stock entry should be created and remaining_qty set."""
-        entry = StockEntry.objects.create(
-            medicine=self.medicine, quantity=50, remaining_qty=50,
+    def test_stock_batch_creation(self):
+        """Stock batch should be created and quantity_remaining set."""
+        batch = StockBatch.objects.create(
+            medicine=self.medicine, quantity_received=50, quantity_remaining=50,
             purchase_date=timezone.localdate(),
             created_by=None
         )
-        self.assertEqual(entry.remaining_qty, 50)
+        self.assertEqual(batch.quantity_remaining, 50)
 
     def test_expired_stock(self):
-        entry = StockEntry.objects.create(
-            medicine=self.medicine, quantity=20, remaining_qty=20,
+        batch = StockBatch.objects.create(
+            medicine=self.medicine, quantity_received=20, quantity_remaining=20,
             expiry_date=date(2020, 1, 1), purchase_date=timezone.localdate()
         )
-        self.assertTrue(entry.is_expired)
+        self.assertTrue(batch.is_expired)
 
 
 class PharmacyAuthTest(TestCase):

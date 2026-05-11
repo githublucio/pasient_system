@@ -44,43 +44,43 @@
                             <div class="col-md-3">
                                 <div class="border rounded p-2 text-center bg-white shadow-sm">
                                     <small class="text-muted d-block small">{% trans "BP (sys/dia)" %}</small>
-                                    <span class="fw-bold">{{ visit.bp_sys|default:"-" }}/{{ visit.bp_dia|default:"-" }}</span>
+                                    <span class="fw-bold">{{ visit.vitals.bp_sys|default:"-" }}/{{ visit.vitals.bp_dia|default:"-" }}</span>
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="border rounded p-2 text-center bg-white shadow-sm">
                                     <small class="text-muted d-block small">{% trans "SPO2" %}</small>
-                                    <span class="fw-bold text-primary">{{ visit.spo2|default:"-" }}%</span>
+                                    <span class="fw-bold text-primary">{{ visit.vitals.spo2|default:"-" }}%</span>
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="border rounded p-2 text-center bg-white shadow-sm">
                                     <small class="text-muted d-block small">{% trans "Pulse" %}</small>
-                                    <span class="fw-bold">{{ visit.pulse|default:"-" }}</span>
+                                    <span class="fw-bold">{{ visit.vitals.pulse|default:"-" }}</span>
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="border rounded p-2 text-center bg-white shadow-sm">
                                     <small class="text-muted d-block small">{% trans "Temp" %}</small>
-                                    <span class="fw-bold">{{ visit.temp|default:"-" }}°C</span>
+                                    <span class="fw-bold">{{ visit.vitals.temp|default:"-" }}°C</span>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="border rounded p-2 text-center bg-white shadow-sm border-info">
                                     <small class="text-muted d-block small">{% trans "MUAC" %}</small>
-                                    <span class="fw-bold fs-5">{{ visit.muac|default:"-" }} cm</span>
+                                    <span class="fw-bold fs-5">{{ visit.vitals.muac|default:"-" }} cm</span>
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="border rounded p-2 text-center bg-white shadow-sm">
                                     <small class="text-muted d-block small">{% trans "RR" %}</small>
-                                    <span class="fw-bold">{{ visit.rr|default:"-" }}</span>
+                                    <span class="fw-bold">{{ visit.vitals.rr|default:"-" }}</span>
                                 </div>
                             </div>
                             <div class="col-md-2">
                                 <div class="border rounded p-2 text-center bg-white shadow-sm">
                                     <small class="text-muted d-block small">{% trans "Weight" %}</small>
-                                    <span class="fw-bold">{{ visit.weight|default:"-" }} kg</span>
+                                    <span class="fw-bold">{{ visit.vitals.weight|default:"-" }} kg</span>
                                 </div>
                             </div>
                         </div>
@@ -90,8 +90,16 @@
                 <div class="mb-4">
                     <h6 class="fw-bold"><i class="bi bi-journal-medical me-2"></i>{% trans "Clinical Notes & Diagnosis" %}</h6>
                     <div class="border rounded p-3 bg-white">
-                        <p class="fw-bold text-primary mb-1">{% trans "Diagnosis" %}: {{ visit.diagnosis|default:"-" }}</p>
-                        <div class="text-dark" style="white-space: pre-wrap;">{{ visit.clinical_notes|default:"-" }}</div>
+                        <p class="fw-bold text-primary mb-1">{% trans "Primary Diagnosis" %}: {{ visit.primary_diagnosis|default:"-" }}</p>
+                        {% if visit.secondary_diagnoses_list %}
+                        <div class="mb-2">
+                            <small class="text-muted d-block small">{% trans "Secondary Diagnoses" %}</small>
+                            {% for diag in visit.secondary_diagnoses_list %}
+                                <span class="badge bg-light text-dark border me-1">{{ diag }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <div class="text-dark border-top pt-2" style="white-space: pre-wrap;">{{ visit.clinical_notes|default:"-" }}</div>
                     </div>
                 </div>
 
@@ -108,8 +116,16 @@
                                 {% if lab_req.status == 'COMPLETED' %}<span class="badge bg-success">{% trans "Completed" %}</span>
                                 {% elif lab_req.status == 'IN_PROGRESS' %}<span class="badge bg-warning text-dark">{% trans "In Progress" %}</span>
                                 {% elif lab_req.status == 'SAMPLE_COLLECTED' %}<span class="badge bg-info text-dark">{% trans "Sample Collected" %}</span>
+                                {% elif lab_req.status == 'CANCELLED' %}<span class="badge bg-danger">{% trans "Cancelled" %}</span>
                                 {% else %}<span class="badge bg-secondary">{% trans "Pending" %}</span>{% endif %}
                             </div>
+                            {% if lab_req.status == 'CANCELLED' %}
+                            <div class="alert alert-danger py-2 px-3 small mb-2 border-0">
+                                <i class="bi bi-exclamation-octagon-fill me-2"></i>
+                                <strong>{% trans "Reason:" %}</strong> {{ lab_req.cancel_reason|default:_("No reason provided.") }}
+                                <div class="smaller opacity-75 mt-1">{% trans "By:" %} {{ lab_req.cancelled_by.get_full_name|default:lab_req.cancelled_by.username }}</div>
+                            </div>
+                            {% endif %}
                             <div class="row mb-2">
                                 <div class="col-md-6">
                                     <strong>{% trans "Tests" %}:</strong>

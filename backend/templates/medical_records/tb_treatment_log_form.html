@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% load widget_tweaks %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3 class="fw-bold mb-0 text-danger"><i class="bi bi-plus-lg me-2"></i>{{ title }}</h3>
+            <a href="{% url 'tb_treatment_card' case.uuid %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>{% trans "Back to Card" %}
+            </a>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-light py-3">
+                <div class="fw-bold">{{ case.patient.full_name }}</div>
+                <div class="small text-muted">Reg No: {{ case.tb_registration_number }}</div>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase">{% trans "Date" %} *</label>
+                            {% render_field form.date type="date" class="form-control" %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase">{% trans "Phase" %} *</label>
+                            {% render_field form.phase class="form-select" %}
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase">{% trans "Weight (kg)" %}</label>
+                            {% render_field form.weight class="form-control" step="0.1" %}
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mt-4">
+                                {% render_field form.is_observed class="form-check-input" id="id_is_observed" %}
+                                <label class="form-check-label fw-bold small text-uppercase" for="id_is_observed">
+                                    {% trans "Directly Observed (DOTS)" %}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-uppercase">{% trans "Sputum Results (If tested)" %}</label>
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <span class="small text-muted d-block mb-1">{% trans "Month 2" %}</span>
+                                {% render_field form.sputum_result_month_2 class="form-select small" %}
+                            </div>
+                            <div class="col-md-4">
+                                <span class="small text-muted d-block mb-1">{% trans "Month 5" %}</span>
+                                {% render_field form.sputum_result_month_5 class="form-select small" %}
+                            </div>
+                            <div class="col-md-4">
+                                <span class="small text-muted d-block mb-1">{% trans "Month 6" %}</span>
+                                {% render_field form.sputum_result_month_6 class="form-select small" %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-uppercase">{% trans "Notes" %}</label>
+                        {% render_field form.notes class="form-control" rows="2" %}
+                    </div>
+
+                    <hr>
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="submit" class="btn btn-danger px-5 fw-bold shadow-sm">
+                            <i class="bi bi-save me-1"></i>{% trans "Save Entry" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

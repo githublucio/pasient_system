@@ -1,0 +1,27 @@
+﻿
+> medical_records\models.py:728:class TBDailyDose(models.Model):
+  medical_records\models.py:729:    """
+  medical_records\models.py:730:    Daily medication adherence tracking for the TB grid calendar (TB FORM 4).
+  medical_records\models.py:731:    """
+  medical_records\models.py:732:    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+  medical_records\models.py:733:    tb_case = models.ForeignKey(TBCase, on_delete=models.CASCADE, 
+related_name='daily_doses', verbose_name=_('TB Case'))
+  medical_records\models.py:734:    date = models.DateField(_('Date'))
+  medical_records\models.py:735:    
+  medical_records\models.py:736:    DOSE_STATUS = [
+  medical_records\models.py:737:        ('DONE', '✔'),
+  medical_records\models.py:738:        ('UNOBSERVED', '-'),
+  medical_records\models.py:739:        ('MISSED', '0'),
+  medical_records\models.py:740:        ('NONE', ''),
+  medical_records\models.py:741:    ]
+  medical_records\models.py:742:    status = models.CharField(max_length=10, choices=DOSE_STATUS, default='NONE')
+  medical_records\models.py:743:    is_observed = models.BooleanField(_('Observed?'), default=True, help_text=_("True 
+= (✔), False = (-)"))
+  medical_records\models.py:744:    notes = models.CharField(_('Notes'), max_length=255, blank=True, null=True)
+  medical_records\models.py:745:    recorded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, 
+verbose_name=_('Recorded By'))
+  medical_records\models.py:746:    created_at = models.DateTimeField(auto_now_add=True)
+  medical_records\models.py:747:
+  medical_records\models.py:748:    class Meta:
+
+

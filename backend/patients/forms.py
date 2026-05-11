@@ -125,6 +125,23 @@ class PatientRegistrationForm(forms.ModelForm):
                 raise forms.ValidationError(_("Date of birth cannot be in the future."))
         return dob
 
+    def clean_is_pregnant(self):
+        return self.cleaned_data.get('is_pregnant', False)
+
+    def clean_is_lactating(self):
+        return self.cleaned_data.get('is_lactating', False)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        gender = cleaned_data.get('gender')
+        is_pregnant = cleaned_data.get('is_pregnant')
+        is_lactating = cleaned_data.get('is_lactating')
+
+        if gender == 'M' and (is_pregnant or is_lactating):
+            raise forms.ValidationError(_("Male patients cannot be marked as pregnant or lactating."))
+        
+        return cleaned_data
+
     def save(self, commit=True):
         patient = super().save(commit=commit)
         if commit:

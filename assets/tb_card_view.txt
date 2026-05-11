@@ -1,0 +1,54 @@
+﻿
+> medical_records\views.py:2212:def tb_treatment_card(request, case_uuid):
+  medical_records\views.py:2213:    from .models import TBCase, TBDailyDose
+  medical_records\views.py:2214:    from laboratory.models import LabResult
+  medical_records\views.py:2215:    from radiology.models import RadiologyResult
+  medical_records\views.py:2216:    
+  medical_records\views.py:2217:    case = get_object_or_404(TBCase, uuid=case_uuid)
+  medical_records\views.py:2218:    # Fetch all daily doses for this case
+  medical_records\views.py:2219:    doses = case.daily_doses.all().order_by('date')
+  medical_records\views.py:2220:    
+  medical_records\views.py:2221:    # --- AUTO-PULL DATA FROM OTHER DEPARTMENTS ---
+  medical_records\views.py:2222:    pulled_data = {
+  medical_records\views.py:2223:        'clinical_notes': '',
+  medical_records\views.py:2224:        'hiv_result': '',
+  medical_records\views.py:2225:        'hiv_date': '',
+  medical_records\views.py:2226:        'glucose_value': '',
+  medical_records\views.py:2227:        'afb_result': '',
+  medical_records\views.py:2228:        'lab_no': '',
+  medical_records\views.py:2229:        'lab_date': '',
+  medical_records\views.py:2230:        'xray_date': '',
+  medical_records\views.py:2231:        'xray_result': '',
+  medical_records\views.py:2232:        'xray_abnormal': False,
+  medical_records\views.py:2233:        'visit_diag_code': '',
+  medical_records\views.py:2234:        'visit_diag_name': '',
+  medical_records\views.py:2235:        'visit_diag_date': '',
+  medical_records\views.py:2236:        'suggested_classification': '',
+  medical_records\views.py:2237:        'suggested_site': '',
+  medical_records\views.py:2238:    }
+  medical_records\views.py:2239:    
+  medical_records\views.py:2240:    # 1. Latest Lab Results (HIV, Diabetes, Sputum/AFB)
+  medical_records\views.py:2241:    latest_lab = LabResult.objects.filter(
+  medical_records\views.py:2242:        lab_request__visit__patient=case.patient,
+  medical_records\views.py:2243:        lab_request__status='COMPLETED'
+  medical_records\views.py:2244:    ).select_related('lab_request').order_by('-completed_at').first()
+  medical_records\views.py:2245:    
+  medical_records\views.py:2246:    if latest_lab and latest_lab.result_data:
+  medical_records\views.py:2247:        res = latest_lab.result_data
+  medical_records\views.py:2248:        # HIV
+  medical_records\views.py:2249:        pulled_data['hiv_result'] = res.get('serology', {}).get('hiv', '')
+  medical_records\views.py:2250:        pulled_data['hiv_date'] = latest_lab.completed_at
+  medical_records\views.py:2251:        
+  medical_records\views.py:2252:        # Diabetes (Check both FBS and RBS logic if needed)
+  medical_records\views.py:2253:        glu = res.get('biochemistry', {}).get('glucose', {})
+  medical_records\views.py:2254:        if isinstance(glu, dict):
+  medical_records\views.py:2255:            pulled_data['glucose_value'] = glu.get('value', '')
+  medical_records\views.py:2256:        else:
+  medical_records\views.py:2257:            pulled_data['glucose_value'] = glu
+  medical_records\views.py:2258:            
+  medical_records\views.py:2259:        # Sputum/AFB (ZN Stain)
+  medical_records\views.py:2260:        pulled_data['afb_result'] = res.get('microbiology', {}).get('zn_afb', '')
+  medical_records\views.py:2261:        pulled_data['lab_no'] = latest_lab.lab_request.lab_no
+  medical_records\views.py:2262:        pulled_data['lab_date'] = latest_lab.completed_at
+
+

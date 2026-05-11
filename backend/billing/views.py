@@ -74,8 +74,8 @@ def invoice_create(request):
                 messages.warning(request, _("An invoice already exists for this visit."))
                 return redirect('invoice_detail', uuid=visit.invoice.uuid)
 
-        invoice = Invoice.objects.create(
-            invoice_number=Invoice.generate_invoice_number(),
+        # FIX BUG #2: Use create_next() for atomic, race-condition-safe invoice creation.
+        invoice = Invoice.create_next(
             patient=patient,
             visit=visit,
             discount=discount,
@@ -115,7 +115,7 @@ def invoice_create(request):
                 is_tb = True
             elif visit and visit.current_room and visit.current_room.code == 'TB':
                 is_tb = True
-            elif visit and (visit.diagnosis and 'A15' <= visit.diagnosis.code.upper() <= 'A19'):
+            elif visit and visit.visit_diagnoses.filter(diagnosis__code__range=('A15', 'A19')).exists():
                 is_tb = True
 
             if is_tb:
@@ -157,8 +157,8 @@ def invoice_create_for_visit(request, visit_uuid):
         discount = Decimal(request.POST.get('discount', '0') or '0')
         notes = request.POST.get('notes', '')
 
-        invoice = Invoice.objects.create(
-            invoice_number=Invoice.generate_invoice_number(),
+        # FIX BUG #2: Use create_next() for atomic, race-condition-safe invoice creation.
+        invoice = Invoice.create_next(
             patient=visit.patient,
             visit=visit,
             discount=discount,
@@ -166,11 +166,21 @@ def invoice_create_for_visit(request, visit_uuid):
             created_by=request.user,
         )
 
+        # 1. Process Service Items from Form
         descriptions = request.POST.getlist('item_description')
         quantities = request.POST.getlist('item_quantity')
         prices = request.POST.getlist('item_price')
         service_ids = request.POST.getlist('item_service_id')
         category_ids = request.POST.getlist('item_category_id')
+
+        # TB Exception: Global check for this visit
+        is_tb = False
+        if visit.patient.is_tb_patient:
+            is_tb = True
+        elif visit.current_room and visit.current_room.code == 'TB':
+            is_tb = True
+        elif visit.visit_diagnoses.filter(diagnosis__code__range=('A15', 'A19')).exists():
+            is_tb = True
 
         for i in range(len(descriptions)):
             desc = descriptions[i].strip()
@@ -192,20 +202,12 @@ def invoice_create_for_visit(request, visit_uuid):
             if not cat and i < len(category_ids) and category_ids[i]:
                 cat = ServiceCategory.objects.filter(pk=category_ids[i]).first()
 
-            # TB Exception: If visit is in TB room or patient is tagged as TB patient, set price to 0
-            is_tb = False
-            if visit and visit.patient.is_tb_patient:
-                is_tb = True
-            elif visit and visit.current_room and visit.current_room.code == 'TB':
-                is_tb = True
-            elif visit and (visit.diagnosis and 'A15' <= visit.diagnosis.code.upper() <= 'A19'):
-                is_tb = True
-
             if is_tb:
                 price = Decimal('0.00')
 
             InvoiceItem.objects.create(
                 invoice=invoice,
+                item_type='SERVICE',
                 service=svc,
                 category=cat,
                 description=desc,
@@ -213,8 +215,49 @@ def invoice_create_for_visit(request, visit_uuid):
                 unit_price=price,
             )
 
+        # 2. Process Medicine Items Automatically (from Pharmacy)
+        # FIX BUG #1: Aggregate total quantity per medicine across all batches.
+        # The old loop iterated per DispensedItem (per batch), so multi-batch
+        # FEFO dispensing (e.g. 5 tablets from Batch A + 5 from Batch B) would
+        # only bill the first batch's quantity. We now SUM all batches per medicine.
+        from pharmacy.models import DispensedItem, Medicine as PharmMedicine
+        from django.db.models import Sum as DjSum
+        dispensed_summary = (
+            DispensedItem.objects
+            .filter(prescription__visit=visit)
+            .values('medicine')
+            .annotate(total_qty=DjSum('quantity_dispensed'))
+        )
+        for entry in dispensed_summary:
+            med = PharmMedicine.objects.get(pk=entry['medicine'])
+            InvoiceItem.objects.create(
+                invoice=invoice,
+                item_type='MEDICINE',
+                medicine=med,
+                description=med.display_name,
+                quantity=entry['total_qty'],
+                unit_price=Decimal('0.00') if is_tb else med.selling_price,
+            )
+
+        # 3. Process Lab Tests Automatically (from Laboratory)
+        # FIX RISK #3: Use exact description match instead of __contains to prevent
+        # false-positive de-duplication (e.g. 'CBC' matching 'CBC with Differential').
+        from laboratory.models import LabRequest
+        lab_request = LabRequest.objects.filter(visit=visit).first()
+        if lab_request:
+            for test in lab_request.tests.all():
+                exact_desc = f"Lab Test: {test.name}"
+                if not InvoiceItem.objects.filter(invoice=invoice, description=exact_desc).exists():
+                    InvoiceItem.objects.create(
+                        invoice=invoice,
+                        item_type='LAB',
+                        description=exact_desc,
+                        quantity=1,
+                        unit_price=Decimal('0.00') if is_tb else test.price,
+                    )
+
         invoice.recalculate()
-        messages.success(request, _("Invoice %(num)s created successfully.") % {'num': invoice.invoice_number})
+        messages.success(request, _("Invoice %(num)s created successfully. Medicine charges were automatically included.") % {'num': invoice.invoice_number})
         return redirect('invoice_detail', uuid=invoice.uuid)
 
     categories = ServiceCategory.objects.filter(is_active=True).prefetch_related('services')
@@ -279,6 +322,19 @@ def payment_create(request, invoice_uuid):
         notes = request.POST.get('notes', '')
 
         if amount > 0:
+            # FIX #2: Server-side cap — payment cannot exceed balance_due.
+            # Prevents amount_paid > total_amount being stored in the database.
+            balance = invoice.balance_due
+            if balance <= 0:
+                messages.warning(request, _("This invoice is already fully paid."))
+                return redirect('invoice_detail', uuid=invoice.uuid)
+            if amount > balance:
+                amount = balance
+                messages.info(
+                    request,
+                    _("Payment amount capped at remaining balance: $%(amount)s.") % {'amount': amount}
+                )
+
             Payment.objects.create(
                 invoice=invoice,
                 amount=amount,
@@ -504,22 +560,39 @@ def billing_report(request):
     )
 
     # Revenue by category
+    # FIX #3: Use a Case/When annotation to categorise ALL item types.
+    # The old query used F('category__name') which is NULL for MEDICINE and
+    # LAB items (they have no category FK), causing their revenue to be
+    # grouped under a blank row and effectively hidden from the report.
+    from django.db.models import Case, When, Value, CharField as DjCharField
     category_breakdown = InvoiceItem.objects.filter(
         invoice__created_at__date__gte=date_from,
         invoice__created_at__date__lte=date_to,
         invoice__status__in=['PAID', 'PARTIAL'],
-    ).values(
-        cat_name=F('category__name')
     ).annotate(
+        cat_name=Case(
+            # Category FK takes highest priority (covers SERVICE items)
+            When(category__isnull=False, then=F('category__name')),
+            # Auto-billed MEDICINE items from pharmacy
+            When(item_type='MEDICINE', then=Value('Medicine / Pharmacy')),
+            # Auto-billed LAB test items from laboratory
+            When(item_type='LAB', then=Value('Laboratory Tests')),
+            # Fallback for any custom item with no category
+            default=Value('Other / Custom'),
+            output_field=DjCharField(),
+        )
+    ).values('cat_name').annotate(
         total=Sum(F('quantity') * F('unit_price')),
         item_count=Count('id'),
     ).order_by('-total')
 
     categories = ServiceCategory.objects.filter(is_active=True)
 
-    # select_related visit__diagnosis for reporting
-    invoices = invoices.select_related('patient', 'visit__diagnosis').prefetch_related(
-        'items__category', 'items__service__category'
+    # Updated for new VisitDiagnosis model
+    invoices = invoices.select_related('patient', 'visit').prefetch_related(
+        'visit__visit_diagnoses__diagnosis',
+        'items__category', 
+        'items__service__category'
     ).order_by('-created_at')[:200]
 
     return render(request, 'billing/report.html', {
@@ -588,7 +661,7 @@ def billing_report_pdf(request):
     invoices = Invoice.objects.visible_to(request.user).filter(
         created_at__date__gte=date_from,
         created_at__date__lte=date_to,
-    ).exclude(status='CANCELLED').select_related('patient', 'visit__diagnosis').prefetch_related(
+    ).exclude(status='CANCELLED').select_related('patient', 'visit').prefetch_related(
         'items__category', 'items__service__category'
     ).order_by('-created_at')
 
@@ -598,6 +671,20 @@ def billing_report_pdf(request):
         count=Count('uuid'),
     )
 
+    from clinic_core.pdf_utils import render_to_pdf
+    context = {
+        'invoices': list(invoices[:200]),
+        'date_from': date_from,
+        'date_to': date_to,
+        'total_billed': totals['total_billed'] or Decimal('0.00'),
+        'total_paid': totals['total_paid'] or Decimal('0.00'),
+        'invoice_count': totals['count'] or 0,
+    }
+    pdf = render_to_pdf('billing/pdf/report_pdf.html', context)
+    if pdf:
+        pdf['Content-Disposition'] = f'inline; filename="Billing_Report_{date_from}_to_{date_to}.pdf"'
+        return pdf
+    return HttpResponse("Error generating PDF", status=500)
     from clinic_core.pdf_utils import render_to_pdf
     context = {
         'invoices': list(invoices[:200]),

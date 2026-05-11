@@ -89,7 +89,7 @@
                                     <select name="medicine_id" class="form-select medicine-select" required>
                                         <option value="">-- {% trans "Select Medicine" %} --</option>
                                         {% for med in all_medicines %}
-                                        <option value="{{ med.id }}" data-stock="{{ med.stock }}" data-unit="{{ med.get_unit_display }}" data-code="{{ med.code|default:'' }}"
+                                        <option value="{{ med.id }}" data-stock="{{ med.total_stock }}" data-unit="{{ med.get_unit_display }}" data-code="{{ med.code|default:'' }}"
                                             {% if med.id == item.medicine.id %}selected{% endif %}
                                             {% if med.is_low_stock %}class="text-danger"{% endif %}>
                                             {{ med.display_name }}
@@ -98,7 +98,7 @@
                                     </select>
                                 </td>
                                 <td class="stock-display text-center">
-                                    <span class="badge {% if item.medicine.is_low_stock %}bg-danger{% else %}bg-info text-dark{% endif %}">{{ item.medicine.stock }}</span>
+                                    <span class="badge {% if item.medicine.is_low_stock %}bg-danger{% else %}bg-info text-dark{% endif %}">{{ item.medicine.total_stock }}</span>
                                 </td>
                                 <td>
                                     <input type="number" name="quantity" class="form-control" min="1" value="{{ item.quantity }}" required>
@@ -117,7 +117,7 @@
                                     <select name="medicine_id" class="form-select medicine-select" required>
                                         <option value="">-- {% trans "Select Medicine" %} --</option>
                                         {% for med in all_medicines %}
-                                        <option value="{{ med.id }}" data-stock="{{ med.stock }}" data-unit="{{ med.get_unit_display }}" data-code="{{ med.code|default:'' }}"
+                                        <option value="{{ med.id }}" data-stock="{{ med.total_stock }}" data-unit="{{ med.get_unit_display }}" data-code="{{ med.code|default:'' }}"
                                             {% if med.is_low_stock %}class="text-danger"{% endif %}>
                                             {{ med.display_name }}
                                         </option>
@@ -193,7 +193,7 @@
             <select name="medicine_id" class="form-select medicine-select" required>
                 <option value="">-- {% trans "Select Medicine" %} --</option>
                 {% for med in all_medicines %}
-                                        <option value="{{ med.id }}" data-stock="{{ med.stock }}" data-unit="{{ med.get_unit_display }}" data-code="{{ med.code|default:'' }}"
+                                        <option value="{{ med.id }}" data-stock="{{ med.total_stock }}" data-unit="{{ med.get_unit_display }}" data-code="{{ med.code|default:'' }}"
                                             {% if med.is_low_stock %}class="text-danger"{% endif %}>
                                             {{ med.display_name }}
                                         </option>

@@ -17,4 +17,8 @@ urlpatterns = [
     path('stock/add/', views.stock_entry_add, name='stock_entry_add'),
     path('stock/edit/<int:pk>/', views.stock_entry_edit, name='stock_entry_edit'),
     path('stock/delete/<int:pk>/', views.stock_entry_delete, name='stock_entry_delete'),
+    
+    # Reports & Logs
+    path('logs/dispensing/', views.pharmacy_dispensing_log, name='pharmacy_dispensing_log'),
+    path('logs/dispensing/export/', views.export_pharmacy_log_excel, name='export_pharmacy_log_excel'),
 ]

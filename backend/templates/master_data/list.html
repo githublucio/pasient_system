@@ -13,7 +13,7 @@
 
 <div class="card">
     <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-        <h5 class="mb-0 fw-bold">{{ title }}</h5>
+        <h5 class="mb-0 fw-bold">{{ title }} <span class="badge bg-secondary ms-2">{{ paginator.count|default:items.count }}</span></h5>
         <div class="d-flex gap-2">
             {% if model_name == 'diagnosis' %}
             <div class="dropdown">
@@ -81,6 +81,7 @@
                         {% if model_name == 'posto' %}<th>{% trans "Municipio" %}</th>{% endif %}
                         {% if model_name == 'suco' %}<th>{% trans "Posto" %}</th>{% endif %}
                         {% if model_name == 'aldeia' %}<th>{% trans "Suco" %}</th>{% endif %}
+                        {% if model_name == 'diagnosis' %}<th>{% trans "Category" %}</th>{% endif %}
                         {% if model_name == 'diagnosis' %}<th>{% trans "Parent" %}</th>{% endif %}
                         <th class="text-end pe-3">{% trans "Actions" %}</th>
                     </tr>
@@ -95,6 +96,15 @@
                         {% if model_name == 'suco' %}<td>{{ item.posto.name }}</td>{% endif %}
                         {% if model_name == 'aldeia' %}<td>{{ item.suco.name }}</td>{% endif %}
                         {% if model_name == 'diagnosis' %}
+                        <td>
+                            {% if item.category %}
+                                <span class="badge {% if item.category.pk == 1 %}bg-warning text-dark{% elif item.category.pk == 2 %}bg-info text-dark{% else %}bg-light text-dark{% endif %} border">
+                                    {{ item.category.name }}
+                                </span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                         <td class="small text-muted">
                             {% if item.parent %}
                                 <span class="badge bg-light text-dark border">{{ item.parent.code }}</span>
@@ -126,6 +136,46 @@
                 </tbody>
             </table>
         </div>
+        
+        {% if is_paginated %}
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center pagination-sm">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if query %}&q={{ query }}{% endif %}{% if show %}&show={{ show }}{% endif %}">&laquo; First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if query %}&q={{ query }}{% endif %}{% if show %}&show={{ show }}{% endif %}">Previous</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">&laquo; First</span></li>
+                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}{% if query %}&q={{ query }}{% endif %}{% if show %}&show={{ show }}{% endif %}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if query %}&q={{ query }}{% endif %}{% if show %}&show={{ show }}{% endif %}">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if query %}&q={{ query }}{% endif %}{% if show %}&show={{ show }}{% endif %}">Last &raquo;</a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">Next</span></li>
+                    <li class="page-item disabled"><span class="page-link">Last &raquo;</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

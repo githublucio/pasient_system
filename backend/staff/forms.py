@@ -58,3 +58,5 @@ class StaffUpdateForm(forms.ModelForm):
     class Meta:
         model = StaffProfile
         fields = ['staff_id', 'department', 'category', 'position', 'phone', 'address', 'bio', 'photo', 'is_active']
+        model = StaffProfile
+        fields = ['staff_id', 'department', 'category', 'position', 'phone', 'address', 'bio', 'photo', 'is_active']

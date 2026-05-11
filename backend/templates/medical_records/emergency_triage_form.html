@@ -37,7 +37,7 @@
             <form method="post">
                 {% csrf_token %}
 
-                {% if form.errors %}
+                {% if form.errors or vitals_form.errors %}
                 <div class="alert alert-danger rounded-4 border-0 shadow-sm mb-4">
                     <h6 class="fw-bold mb-2"><i class="bi bi-exclamation-triangle-fill me-2"></i>{% trans "Please correct the following errors:" %}</h6>
                     <ul class="mb-0">
@@ -46,7 +46,15 @@
                                 <li><strong>{{ field.label }}:</strong> {{ error }}</li>
                             {% endfor %}
                         {% endfor %}
+                        {% for field in vitals_form %}
+                            {% for error in field.errors %}
+                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
                         {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                        {% for error in vitals_form.non_field_errors %}
                             <li>{{ error }}</li>
                         {% endfor %}
                     </ul>
@@ -65,42 +73,42 @@
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold text-muted small">{% trans "Blood Pressure (Systolic)" %}</label>
                                         <div class="input-group input-group-lg">
-                                            {{ form.er_bp_sys }}
+                                            {{ vitals_form.bp_sys }}
                                             <span class="input-group-text bg-light small">mmHg</span>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold text-muted small">{% trans "Blood Pressure (Diastolic)" %}</label>
                                         <div class="input-group input-group-lg">
-                                            {{ form.er_bp_dia }}
+                                            {{ vitals_form.bp_dia }}
                                             <span class="input-group-text bg-light small">mmHg</span>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold text-muted small">{% trans "Pulse Rate" %}</label>
                                         <div class="input-group input-group-lg">
-                                            {{ form.er_pulse }}
+                                            {{ vitals_form.pulse }}
                                             <span class="input-group-text bg-light small">bpm</span>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold text-muted small">{% trans "Oxygen Saturation (SPO2)" %}</label>
                                         <div class="input-group input-group-lg">
-                                            {{ form.er_spo2 }}
+                                            {{ vitals_form.spo2 }}
                                             <span class="input-group-text bg-light small">%</span>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold text-muted small">{% trans "Respiratory Rate" %}</label>
                                         <div class="input-group input-group-lg">
-                                            {{ form.er_rr }}
+                                            {{ vitals_form.rr }}
                                             <span class="input-group-text bg-light small">bpm</span>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold text-muted small">{% trans "Temperature" %}</label>
                                         <div class="input-group input-group-lg">
-                                            {{ form.er_temp }}
+                                            {{ vitals_form.temp }}
                                             <span class="input-group-text bg-light small">°C</span>
                                         </div>
                                     </div>
@@ -122,7 +130,7 @@
                             </div>
                             <div class="card-body p-4 text-center">
                                 <div class="d-flex justify-content-center gap-3 mt-3">
-                                    {% for val, label, icon, color in form.fields.vas_score.choices_data %}
+                                    {% for val, label, icon, color in vitals_form.fields.vas_score.choices_data %}
                                     <div class="vas-option cursor-pointer text-center" data-val="{{ val }}" title="{{ label }}">
                                         <div class="vas-icon rounded-circle p-2 mb-2 shadow-sm d-flex align-items-center justify-content-center" 
                                              style="width: 48px; height: 48px; font-size: 1.5rem; background-color: {{ color }}; color: white; border: 3px solid transparent;">
@@ -133,7 +141,7 @@
                                     </div>
                                     {% endfor %}
                                 </div>
-                                {{ form.vas_score }}
+                                {{ vitals_form.vas_score }}
                             </div>
                         </div>
 

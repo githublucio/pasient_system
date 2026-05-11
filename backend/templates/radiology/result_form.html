@@ -50,13 +50,29 @@
             {% csrf_token %}
             <div class="card shadow-sm">
                 <div class="card-body">
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">{% trans "Status" %}</label>
-                        <select name="status" class="form-select">
-                            <option value="PENDING" {% if radiology_request.status == 'PENDING' %}selected{% endif %}>{% trans "Pending" %}</option>
-                            <option value="IN_PROGRESS" {% if radiology_request.status == 'IN_PROGRESS' %}selected{% endif %}>{% trans "In Progress" %}</option>
-                            <option value="COMPLETED" {% if radiology_request.status == 'COMPLETED' %}selected{% endif %}>{% trans "Completed" %}</option>
-                        </select>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">{% trans "Status" %}</label>
+                                <select name="status" class="form-select">
+                                    <option value="PENDING" {% if radiology_request.status == 'PENDING' %}selected{% endif %}>{% trans "Pending" %}</option>
+                                    <option value="IN_PROGRESS" {% if radiology_request.status == 'IN_PROGRESS' %}selected{% endif %}>{% trans "In Progress" %}</option>
+                                    <option value="COMPLETED" {% if radiology_request.status == 'COMPLETED' %}selected{% endif %}>{% trans "Completed" %}</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">{% trans "Radiology No (Manual)" %}</label>
+                                {% if radiology_request.radiology_no %}
+                                    <div class="form-control bg-light fw-bold text-primary">{{ radiology_request.radiology_no }}</div>
+                                {% else %}
+                                    <input type="text" name="radiology_no" class="form-control" 
+                                           placeholder="{% trans 'Last: ' %}{{ last_radiology_no }}" 
+                                           value="{{ radiology_request.radiology_no|default:'' }}">
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
 
                     <div class="mb-4">

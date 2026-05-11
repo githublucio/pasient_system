@@ -43,16 +43,16 @@
             <div class="{% if room_filter == 'HIV' %}col-md-3{% else %}col-md-4{% endif %}">
                 <div class="card border-0 shadow-sm h-100" style="border-left: 5px solid #5d2d91 !important;">
                     <div class="card-body">
-                        <h6 class="text-muted text-uppercase small fw-bold">{% trans "Total Today" %}</h6>
-                        <h2 class="mb-0 fw-bold">{{ stats.total_today }}</h2>
+                        <h6 class="text-muted text-uppercase small fw-bold">{% trans "Today's New" %}</h6>
+                        <h2 class="mb-0 fw-bold">{{ stats.new_pending }}</h2>
                     </div>
                 </div>
             </div>
             <div class="{% if room_filter == 'HIV' %}col-md-3{% else %}col-md-4{% endif %}">
                 <div class="card border-0 shadow-sm h-100" style="border-left: 5px solid #ffc107 !important;">
                     <div class="card-body">
-                        <h6 class="text-muted text-uppercase small fw-bold">{% trans "Waiting" %} / {% trans "In-Progress" %}</h6>
-                        <h2 class="mb-0 fw-bold">{{ stats.pending_today }}</h2>
+                        <h6 class="text-muted text-uppercase small fw-bold">{% trans "Continued (Lanjutan)" %}</h6>
+                        <h2 class="mb-0 fw-bold">{{ stats.continued_pending }}</h2>
                     </div>
                 </div>
             </div>
@@ -79,8 +79,80 @@
 
     <!-- Waiting Queue -->
     <div class="col-md-8">
+        {% if continued_visits %}
+        <div class="card p-4 mb-4 border-start border-warning border-4 shadow-sm bg-warning bg-opacity-10">
+            <h4 class="mb-3 text-warning-emphasis"><i class="bi bi-clock-history me-2"></i>{% trans "Continued Patients (Carry-over)" %}</h4>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>{% trans "Queue" %}</th>
+                            <th>{% trans "Patient Name" %}</th>
+                            <th>{% trans "Visit Date" %}</th>
+                            <th>{% trans "Status" %}</th>
+                            <th>{% trans "Action" %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for visit in continued_visits %}
+                        <tr>
+                            <td class="fw-bold h5">#{{ visit.queue_number }}</td>
+                            <td>
+                                <div class="fw-bold">{{ visit.patient.full_name }}</div>
+                                <small class="text-muted">{{ visit.patient.patient_id }}</small>
+                                {% if visit.doctor %}
+                                <div class="small mt-1 text-success fw-bold">
+                                    <i class="bi bi-stethoscope"></i> Dr. {{ visit.doctor.first_name }} {{ visit.doctor.last_name }}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td><span class="badge bg-secondary">{{ visit.visit_date|date:"d M" }}</span></td>
+                            <td>
+                                <span class="badge bg-warning text-dark">{% trans "In Progress" %}</span>
+                                
+                                {% if visit.lab_request.status == 'CANCELLED' %}
+                                <div class="mt-1">
+                                    <span class="badge bg-danger animate-pulse-slow" title="{{ visit.lab_request.cancel_reason }}">
+                                        <i class="bi bi-exclamation-octagon me-1"></i>{% trans "Lab Cancelled" %}
+                                    </span>
+                                </div>
+                                {% endif %}
+                                
+                                {% if visit.prescription %}
+                                <div class="mt-1">
+                                    <span class="badge {% if visit.prescription.dispensing_status == 'COLLECTED' %}bg-success{% else %}bg-info text-dark{% endif %} smaller">
+                                        <i class="bi bi-capsule me-1"></i>{{ visit.prescription.get_dispensing_status_display }}
+                                    </span>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if room_filter == 'TB' or request.user.staff_profile.department.code == 'TB' %}
+                                    {% if visit.patient.active_tb_case %}
+                                        <a href="{% url 'tb_treatment_card' visit.patient.active_tb_case.uuid %}?visit={{ visit.uuid }}" class="btn btn-danger btn-sm">
+                                            <i class="bi bi-file-earmark-medical me-1"></i> {% trans "Open TB Form 4" %}
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'tb_case_create' %}?patient={{ visit.patient.uuid }}&visit={{ visit.uuid }}" class="btn btn-outline-danger btn-sm">
+                                            <i class="bi bi-person-plus-fill me-1"></i> {% trans "Register DOTS" %}
+                                        </a>
+                                    {% endif %}
+                                {% else %}
+                                    <a href="{% url 'perform_examination' visit.uuid %}" class="btn btn-warning btn-sm fw-bold">
+                                        {% trans "Continue" %}
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="card p-4 h-100">
-            <h4 class="mb-3">{% trans "Patients Waiting" %}</h4>
+            <h4 class="mb-3">{% trans "New Patients (Today)" %}</h4>
             <div class="table-responsive">
                 <table class="table table-hover">
                     <thead class="table-light">
@@ -100,6 +172,11 @@
                             <td>
                                 <div class="fw-bold">{{ visit.patient.full_name }}</div>
                                 <small class="text-muted">{{ visit.patient.patient_id }}</small>
+                                {% if visit.doctor %}
+                                <div class="small mt-1 text-success fw-bold">
+                                    <i class="bi bi-stethoscope"></i> Dr. {{ visit.doctor.first_name }} {{ visit.doctor.last_name }}
+                                </div>
+                                {% endif %}
                             </td>
                             <td>
                                 {% if visit.source == 'IGD' %}
@@ -108,31 +185,52 @@
                                     <span class="badge bg-primary">OPD</span>
                                 {% endif %}
                             </td>
-                            <td><small>{{ visit.visit_date|date:"d M H:i" }}</small></td>
+                            <td><small>{{ visit.visit_date|date:"H:i" }}</small></td>
                             <td>
                                 {% if visit.status == 'SCH' %}
                                 <span class="badge bg-secondary">{% trans "Waiting" %}</span>
                                 {% else %}
                                 <span class="badge bg-warning text-dark">{% trans "In Progress" %}</span>
                                 {% endif %}
-
-                                {% if visit.lab_request and visit.lab_request.status == 'COMPLETED' %}
-                                <span class="badge bg-info text-dark ms-1"><i class="bi bi-eyedropper me-1"></i>{% trans "Lab Ready" %}</span>
+                                
+                                {% if visit.lab_request.status == 'CANCELLED' %}
+                                <div class="mt-1">
+                                    <span class="badge bg-danger animate-pulse-slow" title="{{ visit.lab_request.cancel_reason }}">
+                                        <i class="bi bi-exclamation-octagon me-1"></i>{% trans "Lab Cancelled" %}
+                                    </span>
+                                </div>
                                 {% endif %}
-                                {% if visit.pathology_request and visit.pathology_request.status == 'COMPLETED' %}
-                                <span class="badge bg-success text-white ms-1"><i class="bi bi-droplet-half me-1"></i>{% trans "Pathology Ready" %}</span>
+                                
+                                {% if visit.prescription %}
+                                <div class="mt-1">
+                                    <span class="badge {% if visit.prescription.dispensing_status == 'COLLECTED' %}bg-success{% else %}bg-info text-dark{% endif %} smaller">
+                                        <i class="bi bi-capsule me-1"></i>{{ visit.prescription.get_dispensing_status_display }}
+                                    </span>
+                                </div>
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{% url 'perform_examination' visit.uuid %}" class="btn btn-primary btn-sm">
-                                    {% if visit.status == 'SCH' %}{% trans "Call Patient" %}{% else %}{% trans "Continue" %}{% endif %}
-                                </a>
+                                {% if room_filter == 'TB' or request.user.staff_profile.department.code == 'TB' %}
+                                    {% if visit.patient.active_tb_case %}
+                                        <a href="{% url 'tb_treatment_card' visit.patient.active_tb_case.uuid %}?visit={{ visit.uuid }}" class="btn btn-danger btn-sm">
+                                            <i class="bi bi-file-earmark-medical me-1"></i> {% trans "Open TB Form 4" %}
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'tb_case_create' %}?patient={{ visit.patient.uuid }}&visit={{ visit.uuid }}" class="btn btn-outline-danger btn-sm">
+                                            <i class="bi bi-person-plus-fill me-1"></i> {% trans "Register DOTS" %}
+                                        </a>
+                                    {% endif %}
+                                {% else %}
+                                    <a href="{% url 'perform_examination' visit.uuid %}" class="btn btn-primary btn-sm">
+                                        {% if visit.status == 'SCH' %}{% trans "Call Patient" %}{% else %}{% trans "Continue" %}{% endif %}
+                                    </a>
+                                {% endif %}
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="text-center py-4 text-muted">
-                                {% trans "No patients waiting in queue." %}
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                {% trans "No new patients in queue for today." %}
                             </td>
                         </tr>
                         {% endfor %}

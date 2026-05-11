@@ -42,7 +42,7 @@ class Appointment(models.Model):
     ]
 
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='appointments', verbose_name=_('Patient'))
+    patient = models.ForeignKey(Patient, on_delete=models.PROTECT, related_name='appointments', verbose_name=_('Patient'))
     department = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_('Department/Room'))
     doctor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='doctor_appointments', verbose_name=_('Doctor'))
     

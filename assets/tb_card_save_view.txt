@@ -1,0 +1,57 @@
+﻿
+> medical_records\views.py:2334:def tb_card_save(request, case_uuid):
+  medical_records\views.py:2335:    """
+  medical_records\views.py:2336:    Saves the entire TB Treatment Card data, including the daily dose grid 
+  medical_records\views.py:2337:    and unstructured card_data.
+  medical_records\views.py:2338:    """
+  medical_records\views.py:2339:    from .models import TBCase, TBDailyDose
+  medical_records\views.py:2340:    import json
+  medical_records\views.py:2341:    
+  medical_records\views.py:2342:    case = get_object_or_404(TBCase, uuid=case_uuid)
+  medical_records\views.py:2343:    
+  medical_records\views.py:2344:    if request.method == 'POST':
+  medical_records\views.py:2345:        # 1. Save Unstructured Card Data (JSON)
+  medical_records\views.py:2346:        card_data = {}
+  medical_records\views.py:2347:        for key, value in request.POST.items():
+  medical_records\views.py:2348:            if key.startswith('card_'):
+  medical_records\views.py:2349:                clean_key = key.replace('card_', '')
+  medical_records\views.py:2350:                card_data[clean_key] = value
+  medical_records\views.py:2351:                
+  medical_records\views.py:2352:                # 2. Also try to sync with TBDailyDose if it's a dose mark
+  medical_records\views.py:2353:                # Format: dose_p1_r1_d01
+  medical_records\views.py:2354:                if clean_key.startswith('dose_'):
+  medical_records\views.py:2355:                    try:
+  medical_records\views.py:2356:                        # We try to find the month for this row to derive a real date
+  medical_records\views.py:2357:                        # Example key: dose_p1_r1_d01 -> row is p1_r1
+  medical_records\views.py:2358:                        parts = clean_key.split('_') # ['dose', 'p1', 'r1', 'd01']
+  medical_records\views.py:2359:                        row_prefix = f"month_{parts[1]}_{parts[2]}" # month_p1_r1
+  medical_records\views.py:2360:                        month_val = request.POST.get(f"card_{row_prefix}", "") # e.g. 
+"2026-05"
+  medical_records\views.py:2361:                        day_val = parts[3].replace('d', '') # "01"
+  medical_records\views.py:2362:                        
+  medical_records\views.py:2363:                        if month_val and len(month_val) >= 7: # YYYY-MM
+  medical_records\views.py:2364:                            # Only sync if we have a valid-looking month/year
+  medical_records\views.py:2365:                            date_str = f"{month_val[:7]}-{day_val.zfill(2)}"
+  medical_records\views.py:2366:                            
+  medical_records\views.py:2367:                            status_map = {'✔': 'DONE', '-': 'UNOBSERVED', '0': 
+'MISSED'}
+  medical_records\views.py:2368:                            db_status = status_map.get(value)
+  medical_records\views.py:2369:                            
+  medical_records\views.py:2370:                            if db_status:
+  medical_records\views.py:2371:                                TBDailyDose.objects.update_or_create(
+  medical_records\views.py:2372:                                    tb_case=case,
+  medical_records\views.py:2373:                                    date=date_str,
+  medical_records\views.py:2374:                                    defaults={'status': db_status, 'recorded_by': 
+request.user}
+  medical_records\views.py:2375:                                )
+  medical_records\views.py:2376:                    except Exception:
+  medical_records\views.py:2377:                        pass # Continue if date parsing fails
+  medical_records\views.py:2378:        
+  medical_records\views.py:2379:        # 3. Sync model fields from card_data
+  medical_records\views.py:2380:        if card_data.get('cl_pul'): case.classification = 'P'
+  medical_records\views.py:2381:        elif card_data.get('cl_ep'): case.classification = 'EP'
+  medical_records\views.py:2382:        
+  medical_records\views.py:2383:        if card_data.get('cl_site'): case.site_of_eptb = card_data.get('cl_site')
+  medical_records\views.py:2384:        
+
+

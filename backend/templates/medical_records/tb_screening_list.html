@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "TB Outreach Screening Logs" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: none !important;
+        border-radius: 16px;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    .icon-shape {
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+    }
+    .table-container {
+        border-radius: 16px;
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .screening-table thead th {
+        background-color: #f8f9fa;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        font-weight: 700;
+        color: #6c757d;
+        padding: 1.25rem 1rem;
+        border-bottom: 1px solid #edf2f7;
+    }
+    .screening-table tbody td {
+        padding: 1.25rem 1rem;
+        border-bottom: 1px solid #edf2f7;
+        font-size: 0.875rem;
+    }
+    .bg-soft-danger { background-color: rgba(220, 53, 69, 0.1); }
+    .bg-soft-success { background-color: rgba(25, 135, 84, 0.1); }
+    .bg-soft-warning { background-color: rgba(255, 193, 7, 0.1); }
+    .bg-soft-info { background-color: rgba(13, 202, 240, 0.1); }
+    .bg-soft-primary { background-color: rgba(13, 110, 253, 0.1); }
+    
+    .status-pill {
+        padding: 0.4rem 0.8rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.75rem;
+    }
+    .location-badge {
+        background: #f1f5f9;
+        color: #475569;
+        padding: 0.25rem 0.6rem;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2">
+    <!-- Header -->
+    <div class="row align-items-center mb-4">
+        <div class="col-md-7">
+            <h2 class="fw-bold text-dark mb-1">
+                <span class="text-primary"><i class="bi bi-people-fill"></i></span> 
+                {% trans "TB Screening Outreach Logs" %}
+            </h2>
+            <p class="text-muted mb-0">{% trans "Tracking community-based tuberculosis screening activities" %}</p>
+        </div>
+        <div class="col-md-5 text-md-end mt-3 mt-md-0">
+            <a href="{% url 'tb_screening_create' %}" class="btn btn-primary px-4 py-2 fw-bold shadow-sm" style="border-radius: 12px;">
+                <i class="bi bi-plus-circle-fill me-2"></i>{% trans "New Screening Record" %}
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-shape bg-soft-primary text-primary me-3">
+                            <i class="bi bi-person-lines-fill fs-5"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">{% trans "Total Screened" %}</small>
+                            <h4 class="mb-0 fw-bold">{{ screenings.count }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-shape bg-soft-danger text-danger me-3">
+                            <i class="bi bi-virus fs-5"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">{% trans "Positive Found" %}</small>
+                            <h4 class="mb-0 fw-bold">{{ positive_count }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-shape bg-soft-warning text-warning me-3">
+                            <i class="bi bi-droplet-half fs-5"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">{% trans "Sputum Collected" %}</small>
+                            <h4 class="mb-0 fw-bold">{{ sputum_count }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card shadow-sm">
+                <div class="card-body p-3">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-shape bg-soft-info text-info me-3">
+                            <i class="bi bi-exclamation-octagon fs-5"></i>
+                        </div>
+                        <div>
+                            <small class="text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">{% trans "Suspects" %}</small>
+                            <h4 class="mb-0 fw-bold">{{ suspect_count }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Table -->
+    <div class="table-container mb-4">
+        <div class="p-4 border-bottom bg-white">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted">{% trans "Keyword" %}</label>
+                    <input type="text" name="q" class="form-control" placeholder="{% trans "Name, phone, site..." %}" value="{{ q }}" style="border-radius: 10px;">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold text-muted">{% trans "Municipio" %}</label>
+                    <select name="municipio" class="form-select" id="id_municipio" style="border-radius: 10px;">
+                        <option value="">-- {% trans "All" %} --</option>
+                        {% for m in municipios %}
+                        <option value="{{ m.id }}" {% if selected_filters.municipio == m.id|stringformat:"s" %}selected{% endif %}>{{ m.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold text-muted">{% trans "Year" %}</label>
+                    <select name="year" class="form-select" style="border-radius: 10px;">
+                        <option value="">-- {% trans "All" %} --</option>
+                        {% for y in years %}
+                        <option value="{{ y }}" {% if selected_filters.year == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-5 d-flex gap-2">
+                    <button class="btn btn-dark fw-bold px-4" type="submit" style="border-radius: 10px;">
+                        <i class="bi bi-filter me-2"></i>{% trans "Filter" %}
+                    </button>
+                    <a href="{% url 'tb_screening_list' %}" class="btn btn-outline-secondary" style="border-radius: 10px;">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                    
+                    <div class="ms-auto d-flex gap-1">
+                        <a href="{% url 'tb_screening_export_excel' %}?{{ request.GET.urlencode }}" class="btn btn-outline-success fw-bold" style="border-radius: 10px;">
+                            <i class="bi bi-file-earmark-excel"></i>
+                        </a>
+                        <a href="{% url 'tb_screening_export_pdf' %}?{{ request.GET.urlencode }}" class="btn btn-outline-danger fw-bold" style="border-radius: 10px;">
+                            <i class="bi bi-file-earmark-pdf"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table screening-table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">{% trans "Date & Patient" %}</th>
+                        <th>{% trans "Location Details" %}</th>
+                        <th class="text-center">{% trans "Screening Result" %}</th>
+                        <th>{% trans "Referral Status" %}</th>
+                        <th>{% trans "Lab Confirmation" %}</th>
+                        <th class="text-end pe-4">{% trans "Action" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in screenings %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="fw-bold text-dark">{{ s.screening_date|date:"d M Y" }}</div>
+                            <div class="d-flex align-items-center mt-1">
+                                {% if s.patient %}
+                                    <a href="{% url 'patient_detail' s.patient.uuid %}" class="text-primary text-decoration-none fw-bold me-1">{{ s.patient.full_name }}</a>
+                                    <span class="badge bg-soft-primary text-primary border-0 rounded-pill px-2" style="font-size: 0.65rem;">{% trans "REG" %}</span>
+                                {% else %}
+                                    <span class="text-dark fw-bold me-1">{{ s.full_name }}</span>
+                                    <span class="badge bg-soft-secondary text-secondary border-0 rounded-pill px-2" style="font-size: 0.65rem;">{% trans "FIELD" %}</span>
+                                {% endif %}
+                            </div>
+                            <div class="text-muted smaller">{{ s.gender|default:"-" }} / {{ s.age|default:"-" }} y.o</div>
+                        </td>
+                        <td>
+                            <div class="fw-bold small text-dark">{{ s.outreach_location|default:"-" }}</div>
+                            <div class="d-flex flex-wrap gap-1 mt-1">
+                                <span class="location-badge">{{ s.suco.name|default:"-" }}</span>
+                                <span class="location-badge">{{ s.aldeia.name|default:"-" }}</span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            {% if s.is_suspect %}
+                                <div class="status-pill bg-soft-danger text-danger d-inline-flex align-items-center">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>{% trans "TB SUSPECT" %}
+                                </div>
+                            {% else %}
+                                <div class="status-pill bg-soft-success text-success d-inline-flex align-items-center">
+                                    <i class="bi bi-check-circle-fill me-2"></i>{% trans "Negative" %}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.referral_status == 'CLINIC' %}
+                                <div class="text-primary fw-bold small"><i class="bi bi-hospital me-1"></i>{% trans "Referred to Clinic" %}</div>
+                            {% elif s.referral_status == 'LAB' %}
+                                <div class="text-danger fw-bold small"><i class="bi bi-droplet-half me-1"></i>{% trans "Sputum Collection" %}</div>
+                            {% else %}
+                                <div class="text-muted small">{% trans "No Referral" %}</div>
+                            {% endif %}
+                            
+                            {% if s.sputum_collected %}
+                                <div class="badge bg-soft-warning text-dark border-0 mt-1" style="font-size: 0.65rem;">
+                                    <i class="bi bi-check2-circle me-1"></i>{% trans "Sample Taken" %}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.lab_result == 'POSITIVE' %}
+                                <span class="status-pill bg-danger text-white d-inline-flex align-items-center">
+                                    <i class="bi bi-plus-circle-fill me-1"></i>POSITIVE
+                                </span>
+                            {% elif s.lab_result == 'NEGATIVE' %}
+                                <span class="status-pill bg-soft-success text-success d-inline-flex align-items-center">
+                                    <i class="bi bi-dash-circle-fill me-1"></i>NEGATIVE
+                                </span>
+                            {% elif s.lab_result == 'INVALID' %}
+                                <span class="status-pill bg-warning text-dark">INVALID</span>
+                            {% else %}
+                                <span class="status-pill bg-light text-muted border">PENDING</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'tb_screening_edit' s.uuid %}" class="btn btn-sm btn-outline-primary" style="border-radius: 8px; width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-pencil-fill" style="font-size: 0.75rem;"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="py-4">
+                                <i class="bi bi-inbox fs-1 text-muted opacity-25"></i>
+                                <h5 class="mt-3 text-muted">{% trans "No screening records found." %}</h5>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database ERD - Resolusi Tinggi</title>
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({ 
+          startOnLoad: true, 
+          theme: 'default',
+          securityLevel: 'loose',
+          maxTextSize: 9000000,
+          er: {
+              useMaxWidth: false
+          }
+      });
+    </script>
+    <style>
+        body { font-family: sans-serif; margin: 20px; }
+        .mermaid { width: 100%; overflow: auto; }
+        .controls { margin-bottom: 20px; padding: 10px; background: #f0f0f0; border-radius: 5px; }
+        button { padding: 8px 16px; margin-right: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h2>Database Entity Relationship Diagram (ERD)</h2>
+        <p>ERD Resolusi Tinggi (Mermaid.js). Anda dapat membaca dengan jelas karena ini adalah gambar vektor (bukan raster).</p>
+        <p><strong>Cara Download:</strong></p>
+        <ul>
+            <li><strong>PDF:</strong> Tekan tombol Print / Cetak di bawah ini, lalu pilih tujuan (Destination) "Save as PDF" / "Simpan sebagai PDF".</li>
+            <li><strong>SVG / PNG:</strong> Klik kanan pada diagram di bawah ini lalu pilih "Save image as..." (tergantung browser).</li>
+        </ul>
+        <button onclick="window.print()">Print / Save as PDF</button>
+    </div>
+    <div class="mermaid">
+erDiagram
+    Municipio {
+        BigAuto id
+        Char name
+    }
+    PostoAdministrativo {
+        BigAuto id
+        ForeignKey municipio
+        Char name
+    }
+    PostoAdministrativo }o--|| Municipio : "municipio"
+    Suco {
+        BigAuto id
+        ForeignKey posto
+        Char name
+    }
+    Suco }o--|| PostoAdministrativo : "posto"
+    Aldeia {
+        BigAuto id
+        ForeignKey suco
+        Char name
+    }
+    Aldeia }o--|| Suco : "suco"
+    Patient {
+        UUID uuid
+        Char patient_id
+        Char patient_category
+        Char full_name
+        Date date_of_birth
+        Char gender
+        Char blood_type
+        Char father_name
+        Char mother_name
+        Char nationality
+        ForeignKey municipio
+        ForeignKey posto_administrativo
+        ForeignKey suco
+        ForeignKey aldeia
+        Text address
+        Text phone_number
+        Char emergency_contact_name
+        Char emergency_contact_relation
+        Text emergency_contact_phone
+        Text emergency_contact_address
+        File qr_code_image
+        Char qr_code_data
+        File barcode_image
+        Decimal registration_fee
+        Boolean is_hiv_patient
+        Boolean is_tb_patient
+        Boolean is_pregnant
+        Boolean is_lactating
+        DateTime created_at
+        DateTime updated_at
+    }
+    Patient }o--|| Municipio : "municipio"
+    Patient }o--|| PostoAdministrativo : "posto_administrativo"
+    Patient }o--|| Suco : "suco"
+    Patient }o--|| Aldeia : "aldeia"
+    PatientID {
+        UUID uuid
+        ForeignKey patient
+        Char id_type
+        Text id_number
+        Char id_search_hash
+    }
+    PatientID }o--|| Patient : "patient"
+    PatientAllergy {
+        UUID uuid
+        ForeignKey patient
+        Char allergen
+        Char reaction
+        Char severity
+        Boolean is_active
+        Date noted_date
+    }
+    PatientAllergy }o--|| Patient : "patient"
+    DailyQueue {
+        BigAuto id
+        Date date
+        PositiveInteger current_number
+        Char department
+    }
+    Room {
+        BigAuto id
+        Char name
+        Char code
+        Text description
+        PositiveInteger order
+    }
+    DiagnosisCategory {
+        BigAuto id
+        Char name
+        Text description
+    }
+    Diagnosis {
+        BigAuto id
+        Char code
+        Char name
+        ForeignKey category
+        ForeignKey parent
+    }
+    Diagnosis }o--|| DiagnosisCategory : "category"
+    Diagnosis }o--|| Diagnosis : "parent"
+    Visit {
+        UUID uuid
+        ForeignKey patient
+        ForeignKey doctor
+        DateTime visit_date
+        PositiveInteger queue_number
+        ForeignKey current_room
+        Decimal visit_fee
+        Text complaint
+        Text clinical_notes
+        Boolean lab_cbc
+        Boolean pharmacy_requested
+        Boolean refer_to_central
+        Char patient_type
+        Char status
+        Char source
+        ForeignKey checked_in_by
+        ForeignKey triage_nurse
+        Char triage_level
+        Char arrival_mode
+        Char brought_by_name
+        Char companion_name
+        Text arrival_notes
+        Char discharge_condition
+        Char referral_hospital
+        Char referral_vehicle
+        DateTime discharge_datetime
+        Text discharge_summary
+        ForeignKey continuation_of
+        Date follow_up_date
+        Char follow_up_notes
+    }
+    Visit ||--|| VitalSigns : "vital_signs_record"
+    Visit ||--|| Invoice : "invoice"
+    Visit ||--|| LabRequest : "lab_request"
+    Visit ||--|| Prescription : "prescription"
+    Visit ||--|| RadiologyRequest : "radiology_request"
+    Visit ||--|| PathologyRequest : "pathology_request"
+    Visit }o--|| Patient : "patient"
+    Visit }o--|| Room : "current_room"
+    Visit }o--|| Visit : "continuation_of"
+    VisitDiagnosis {
+        UUID uuid
+        ForeignKey visit
+        ForeignKey diagnosis
+        Boolean is_primary
+        Text notes
+        DateTime created_at
+    }
+    VisitDiagnosis }o--|| Visit : "visit"
+    VisitDiagnosis }o--|| Diagnosis : "diagnosis"
+    VitalSigns {
+        BigAuto id
+        OneToOne visit
+        Integer bp_sys
+        Integer bp_dia
+        Integer spo2
+        Integer pulse
+        Integer rr
+        Decimal temp
+        Decimal weight
+        Decimal height_cm
+        Decimal muac
+        Char vas_score
+        Char kia_category
+        Integer er_bp_sys
+        Integer er_bp_dia
+        Integer er_spo2
+        Integer er_pulse
+        Decimal er_temp
+        Text notes
+        DateTime taken_at
+    }
+    VitalSigns ||--|| Visit : "visit"
+    VisitLog {
+        UUID uuid
+        ForeignKey visit
+        Char action
+        ForeignKey performed_by
+        DateTime timestamp
+        ForeignKey room
+        Text notes
+    }
+    VisitLog }o--|| Visit : "visit"
+    VisitLog }o--|| Room : "room"
+    EmergencyObservation {
+        UUID uuid
+        ForeignKey visit
+        DateTime check_time
+        Integer bp_sys
+        Integer bp_dia
+        Integer spo2
+        Integer pulse
+        Integer rr
+        Decimal temp
+        Char vas_score
+        Text clinical_notes
+        ForeignKey checked_by
+    }
+    EmergencyObservation }o--|| Visit : "visit"
+    EmergencyMedication {
+        UUID uuid
+        ForeignKey visit
+        ForeignKey medicine
+        PositiveInteger quantity
+        Char admin_type
+        Char dosage_instruction
+        ForeignKey ordered_by
+        ForeignKey given_by
+        DateTime given_at
+    }
+    EmergencyMedication }o--|| Visit : "visit"
+    EmergencyMedication }o--|| Medicine : "medicine"
+    HIVAssessment {
+        UUID uuid
+        ForeignKey patient
+        ForeignKey visit
+        Date date_registered_at_bpc
+        Char patient_type
+        Char previous_registrations
+        Char previous_art
+        Date first_positive_test_date
+        Boolean confirmation_test_seen
+        Char where_test_done
+        Boolean prophylaxis_inh
+        Boolean prophylaxis_cotrimoxazole
+        Boolean prophylaxis_fluconazole
+        Text investigation_tb_needed
+        Text contraception_plans
+        Boolean planned_for_art
+        Char art_regime
+        Date next_visit_scheduled
+        Text other_plans
+        ForeignKey completed_by
+        DateTime created_at
+        DateTime updated_at
+    }
+    HIVAssessment }o--|| Patient : "patient"
+    HIVAssessment }o--|| Visit : "visit"
+    TBScreening {
+        UUID uuid
+        ForeignKey patient
+        Char full_name
+        Char phone_number
+        Integer age
+        Char gender
+        ForeignKey municipio
+        ForeignKey posto
+        ForeignKey suco
+        ForeignKey aldeia
+        Char outreach_location
+        Boolean has_cough_2_weeks
+        Boolean has_fever
+        Boolean has_night_sweats
+        Boolean has_weight_loss
+        Boolean has_contact_history
+        Boolean is_hiv_positive
+        Boolean is_suspect
+        Char referral_status
+        Boolean sputum_collected
+        Char lab_result
+        Date lab_test_date
+        Text notes
+        ForeignKey screened_by
+        Date screening_date
+        DateTime created_at
+    }
+    TBScreening }o--|| Patient : "patient"
+    TBScreening }o--|| Municipio : "municipio"
+    TBScreening }o--|| PostoAdministrativo : "posto"
+    TBScreening }o--|| Suco : "suco"
+    TBScreening }o--|| Aldeia : "aldeia"
+    Appointment {
+        UUID uuid
+        ForeignKey patient
+        ForeignKey department
+        ForeignKey doctor
+        Date appointment_date
+        Time appointment_time
+        Text reason
+        Text notes
+        Char status
+        ForeignKey created_by
+        DateTime created_at
+        DateTime updated_at
+        Text cancelled_reason
+    }
+    Appointment }o--|| Patient : "patient"
+    Appointment }o--|| Room : "department"
+    ServiceCategory {
+        BigAuto id
+        Char name
+        Char code
+        Char icon
+        PositiveInteger order
+        Boolean is_active
+    }
+    ServicePrice {
+        BigAuto id
+        ForeignKey category
+        Char name
+        Char code
+        Decimal price
+        Text description
+        Boolean is_active
+        DateTime created_at
+        DateTime updated_at
+    }
+    ServicePrice }o--|| ServiceCategory : "category"
+    Invoice {
+        UUID uuid
+        Char invoice_number
+        OneToOne visit
+        ForeignKey patient
+        Decimal subtotal
+        Decimal discount
+        Decimal total_amount
+        Decimal amount_paid
+        Char status
+        Char payment_method
+        Text notes
+        ForeignKey created_by
+        DateTime created_at
+        DateTime updated_at
+        DateTime paid_at
+    }
+    Invoice ||--|| Visit : "visit"
+    Invoice }o--|| Patient : "patient"
+    InvoiceItem {
+        BigAuto id
+        ForeignKey invoice
+        Char item_type
+        ForeignKey service
+        ForeignKey medicine
+        ForeignKey category
+        Char description
+        PositiveInteger quantity
+        Decimal unit_price
+    }
+    InvoiceItem }o--|| Invoice : "invoice"
+    InvoiceItem }o--|| ServicePrice : "service"
+    InvoiceItem }o--|| Medicine : "medicine"
+    InvoiceItem }o--|| ServiceCategory : "category"
+    Payment {
+        UUID uuid
+        ForeignKey invoice
+        Decimal amount
+        Char payment_method
+        Char reference
+        Text notes
+        ForeignKey received_by
+        DateTime created_at
+    }
+    Payment }o--|| Invoice : "invoice"
+    LabTest {
+        BigAuto id
+        Char code
+        Char name
+        Decimal price
+        Char normal_range
+        Char unit
+        Integer column_index
+        PositiveInteger order
+    }
+    LabTest }o--o{ LabRequest : "labrequest"
+    LabRequest {
+        UUID uuid
+        OneToOne visit
+        DateTime date_of_request
+        Char lab_no
+        Char patient_type
+        Char urgency
+        Char special_category
+        Char others_note
+        ForeignKey requesting_physician
+        Char source
+        Char status
+        ForeignKey processed_by
+    }
+    LabRequest ||--|| LabResult : "result"
+    LabRequest ||--|| Visit : "visit"
+    LabRequest }o--o{ LabTest : "tests"
+    LabResult {
+        UUID uuid
+        OneToOne lab_request
+        Text result_text
+        JSON result_data
+        Char flag
+        Boolean is_abnormal
+        File attachment
+        Text notes
+        ForeignKey verified_by
+        DateTime completed_at
+        DateTime created_at
+        DateTime updated_at
+    }
+    LabResult ||--|| LabRequest : "lab_request"
+    LabResultAttachment {
+        BigAuto id
+        ForeignKey lab_result
+        File file
+        Char description
+        DateTime uploaded_at
+    }
+    LabResultAttachment }o--|| LabResult : "lab_result"
+    Medicine {
+        BigAuto id
+        Char name
+        Char strength
+        Char form
+        Char code
+        Char unit
+        Decimal selling_price
+        PositiveInteger min_stock
+        Text description
+        Char department_category
+        PositiveInteger conversion_multiplier
+        Boolean is_active
+        DateTime created_at
+        DateTime updated_at
+    }
+    StockBatch {
+        BigAuto id
+        ForeignKey medicine
+        Char batch_number
+        Date expiry_date
+        PositiveInteger quantity_received
+        PositiveInteger quantity_remaining
+        Char source_type
+        Char donor_name
+        Char supplier
+        Date purchase_date
+        Decimal unit_price
+        Text notes
+        ForeignKey created_by
+        DateTime created_at
+    }
+    StockBatch }o--|| Medicine : "medicine"
+    Prescription {
+        UUID uuid
+        OneToOne visit
+        DateTime date_created
+        Char has_allergy
+        Char allergy_medicine
+        Text prescription_text
+        ForeignKey doctor
+        Char source
+        Char dispensing_status
+        ForeignKey dispensed_by
+        DateTime dispensed_at
+        Text dispensing_notes
+    }
+    Prescription ||--|| Visit : "visit"
+    PrescriptionItem {
+        BigAuto id
+        ForeignKey prescription
+        ForeignKey medicine
+        Char dose
+        Char frequency
+        Char duration
+        PositiveInteger quantity
+        Text instructions
+    }
+    PrescriptionItem }o--|| Prescription : "prescription"
+    PrescriptionItem }o--|| Medicine : "medicine"
+    DispensedItem {
+        BigAuto id
+        ForeignKey prescription_item
+        ForeignKey prescription
+        ForeignKey medicine
+        ForeignKey stock_batch
+        PositiveInteger quantity_dispensed
+        ForeignKey dispensed_by
+        DateTime dispensed_at
+    }
+    DispensedItem }o--|| PrescriptionItem : "prescription_item"
+    DispensedItem }o--|| Prescription : "prescription"
+    DispensedItem }o--|| Medicine : "medicine"
+    DispensedItem }o--|| StockBatch : "stock_batch"
+    RadiologyTest {
+        BigAuto id
+        Char name
+        PositiveInteger order
+    }
+    RadiologyTest }o--o{ RadiologyRequest : "radiologyrequest"
+    RadiologyRequest {
+        UUID uuid
+        OneToOne visit
+        DateTime date_of_request
+        ForeignKey requesting_physician
+        Char source
+        Char status
+        ForeignKey performed_by
+    }
+    RadiologyRequest ||--|| RadiologyResult : "result"
+    RadiologyRequest ||--|| Visit : "visit"
+    RadiologyRequest }o--o{ RadiologyTest : "tests"
+    RadiologyResult {
+        UUID uuid
+        OneToOne radiology_request
+        Text findings
+        Text impression
+        File attachment
+        Text notes
+        ForeignKey verified_by
+        DateTime completed_at
+        DateTime created_at
+        DateTime updated_at
+    }
+    RadiologyResult ||--|| RadiologyRequest : "radiology_request"
+    RadiologyResultAttachment {
+        BigAuto id
+        ForeignKey radiology_result
+        File file
+        Char description
+        DateTime uploaded_at
+    }
+    RadiologyResultAttachment }o--|| RadiologyResult : "radiology_result"
+    PathologyTest {
+        BigAuto id
+        Char name
+        PositiveInteger order
+    }
+    PathologyTest }o--o{ PathologyRequest : "pathologyrequest"
+    PathologyRequest {
+        UUID uuid
+        OneToOne visit
+        DateTime date_of_request
+        ForeignKey requesting_physician
+        Boolean fasting
+        Text clinica_history
+        Char billing_type
+        Char tube_sst
+        Char tube_edta
+        Char tube_esr
+        Char tube_plain
+        Char tube_cit
+        Char tube_flok
+        Char tube_msu
+        Char tube_swabs
+        Char tube_pap
+        Char tube_other
+        Char source
+        Char status
+        ForeignKey processed_by
+    }
+    PathologyRequest ||--|| PathologyResult : "result"
+    PathologyRequest ||--|| Visit : "visit"
+    PathologyRequest }o--o{ PathologyTest : "tests"
+    PathologyResult {
+        UUID uuid
+        OneToOne pathology_request
+        Text result_text
+        File attachment
+        Text notes
+        ForeignKey verified_by
+        DateTime completed_at
+        DateTime created_at
+        DateTime updated_at
+    }
+    PathologyResult ||--|| PathologyRequest : "pathology_request"
+    PathologyResultAttachment {
+        BigAuto id
+        ForeignKey pathology_result
+        File file
+        Char description
+        DateTime uploaded_at
+    }
+    PathologyResultAttachment }o--|| PathologyResult : "pathology_result"
+    Department {
+        BigAuto id
+        Char name
+        Char code
+        Text description
+        Boolean is_active
+    }
+    StaffCategory {
+        BigAuto id
+        Char name
+        Text description
+    }
+    Position {
+        BigAuto id
+        Char name
+        Text description
+    }
+    StaffProfile {
+        BigAuto id
+        OneToOne user
+        Char staff_id
+        ForeignKey department
+        ForeignKey category
+        ForeignKey position
+        Char phone
+        Text address
+        Text bio
+        File photo
+        Boolean is_active
+        DateTime created_at
+        DateTime updated_at
+    }
+    StaffProfile }o--|| Department : "department"
+    StaffProfile }o--|| StaffCategory : "category"
+    StaffProfile }o--|| Position : "position"
+    AuditLog {
+        BigAuto id
+        DateTime timestamp
+        ForeignKey user
+        Char action
+        Char module
+        Char model_name
+        Char object_id
+        Char object_repr
+        GenericIPAddress ip_address
+        JSON changes
+    }
+
+    </div>
+</body>
+</html>

@@ -72,3 +72,21 @@ def visible_visits(patient, user):
     if not hasattr(patient, 'visits'):
         return []
     return Visit.objects.visible_to(user).filter(patient=patient).order_by('-visit_date')
+
+@register.filter
+def get_item(dictionary, key):
+    """
+    Returns the value of a key in a dictionary.
+    Usage: {{ my_dict|get_item:my_key }}
+    """
+    if not dictionary:
+        return ""
+    return dictionary.get(str(key), "")
+
+@register.filter(name='split')
+def split(value, arg):
+    """
+    Splits a string by a delimiter.
+    Usage: {{ "1,2,3"|split:"," }}
+    """
+    return value.split(arg)

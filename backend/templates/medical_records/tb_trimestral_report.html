@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}Relatorio Trimestral TB - {{ year }} Q{{ quarter }}{% endblock %}
+{% block page_title %}📊 Relatorio Trimestral TB{% endblock %}
+
+{% block content %}
+<style>
+  .report-wrap { font-family: 'Arial', sans-serif; font-size: 8.5pt; }
+  .report-title { text-align: center; font-size: 9pt; font-weight: bold; }
+  .block-title { background: #1565c0; color: #fff; font-weight: bold; padding: 4px 8px; font-size: 8.5pt; }
+  .block-subtitle { background: #bbdefb; font-weight: bold; padding: 3px 6px; font-size: 8pt; }
+  .tb-table { width: 100%; border-collapse: collapse; font-size: 8pt; margin-bottom: 12px; }
+  .tb-table th, .tb-table td { border: 1px solid #455a64; padding: 3px 5px; vertical-align: middle; text-align: center; }
+  .tb-table th { background: #e3f2fd; font-weight: bold; }
+  .tb-table td.row-label { text-align: left; background: #f5f5f5; font-weight: 500; }
+  .tb-table td.num { font-weight: bold; color: #1565c0; }
+  .tb-table td.total-col { background: #fff8e1; font-weight: bold; }
+  .tb-table tr.sub-header th { background: #c8e6c9; }
+  .header-box { border: 2px solid #1565c0; padding: 8px 16px; margin-bottom: 10px; }
+  .header-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 6px; }
+  .hfield { border-bottom: 1px solid #999; padding: 2px 4px; }
+  .hfield label { font-size: 7pt; color: #555; display: block; }
+  .hfield span { font-weight: bold; font-size: 9pt; }
+  .blocks-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .filter-bar { background: #fff; border: 1px solid #dee2e6; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .filter-bar label { font-size: 0.8rem; font-weight: 600; color: #555; display: block; margin-bottom: 3px; }
+  .badge-q { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 8pt; font-weight: bold; }
+  .q1 { background: #e3f2fd; color: #1565c0; }
+  .q2 { background: #e8f5e9; color: #2e7d32; }
+  .q3 { background: #fff8e1; color: #e65100; }
+  .q4 { background: #fce4ec; color: #880e4f; }
+  @media print {
+    .filter-bar, .no-print { display: none !important; }
+    .report-wrap { font-size: 7.5pt; }
+    body { background: white; }
+    .sidebar, .topbar, .wrapper > header { display: none !important; }
+    .wrapper { margin-left: 0 !important; }
+    .content { padding: 5mm; }
+  }
+</style>
+
+<div class="no-print filter-bar">
+  <form method="get" style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; width:100%;">
+    <div>
+      <label>Tinan (Year)</label>
+      <select name="year" class="form-select form-select-sm" style="width:100px;">
+        {% for y in year_range %}
+        <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Trimestre (Quarter)</label>
+      <select name="quarter" class="form-select form-select-sm" style="width:130px;">
+        <option value="1" {% if quarter == 1 %}selected{% endif %}>Q1 — Jan, Fev, Mar</option>
+        <option value="2" {% if quarter == 2 %}selected{% endif %}>Q2 — Abr, Mai, Jun</option>
+        <option value="3" {% if quarter == 3 %}selected{% endif %}>Q3 — Jul, Ago, Set</option>
+        <option value="4" {% if quarter == 4 %}selected{% endif %}>Q4 — Out, Nov, Dez</option>
+      </select>
+    </div>
+    <div>
+      <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-search me-1"></i>Haree</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm ms-1" onclick="window.print()"><i class="bi bi-printer me-1"></i>Print</button>
+      <a href="{% url 'tb_trimestral_export_excel' %}?year={{ year }}&quarter={{ quarter }}" class="btn btn-success btn-sm ms-1">
+        <i class="bi bi-file-earmark-excel me-1"></i>Download Excel
+      </a>
+    </div>
+    <div class="ms-auto">
+      <span class="badge-q {% if quarter == 1 %}q1{% elif quarter == 2 %}q2{% elif quarter == 3 %}q3{% else %}q4{% endif %}">
+        <i class="bi bi-calendar3"></i> Q{{ quarter }}/{{ year }} &nbsp;|&nbsp; {{ quarter_label }} &nbsp;|&nbsp; Total Kazu: <strong>{{ b1.total_all }}</strong>
+      </span>
+    </div>
+  </form>
+</div>
+
+<div class="report-wrap">
+
+  <!-- ===== REPORT HEADER ===== -->
+  <div style="text-align:center; margin-bottom:10px;">
+    <div class="report-title">REPUBLICA DEMOCRATICA DE TIMOR LESTE</div>
+    <div class="report-title">MINISTÉRIO DA SAÚDE</div>
+    <div class="report-title">SERVIÇO SAÚDE MUNICIPIO DE DILI</div>
+    <div class="report-title">PROGRAMA NASIONAL KONTROLA TUBERKULOZU</div>
+    <div style="height:6px;"></div>
+    <div style="font-size:11pt; font-weight:bold; text-decoration:underline;">RELATORIO TRIMESTRAL DETEKSAUN KAZU TUBERKULOZU</div>
+  </div>
+
+  <div class="header-box">
+    <div class="header-grid">
+      <div class="hfield"><label>MUNISIPIU</label><span>DILI</span></div>
+      <div class="hfield"><label>NARAN SENTRU DOT</label><span>KLINIKA BAIRO PITE</span></div>
+      <div class="hfield"><label>TINAN</label><span>{{ year }}</span></div>
+    </div>
+    <div class="header-grid">
+      <div class="hfield"><label>FASILIDADE SAUDE NIA NARAN</label><span>KLINIKA BAIRO PITE</span></div>
+      <div class="hfield"><label>MTA KA RESPONSAVEL TB</label><span>&nbsp;</span></div>
+      <div class="hfield"><label>FULAN (TRIMESTRE)</label><span>{{ quarter_label }}</span></div>
+    </div>
+  </div>
+
+  <!-- ===== DATA VALIDATION (No Print) ===== -->
+  {% if missing_hiv or missing_dm %}
+  <div class="no-print alert alert-warning py-2 mb-3" style="font-size: 8pt; border-left: 4px solid #ffc107;">
+    <div class="fw-bold mb-1"><i class="bi bi-exclamation-triangle-fill"></i> Atensaun: Dadus balun seidauk kompletu iha Trimestre ne'e:</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+        <div>
+            <div class="fw-bold text-decoration-underline">Kazu sira ne'ebe HIV Status mamuk ({{ missing_hiv|length }}):</div>
+            <ul class="mb-0 ps-3">
+                {% for c in missing_hiv|slice:":10" %}
+                <li>{{ c.patient.full_name }} ({{ c.tb_registration_number }})</li>
+                {% empty %}<li>Laiha</li>{% endfor %}
+                {% if missing_hiv|length > 10 %}<li>... no seluk tan</li>{% endif %}
+            </ul>
+        </div>
+        <div>
+            <div class="fw-bold text-decoration-underline">Kazu sira ne'ebe Diabetes mamuk ({{ missing_dm|length }}):</div>
+            <ul class="mb-0 ps-3">
+                {% for c in missing_dm|slice:":10" %}
+                <li>{{ c.patient.full_name }} ({{ c.tb_registration_number }})</li>
+                {% empty %}<li>Laiha</li>{% endfor %}
+                {% if missing_dm|length > 10 %}<li>... no seluk tan</li>{% endif %}
+            </ul>
+        </div>
+    </div>
+    <div class="mt-2 text-muted italic">* Favor ida kompletu dadus sira ne'e iha Kartu Tratamentu TB atu relatorio sai 100% akuradu.</div>
+  </div>
+  {% endif %}
+
+  <!-- ===== BLOCK 1 ===== -->
+  <div class="block-title">Block 1 : Kazu TB hotu ne'ebe rejistu durante trimester ne'e <sup>b</sup></div>
+  <table class="tb-table">
+    <thead>
+      <tr>
+        <th rowspan="2" style="width:38%; text-align:left;">Tipu Kazu</th>
+        <th colspan="3">Foun</th>
+        <th colspan="3">Rekaida</th>
+        <th colspan="3">Kazu Re-Tratamentu ne'ebe la inclui rekadia</th>
+        <th colspan="3">Seluk</th>
+        <th>Total</th>
+      </tr>
+      <tr>
+        <th>Total</th><th>M</th><th>F</th>
+        <th>Total</th><th>M</th><th>F</th>
+        <th>Total</th><th>M</th><th>F</th>
+        <th>Total</th><th>M</th><th>F</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in b1.rows %}
+      <tr>
+        <td class="row-label">{{ row.label }}</td>
+        <td class="num">{{ row.foun }}</td><td>{{ row.foun_m }}</td><td>{{ row.foun_f }}</td>
+        <td class="num">{{ row.rekaida }}</td><td>{{ row.rekaida_m }}</td><td>{{ row.rekaida_f }}</td>
+        <td class="num">{{ row.retrat }}</td><td>{{ row.retrat_m }}</td><td>{{ row.retrat_f }}</td>
+        <td class="num">{{ row.seluk }}</td><td>{{ row.seluk_m }}</td><td>{{ row.seluk_f }}</td>
+        <td class="num total-col">{{ row.total }}</td>
+      </tr>
+      {% endfor %}
+      <tr style="background:#fff8e1; font-weight:bold;">
+        <td class="row-label">TOTAL</td>
+        <td class="num">{{ b1.total_foun }}</td><td>{{ b1.total_foun_m }}</td><td>{{ b1.total_foun_f }}</td>
+        <td class="num">{{ b1.total_rekaida }}</td><td>{{ b1.total_rekaida_m }}</td><td>{{ b1.total_rekaida_f }}</td>
+        <td class="num">{{ b1.total_retrat }}</td><td>{{ b1.total_retrat_m }}</td><td>{{ b1.total_retrat_f }}</td>
+        <td class="num">{{ b1.total_seluk }}</td><td>{{ b1.total_seluk_m }}</td><td>{{ b1.total_seluk_f }}</td>
+        <td class="num total-col">{{ b1.total_all }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ===== BLOCK 2 ===== -->
+  <div class="block-title">Block 2: Kazu TB Pulmaun no Ekstra Pulmaun hotu Foun no Re-Tratamentu tuir Idade no Sexu</div>
+  <table class="tb-table">
+    <thead>
+      <tr>
+        <th rowspan="2" style="width:30%; text-align:left;">Tipu Kazu</th>
+        <th colspan="2">0 – 4</th>
+        <th colspan="2">5 – 14</th>
+        <th colspan="2">15 – 24</th>
+        <th colspan="2">25 – 34</th>
+        <th colspan="2">35 – 44</th>
+        <th colspan="2">45 – 54</th>
+        <th colspan="2">55 – 64</th>
+        <th colspan="2">65 +</th>
+        <th colspan="2">TOTAL</th>
+        <th rowspan="2">TOTAL<br>HOTU</th>
+      </tr>
+      <tr class="sub-header">
+        <th>M</th><th>F</th>
+        <th>M</th><th>F</th>
+        <th>M</th><th>F</th>
+        <th>M</th><th>F</th>
+        <th>M</th><th>F</th>
+        <th>M</th><th>F</th>
+        <th>M</th><th>F</th>
+        <th>M</th><th>F</th>
+        <th>M</th><th>F</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in b2.rows %}
+      <tr>
+        <td class="row-label">{{ row.label }}</td>
+        {% for ag in row.age_groups %}
+        <td>{{ ag.m }}</td><td>{{ ag.f }}</td>
+        {% endfor %}
+        <td class="num">{{ row.total_m }}</td>
+        <td class="num">{{ row.total_f }}</td>
+        <td class="num total-col">{{ row.total }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- ===== BLOCKS 3 & 4 side by side ===== -->
+  <div class="blocks-grid">
+    <div>
+      <div class="block-title">Block 3: Atividade Diagnostiku Laboratoriu <sup>c</sup></div>
+      <table class="tb-table">
+        <thead>
+          <tr>
+            <th colspan="2">Pasiente presumtivu TB – Ezaminasaun Bakt. Konfirmadu</th>
+            <th colspan="2">Pasiente presumtivu TB – Pozitivu</th>
+            <th colspan="2">Foun+Rekaida haruka ba GeneXpert</th>
+          </tr>
+          <tr class="sub-header">
+            <th>Smear Microscopy</th><th>GeneXpert</th>
+            <th>Smear+</th><th>GeneXpert+</th>
+            <th>Total testa</th><th>Total la testa</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="num">{{ b3.smear_exam }}</td>
+            <td class="num">{{ b3.genexpert_exam }}</td>
+            <td class="num">{{ b3.smear_pos }}</td>
+            <td class="num">{{ b3.genexpert_pos }}</td>
+            <td class="num">{{ b3.gx_total_tested }}</td>
+            <td class="num">{{ b3.gx_total_not_tested }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <div class="block-title">Block 4: Atividade TB/HIV <sup>d</sup></div>
+      <table class="tb-table">
+        <thead>
+          <tr>
+            <th colspan="2">Halo Teste HIV</th>
+            <th rowspan="2">TB-HIV+</th>
+            <th rowspan="2">TB-HIV+ + ART</th>
+            <th rowspan="2">TB-HIV+ + CPT</th>
+          </tr>
+          <tr class="sub-header">
+            <th>Total kazu TB hotu</th>
+            <th>Foun + Rekaida</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="num">{{ b4.hiv_tested_all }}</td>
+            <td class="num">{{ b4.hiv_tested_new_relapse }}</td>
+            <td class="num">{{ b4.hiv_positive }}</td>
+            <td class="num">{{ b4.hiv_art }}</td>
+            <td class="num">{{ b4.hiv_cpt }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== BLOCKS 5 & 6 side by side ===== -->
+  <div class="blocks-grid">
+    <div>
+      <div class="block-title">Block 5: Atividade TB & Diabetes</div>
+      <table class="tb-table">
+        <thead>
+          <tr>
+            <th>Pasiente TB halo teste FBS (Glucometer)</th>
+            <th>Pasiente TB ho DM</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="num">{{ b5.fbs_tested }}</td>
+            <td class="num">{{ b5.dm_positive }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <div class="block-title">Block 6: Jestaun LTBI (Kontaktu Besik)</div>
+      <table class="tb-table">
+        <thead>
+          <tr>
+            <th>Labarik &lt;2 anus + 3HP</th>
+            <th>Labarik 2-14 anus + 3HP</th>
+            <th>Adultu + 3HP</th>
+            <th>PLHIV + 3HP</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="num">{{ b6.child_under2 }}</td>
+            <td class="num">{{ b6.child_2to14 }}</td>
+            <td class="num">{{ b6.adult }}</td>
+            <td class="num">{{ b6.plhiv }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ===== FOOTNOTES ===== -->
+  <div style="font-size:7pt; color:#555; border-top:1px solid #bbb; padding-top:6px; margin-top:8px;">
+    <p><sup>a</sup> Periodu rejistrasaun baseia ba data rejistrasaun kazu iha rejistu TB, tuir data tratamentu. Q1: 1 Janeiro – 31 Marco; Q2: 1 Abril – 30 Junho; Q3: 1 Julho – 30 Setembro; Q4: 1 Outobro – 31 Dezembro.</p>
+    <p><sup>b</sup> Kazu "Transfere Tama" la inklui.</p>
+    <p><sup>c</sup> Data agregasaun husi rejistu Laboratorio baseia data simu amostra meur tasak, la inklui pasiente ne'ebe halo ezaminasaun follow up.</p>
+    <p><sup>d</sup> Inklui pasiente TB hotu ne'ebe hatene HIV pozitivu (ezemplu iha evidencia dokumentada simu ona tratamentu husi HIV) ou pasiente ne'ebe ho evidencia HIV negativu iha momentu diagnoza ba TB.</p>
+  </div>
+
+  <!-- ===== SIGNATURE ===== -->
+  <div style="display:flex; justify-content:flex-end; margin-top:24px; font-size:8pt;">
+    <div style="text-align:center; border-top:1px solid #333; padding-top:4px; min-width:200px;">
+      <div style="margin-bottom:40px;">Aprova husi,</div>
+      <div style="font-weight:bold;">dra. MELANIA ANTONIA BARRETO CERQUEIRA, S. Ked.</div>
+      <div>DIRETORA KLINIKA BAIRO PITE</div>
+    </div>
+  </div>
+
+</div><!-- end report-wrap -->
+{% endblock %}

@@ -46,11 +46,11 @@ def main_dashboard(request):
     visits_ip_hiv = all_visits_today.filter(status__in=['SCH', 'IP'], patient__is_hiv_patient=True).count()
     visits_com_hiv = all_visits_today.filter(status='COM', patient__is_hiv_patient=True).count()
 
-    # Top 10 diagnoses (General only for main dashboard)
-    top_diagnoses = Visit.objects.filter(
-        visit_date__year=year,
-        diagnosis__isnull=False,
-        patient__is_hiv_patient=False
+    # Top 10 diagnoses (General only for main dashboard) - Updated for VisitDiagnosis model
+    from medical_records.models import VisitDiagnosis
+    top_diagnoses = VisitDiagnosis.objects.filter(
+        visit__visit_date__year=year,
+        visit__patient__is_hiv_patient=False
     ).values(
         diag_code=F('diagnosis__code'),
         diag_name=F('diagnosis__name'),

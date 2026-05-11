@@ -28,7 +28,7 @@
                 <form method="post" class="row g-3">
                     {% csrf_token %}
                     
-                    {% if form.errors %}
+                    {% if form.errors or vitals_form.errors %}
                     <div class="col-12 mb-2">
                         <div class="alert alert-danger px-4 py-3 shadow-sm border-0 border-start border-danger border-4">
                             <h6 class="fw-bold text-danger mb-2"><i class="bi bi-exclamation-triangle-fill me-2"></i> {% trans "Please check your input:" %}</h6>
@@ -38,8 +38,16 @@
                                         <li><strong>{{ field.label }}:</strong> {{ field.errors|striptags }}</li>
                                     {% endif %}
                                 {% endfor %}
+                                {% for field in vitals_form %}
+                                    {% if field.errors %}
+                                        <li><strong>{{ field.label }}:</strong> {{ field.errors|striptags }}</li>
+                                    {% endif %}
+                                {% endfor %}
                                 {% if form.non_field_errors %}
                                     <li><strong>{% trans "General Error:" %}</strong> {{ form.non_field_errors|striptags }}</li>
+                                {% endif %}
+                                {% if vitals_form.non_field_errors %}
+                                    <li><strong>{% trans "Vitals Error:" %}</strong> {{ vitals_form.non_field_errors|striptags }}</li>
                                 {% endif %}
                             </ul>
                         </div>
@@ -96,36 +104,36 @@
 
                     <div class="col-md-3">
                         <label class="form-label fw-bold">{% trans "BP Systolic (mmHg)" %}</label>
-                        {{ form.bp_sys }}
+                        {{ vitals_form.bp_sys }}
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-bold">{% trans "BP Diastolic (mmHg)" %}</label>
-                        {{ form.bp_dia }}
+                        {{ vitals_form.bp_dia }}
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-bold">{% trans "SPO2 (%)" %}</label>
-                        {{ form.spo2 }}
+                        {{ vitals_form.spo2 }}
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-bold">{% trans "Pulse (bpm)" %}</label>
-                        {{ form.pulse }}
+                        {{ vitals_form.pulse }}
                     </div>
 
                     <div class="col-md-3">
                         <label class="form-label fw-bold">{% trans "RR (breath/min)" %}</label>
-                        {{ form.rr }}
+                        {{ vitals_form.rr }}
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-bold">{% trans "Temperature (°C)" %}</label>
-                        {{ form.temp }}
+                        {{ vitals_form.temp }}
                     </div>
                     <div class="col-md-3">
                         <label class="form-label fw-bold">{% trans "Weight (kg)" %}</label>
-                        {{ form.weight }}
+                        {{ vitals_form.weight }}
                     </div>
                      <div class="col-md-3">
                         <label class="form-label fw-bold">{% trans "MUAC (cm)" %}</label>
-                        {{ form.muac }}
+                        {{ vitals_form.muac }}
                     </div>
 
                     <div class="col-12 mt-5 mb-3">
@@ -135,7 +143,13 @@
                     <div class="col-md-6">
                         <label class="form-label fw-bold text-primary">{{ form.current_room.label }}</label>
                         {{ form.current_room }}
-                        <div class="form-text">{% trans "Select which doctor the patient should consult next." %}</div>
+                        <div class="form-text">{% trans "Select the room or department." %}</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-success">{{ form.doctor.label }}</label>
+                        {{ form.doctor }}
+                        <div class="form-text">{% trans "Optional: Select a specific doctor if known." %}</div>
                     </div>
 
                     <div class="col-12 mt-5 border-top pt-4">

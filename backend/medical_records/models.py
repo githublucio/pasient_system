@@ -121,7 +121,7 @@ class Visit(models.Model):
     ]
 
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='visits', verbose_name=_('Patient'))
+    patient = models.ForeignKey(Patient, on_delete=models.PROTECT, related_name='visits', verbose_name=_('Patient'))
     
     objects = VisitManager()
 
@@ -167,41 +167,12 @@ class Visit(models.Model):
     current_room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True, related_name='current_visits', verbose_name=_('Current Room'))
     visit_fee = models.DecimalField(_('Visit Fee (USD)'), max_digits=10, decimal_places=2, default=0.00)
 
-    # Clinical Data (Triage)
+    # Clinical Data (Chief Complaint remains here as core part of visit)
     complaint = models.TextField(_('Chief Complaint'), blank=True, null=True)
     
-    # Vital Signs (Explicit Fields)
-    bp_sys = models.IntegerField(_('BP Systolic'), blank=True, null=True)
-    bp_dia = models.IntegerField(_('BP Diastolic'), blank=True, null=True)
-    spo2 = models.IntegerField(_('SPO2 (%)'), blank=True, null=True)
-    pulse = models.IntegerField(_('Pulse (bpm)'), blank=True, null=True)
-    rr = models.IntegerField(_('Respiratory Rate (bpm)'), blank=True, null=True)
-    temp = models.DecimalField(_('Temperature (°C)'), max_digits=4, decimal_places=1, blank=True, null=True)
-    weight = models.DecimalField(_('Weight (kg)'), max_digits=5, decimal_places=1, blank=True, null=True)
-    VAS_CHOICES = [
-        ('0', _('0 (No Pain)')),
-        ('1-3', _('1-3 (Mild)')),
-        ('4-6', _('4-6 (Moderate)')),
-        ('7-9', _('7-9 (Severe)')),
-        ('10', _('10 (Worst Pain)')),
-    ]
-    muac = models.DecimalField(_('MUAC (cm)'), max_digits=4, decimal_places=1, blank=True, null=True)
-    vas_score = models.CharField(_('VAS Pain Score'), max_length=5, choices=VAS_CHOICES, blank=True, null=True)
-
-    vital_signs = models.JSONField(_('Vital Signs (Legacy/Notes)'), default=dict, blank=True, help_text=_("Additional vital signs or notes."))
+    # NOTE: Vital signs are now moved to VitalSigns model (1:1 with Visit)
+    # NOTE: Diagnoses are now moved to VisitDiagnosis model (M:M with Visit)
     
-    # Emergency Triage Re-Check (To keep initial triage vitals intact)
-    er_bp_sys = models.IntegerField(_('ER BP Systolic'), blank=True, null=True)
-    er_bp_dia = models.IntegerField(_('ER BP Diastolic'), blank=True, null=True)
-    er_spo2 = models.IntegerField(_('ER SPO2 (%)'), blank=True, null=True)
-    er_pulse = models.IntegerField(_('ER Pulse (bpm)'), blank=True, null=True)
-    er_rr = models.IntegerField(_('ER Respiratory Rate'), blank=True, null=True)
-    er_temp = models.DecimalField(_('ER Temperature (°C)'), max_digits=4, decimal_places=1, blank=True, null=True)
-    er_weight = models.DecimalField(_('ER Weight (kg)'), max_digits=5, decimal_places=1, blank=True, null=True)
-    er_muac = models.DecimalField(_('ER MUAC (cm)'), max_digits=4, decimal_places=1, blank=True, null=True)
-    
-    diagnosis = models.ForeignKey(Diagnosis, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_('Diagnosis'))
-    secondary_diagnoses = models.ManyToManyField(Diagnosis, blank=True, related_name='secondary_visits', verbose_name=_('Secondary Diagnoses'))
     clinical_notes = EncryptedTextField(_('Clinical Notes'), blank=True, null=True)
     
     # Quick Requests for Rooms 3-6
@@ -279,6 +250,22 @@ class Visit(models.Model):
         age = vdate.year - dob.year - ((vdate.month, vdate.day) < (dob.month, dob.day))
         return max(0, age)
 
+    @property
+    def vitals(self):
+        try:
+            return self.vital_signs_record
+        except:
+            return None
+
+    @property
+    def primary_diagnosis(self):
+        vd = self.visit_diagnoses.filter(is_primary=True).first()
+        return vd.diagnosis if vd else None
+
+    @property
+    def secondary_diagnoses_list(self):
+        return [vd.diagnosis for vd in self.visit_diagnoses.filter(is_primary=False)]
+
     class Meta:
         verbose_name = _("Visit")
         verbose_name_plural = _("Visits")
@@ -286,7 +273,6 @@ class Visit(models.Model):
             models.Index(fields=['visit_date', 'status'], name='idx_visit_date_status'),
             models.Index(fields=['current_room', 'status'], name='idx_visit_room_status'),
             models.Index(fields=['patient', '-visit_date'], name='idx_visit_patient_date'),
-            models.Index(fields=['diagnosis'], name='idx_visit_diagnosis'),
             models.Index(fields=['patient'], name='idx_visit_patient'),
             GinIndex(name='idx_visit_complaint_trgm', fields=['complaint'], opclasses=['gin_trgm_ops']),
         ]
@@ -306,39 +292,89 @@ class Visit(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        # Auto-tag patient as HIV if they enter HIV room or receive HIV diagnosis
-        if not self.patient.is_hiv_patient:
-            tag_as_hiv = False
+        # Auto-tag logic (Updated for VisitDiagnosis)
+        if not self.patient.is_hiv_patient or not self.patient.is_tb_patient:
             room_code = self.current_room.code.upper() if self.current_room else ''
+            
+            # Tag as HIV
             if room_code in ['HIV', 'AIDS']:
-                tag_as_hiv = True
-            elif self.diagnosis:
-                diag_code = self.diagnosis.code.upper()
-                diag_name = self.diagnosis.name.upper()
-                if 'B20' in diag_code or 'B24' in diag_code or 'HIV' in diag_name:
-                    tag_as_hiv = True
-            
-            if tag_as_hiv:
                 self.patient.is_hiv_patient = True
-                self.patient.save(update_fields=['is_hiv_patient'])
-
-        # Auto-tag patient as TB if they enter TB room or receive TB diagnosis
-        if not self.patient.is_tb_patient:
-            tag_as_tb = False
-            room_code = self.current_room.code.upper() if self.current_room else ''
-            if room_code == 'TB':
-                tag_as_tb = True
-            elif self.diagnosis:
-                diag_code = self.diagnosis.code.upper()
-                if 'A15' <= diag_code <= 'A19':
-                    tag_as_tb = True
             
-            if tag_as_tb:
+            # Tag as TB
+            if room_code == 'TB':
                 self.patient.is_tb_patient = True
-                self.patient.save(update_fields=['is_tb_patient'])
+            
+            self.patient.save(update_fields=['is_hiv_patient', 'is_tb_patient'])
 
     def __str__(self):
         return f"Visit {self.patient.full_name} - {self.visit_date.date()}"
+
+
+class VisitDiagnosis(models.Model):
+    """
+    ERD FINAL: Many-to-Many relation for multiple diagnoses per visit.
+    """
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    visit = models.ForeignKey(Visit, on_delete=models.CASCADE, related_name='visit_diagnoses')
+    diagnosis = models.ForeignKey(Diagnosis, on_delete=models.PROTECT, related_name='visit_records')
+    is_primary = models.BooleanField(_('Primary Diagnosis'), default=False)
+    notes = models.TextField(_('Specific Diagnosis Notes'), blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('Visit Diagnosis')
+        verbose_name_plural = _('Visit Diagnoses')
+        unique_together = ('visit', 'diagnosis')
+
+    def __str__(self):
+        return f"{self.visit} - {self.diagnosis} ({'Primary' if self.is_primary else 'Secondary'})"
+
+
+class VitalSigns(models.Model):
+    """
+    ERD FINAL: Dedicated model for vital signs (1:1 with Visit).
+    """
+    VAS_CHOICES = [
+        ('0', _('0 (No Pain)')),
+        ('1-3', _('1-3 (Mild)')),
+        ('4-6', _('4-6 (Moderate)')),
+        ('7-9', _('7-9 (Severe)')),
+        ('10', _('10 (Worst Pain)')),
+    ]
+
+    visit = models.OneToOneField(Visit, on_delete=models.CASCADE, related_name='vital_signs_record', verbose_name=_('Visit'), null=True, blank=True)
+    
+    # Core Vitals
+    bp_sys = models.IntegerField(_('BP Systolic'), blank=True, null=True)
+    bp_dia = models.IntegerField(_('BP Diastolic'), blank=True, null=True)
+    spo2 = models.IntegerField(_('SPO2 (%)'), blank=True, null=True)
+    pulse = models.IntegerField(_('Pulse (bpm)'), blank=True, null=True)
+    rr = models.IntegerField(_('Respiratory Rate (bpm)'), blank=True, null=True)
+    temp = models.DecimalField(_('Temperature (°C)'), max_digits=4, decimal_places=1, blank=True, null=True)
+    weight = models.DecimalField(_('Weight (kg)'), max_digits=5, decimal_places=1, blank=True, null=True)
+    height_cm = models.DecimalField(_('Height (cm)'), max_digits=5, decimal_places=1, blank=True, null=True)
+    muac = models.DecimalField(_('MUAC (cm)'), max_digits=4, decimal_places=1, blank=True, null=True)
+    vas_score = models.CharField(_('VAS Pain Score'), max_length=5, choices=VAS_CHOICES, blank=True, null=True)
+    
+    # MCH / KIA specific
+    kia_category = models.CharField(_('MCH Category'), max_length=20, blank=True, null=True)
+    
+    # Emergency Specifics (Re-checks)
+    er_bp_sys = models.IntegerField(_('ER BP Systolic'), blank=True, null=True)
+    er_bp_dia = models.IntegerField(_('ER BP Diastolic'), blank=True, null=True)
+    er_spo2 = models.IntegerField(_('ER SPO2 (%)'), blank=True, null=True)
+    er_pulse = models.IntegerField(_('ER Pulse (bpm)'), blank=True, null=True)
+    er_temp = models.DecimalField(_('ER Temperature (°C)'), max_digits=4, decimal_places=1, blank=True, null=True)
+    
+    notes = models.TextField(_('Vitals Notes'), blank=True, null=True)
+    taken_at = models.DateTimeField(_('Time Taken'), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('Vital Signs')
+        verbose_name_plural = _('Vital Signs')
+
+    def __str__(self):
+        return f"Vitals for {self.visit}"
 
 
 class VisitLog(models.Model):
@@ -391,7 +427,7 @@ class EmergencyObservation(models.Model):
     pulse = models.IntegerField(_('Pulse (bpm)'), blank=True, null=True)
     rr = models.IntegerField(_('Respiratory Rate (bpm)'), blank=True, null=True)
     temp = models.DecimalField(_('Temperature (°C)'), max_digits=4, decimal_places=1, blank=True, null=True)
-    vas_score = models.CharField(_('VAS Pain Score'), max_length=5, choices=Visit.VAS_CHOICES, blank=True, null=True)
+    vas_score = models.CharField(_('VAS Pain Score'), max_length=5, choices=VitalSigns.VAS_CHOICES, blank=True, null=True)
     
     clinical_notes = models.TextField(_('Observation Progress Notes'), blank=True, null=True)
     checked_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_('Monitored By'))
@@ -431,7 +467,7 @@ class EmergencyMedication(models.Model):
 
 class HIVAssessment(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='hiv_assessments', verbose_name=_('Patient'))
+    patient = models.ForeignKey(Patient, on_delete=models.PROTECT, related_name='hiv_assessments', verbose_name=_('Patient'))
     visit = models.ForeignKey(Visit, on_delete=models.SET_NULL, null=True, blank=True, related_name='hiv_assessments', verbose_name=_('Visit'))
     
     # Registration Details specific to HIV
@@ -478,4 +514,243 @@ class HIVAssessment(models.Model):
 
     def __str__(self):
         return f"HIV Assessment for {self.patient.full_name} on {self.created_at.date()}"
+
+
+class TBScreening(models.Model):
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(Patient, on_delete=models.SET_NULL, null=True, blank=True, related_name='tb_screenings', verbose_name=_('Registered Patient'))
+    
+    # If not registered yet
+    full_name = models.CharField(_('Full Name'), max_length=255, blank=True, null=True)
+    phone_number = models.CharField(_('Phone Number'), max_length=20, blank=True, null=True)
+    age = models.IntegerField(_('Age'), blank=True, null=True)
+    gender = models.CharField(_('Gender'), max_length=10, choices=[('M', _('Male')), ('F', _('Female'))], blank=True, null=True)
+
+    # Location
+    municipio = models.ForeignKey('patients.Municipio', on_delete=models.SET_NULL, null=True, blank=True)
+    posto = models.ForeignKey('patients.PostoAdministrativo', on_delete=models.SET_NULL, null=True, blank=True)
+    suco = models.ForeignKey('patients.Suco', on_delete=models.SET_NULL, null=True, blank=True)
+    aldeia = models.ForeignKey('patients.Aldeia', on_delete=models.SET_NULL, null=True, blank=True)
+    outreach_location = models.CharField(_('Specific Location/Site'), max_length=255, blank=True, null=True, help_text="e.g. Market, School, Church")
+
+    # Symptoms
+    has_cough_2_weeks = models.BooleanField(_('Cough > 2 Weeks'), default=False)
+    has_fever = models.BooleanField(_('Fever'), default=False)
+    has_night_sweats = models.BooleanField(_('Night Sweats'), default=False)
+    has_weight_loss = models.BooleanField(_('Unexplained Weight Loss'), default=False)
+    
+    # Risk Factors
+    has_contact_history = models.BooleanField(_('Contact with TB Patient'), default=False)
+    is_hiv_positive = models.BooleanField(_('Known HIV Positive'), default=False)
+
+    # Result
+    is_suspect = models.BooleanField(_('Is TB Suspect'), default=False)
+    
+    REFERRAL_CHOICES = [
+        ('NONE', _('No Referral')),
+        ('CLINIC', _('Referred to Clinic')),
+        ('LAB', _('Referred to Lab (Sputum)')),
+    ]
+    referral_status = models.CharField(_('Referral Status'), max_length=10, choices=REFERRAL_CHOICES, default='NONE')
+    sputum_collected = models.BooleanField(_('Sputum Sample Collected on Site'), default=False)
+    
+    # Lab Confirmation (Updated later)
+    LAB_RESULT_CHOICES = [
+        ('PENDING', _('Pending / Waiting for Lab')),
+        ('POSITIVE', _('Positive TB')),
+        ('NEGATIVE', _('Negative TB')),
+        ('INVALID', _('Invalid / Retest Needed')),
+    ]
+    lab_result = models.CharField(_('Lab Confirmation Result'), max_length=20, choices=LAB_RESULT_CHOICES, default='PENDING')
+    lab_test_date = models.DateField(_('Date Lab Result Received'), blank=True, null=True)
+    
+    notes = models.TextField(_('Notes'), blank=True, null=True)
+    
+    screened_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='performed_tb_screenings')
+    screening_date = models.DateField(_('Screening Date'), default=timezone.localdate)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('TB Screening Outreach')
+        verbose_name_plural = _('TB Screening Outreach Logs')
+        ordering = ['-screening_date', '-created_at']
+        indexes = [
+            models.Index(fields=['screening_date', 'is_suspect']),
+            models.Index(fields=['suco', 'aldeia']),
+        ]
+
+    def __str__(self):
+        name = self.patient.full_name if self.patient else self.full_name
+        return f"TB Screening: {name} ({self.screening_date})"
+
+
+class TBCase(models.Model):
+    """
+    Master record for a TB treatment episode (TB Treatment Card).
+    """
+    CASE_TYPES = [
+        ('PTB_POS', _('PTB+ (Pulmonary TB Sputum Positive)')),
+        ('PTB_NEG', _('PTB- (Pulmonary TB Sputum Negative)')),
+        ('EPTB', _('EPTB (Extra-Pulmonary TB)')),
+    ]
+    CATEGORIES = [
+        ('CAT_I', _('Category I (New Cases)')),
+        ('CAT_II', _('Category II (Previously Treated)')),
+        ('CAT_P', _('Pediatric (Children)')),
+        ('CAT_MDR', _('MDR-TB')),
+    ]
+    OUTCOMES = [
+        ('PENDING', _('Still on Treatment')),
+        ('CURED', _('Cured')),
+        ('COMPLETED', _('Treatment Completed')),
+        ('DIED', _('Died')),
+        ('FAILED', _('Treatment Failed')),
+        ('LOST', _('Lost to Follow-up')),
+        ('TRANSFERRED', _('Transferred Out')),
+    ]
+
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='tb_cases', verbose_name=_('Patient'))
+    tb_registration_number = models.CharField(_('TB Reg Number'), max_length=50, unique=True, help_text=_("National TB Program Number"))
+    
+    date_started = models.DateField(_('Treatment Start Date'))
+    case_type = models.CharField(_('Case Type'), max_length=10, choices=CASE_TYPES)
+    category = models.CharField(_('Treatment Category'), max_length=10, choices=CATEGORIES)
+    
+    # Diagnosis details
+    initial_weight = models.DecimalField(_('Weight at Start (kg)'), max_digits=5, decimal_places=2)
+    
+    # Clinical Classification
+    CLASSIFICATION_CHOICES = [
+        ('P', _('Pulmonar')),
+        ('EP', _('Estra-Pulmuar')),
+    ]
+    classification = models.CharField(max_length=2, choices=CLASSIFICATION_CHOICES, default='P')
+    site_of_eptb = models.CharField(max_length=255, blank=True, null=True)
+    
+    # Patient Type
+    TYPE_CHOICES = [
+        ('FOUN', _('Foun (New)')),
+        ('RELAPSU', _('Relapsu (Relapse)')),
+        ('DEPOIS_LAKON', _('Depois lakon (After loss to follow up)')),
+        ('FALHA', _('Falha (Failure)')),
+        ('OUTRU', _('Outru (Other)')),
+    ]
+    patient_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='FOUN')
+    
+    # Treatment Regimen
+    regimen = models.CharField(max_length=255, blank=True, null=True, help_text="e.g., RHZE (150/75/400/275 mg)")
+    
+    # Co-morbidities
+    hiv_status = models.CharField(max_length=50, blank=True, null=True, help_text="Teste HIV / Data / Rezultadu")
+    diabetes_status = models.CharField(max_length=50, blank=True, null=True, help_text="Diabetes Status (FBS/RBG)")
+    
+    # Lab Results
+    initial_sputum = models.CharField(max_length=100, blank=True, null=True)
+    initial_xray = models.CharField(max_length=100, blank=True, null=True)
+    
+    # Treatment Progress (Sputum Follow-up)
+    sputum_month_2 = models.CharField(_('Sputum Result (Month 2)'), max_length=20, blank=True, null=True)
+    sputum_month_5 = models.CharField(_('Sputum Result (Month 5)'), max_length=20, blank=True, null=True)
+    sputum_month_6 = models.CharField(_('Sputum Result (Month 6)'), max_length=20, blank=True, null=True)
+
+    # Outcome
+    OUTCOME_CHOICES = [
+        ('CURA', _('Kura (Cured)')),
+        ('KOMPLETU', _('Tratamentu Kompletu')),
+        ('FALHA', _('Falha')),
+        ('MATE', _('Mate (Died)')),
+        ('LAKON', _('Lakon (Lost to follow up)')),
+        ('TRANSFER', _('Transfer (Transferred out)')),
+    ]
+    outcome = models.CharField(max_length=20, choices=OUTCOME_CHOICES, blank=True, null=True)
+    date_of_outcome = models.DateField(blank=True, null=True)
+    
+    notes = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    
+    # Persistent storage for all extra fields on the physical form
+    card_data = models.JSONField(default=dict, blank=True, help_text=_("Stores additional form data (checkboxes, remarks, etc)"))
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _('TB Case / Treatment Card')
+        verbose_name_plural = _('TB Cases')
+        ordering = ['-date_started']
+        indexes = [
+            models.Index(fields=['tb_registration_number'], name='idx_tb_reg_num'),
+            models.Index(fields=['date_started'], name='idx_tb_date_started'),
+            models.Index(fields=['patient', '-date_started'], name='idx_tb_patient_date'),
+            models.Index(fields=['is_active'], name='idx_tb_active'),
+        ]
+
+    def __str__(self):
+        return f"TB-{self.tb_registration_number} - {self.patient.full_name}"
+
+
+class TBTreatmentLog(models.Model):
+    """
+    Daily or Weekly log for TB drug collection and monitoring.
+    """
+    PHASE_CHOICES = [
+        ('INTENSIVE', _('Intensive Phase')),
+        ('CONTINUATION', _('Continuation Phase')),
+    ]
+    
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tb_case = models.ForeignKey(TBCase, on_delete=models.CASCADE, related_name='logs', verbose_name=_('TB Case'))
+    visit = models.OneToOneField(Visit, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_('Associated Visit'))
+    
+    date_recorded = models.DateField(_('Date'), default=timezone.localdate)
+    phase = models.CharField(_('Phase'), max_length=15, choices=PHASE_CHOICES)
+    weight = models.DecimalField(_('Weight (kg)'), max_digits=5, decimal_places=2, blank=True, null=True)
+    
+    drugs_given = models.CharField(_('Drugs Given'), max_length=255, help_text=_("e.g. RHZE, RH"))
+    days_supply = models.PositiveIntegerField(_('Days of Supply Given'), default=30)
+    
+    side_effects = models.TextField(_('Side Effects Noted'), blank=True, null=True)
+    is_missed_dose = models.BooleanField(_('Missed Doses?'), default=False)
+    
+    next_appointment = models.DateField(_('Next Drug Collection Date'), blank=True, null=True)
+    recorded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name=_('Recorded By'))
+
+    class Meta:
+        verbose_name = _('TB Treatment Log')
+        verbose_name_plural = _('TB Treatment Logs')
+        ordering = ['-date_recorded']
+
+    def __str__(self):
+        return f"Log {self.date_recorded} for {self.tb_case}"
+
+
+class TBDailyDose(models.Model):
+    """
+    Daily medication adherence tracking for the TB grid calendar (TB FORM 4).
+    """
+    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tb_case = models.ForeignKey(TBCase, on_delete=models.CASCADE, related_name='daily_doses', verbose_name=_('TB Case'))
+    date = models.DateField(_('Date'))
+    
+    DOSE_STATUS = [
+        ('DONE', '✔'),
+        ('UNOBSERVED', '-'),
+        ('MISSED', '0'),
+        ('NONE', ''),
+    ]
+    status = models.CharField(max_length=10, choices=DOSE_STATUS, default='NONE')
+    is_observed = models.BooleanField(_('Observed?'), default=True, help_text=_("True = (✔), False = (-)"))
+    notes = models.CharField(_('Notes'), max_length=255, blank=True, null=True)
+    recorded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name=_('Recorded By'))
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('TB Daily Dose')
+        verbose_name_plural = _('TB Daily Doses')
+        unique_together = ('tb_case', 'date')
+        ordering = ['-date']
+
+    def __str__(self):
+        return f"{self.date} - {self.tb_case} ({'Observed' if self.is_observed else 'Self'})"
 

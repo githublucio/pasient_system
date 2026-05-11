@@ -21,15 +21,42 @@
 
 <!-- Alerts -->
 {% if expired_count > 0 %}
-<div class="alert alert-danger d-flex align-items-center mb-3">
-    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
-    <strong>{{ expired_count }}</strong>&nbsp;{% trans "batch(es) have EXPIRED stock remaining. Please review and dispose." %}
+<div class="alert alert-danger mb-3 shadow-sm border-start border-4 border-danger">
+    <div class="d-flex align-items-center mb-2">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+        <strong class="fs-5">{% trans "STOCK EXPIRED!" %} ({{ expired_count }})</strong>
+    </div>
+    <ul class="mb-0 small">
+        {% for item in expired_items %}
+        <li>
+            <strong>{{ item.medicine.display_name }}</strong> 
+            (Batch: <code class="text-danger fw-bold">{{ item.batch_number|default:"N/A" }}</code>) 
+            - {% trans "Expired on" %} <span class="fw-bold">{{ item.expiry_date|date:"d M Y" }}</span>
+            - {% trans "Remaining" %}: <span class="badge bg-danger">{{ item.quantity_remaining }} {{ item.medicine.get_unit_display }}</span>
+        </li>
+        {% endfor %}
+        {% if expired_count > 10 %}<li class="text-muted">... {% trans "and more" %}</li>{% endif %}
+    </ul>
 </div>
 {% endif %}
+
 {% if expiring_soon_count > 0 %}
-<div class="alert alert-warning d-flex align-items-center mb-3">
-    <i class="bi bi-clock-history me-2 fs-5"></i>
-    <strong>{{ expiring_soon_count }}</strong>&nbsp;{% trans "batch(es) will expire within 90 days." %}
+<div class="alert alert-warning mb-3 shadow-sm border-start border-4 border-warning">
+    <div class="d-flex align-items-center mb-2">
+        <i class="bi bi-clock-history me-2 fs-5"></i>
+        <strong class="fs-5">{% trans "EXPIRING SOON" %} ({{ expiring_soon_count }})</strong>
+    </div>
+    <ul class="mb-0 small">
+        {% for item in expiring_soon_items %}
+        <li>
+            <strong>{{ item.medicine.display_name }}</strong> 
+            (Batch: <code class="text-dark fw-bold">{{ item.batch_number|default:"N/A" }}</code>) 
+            - {% trans "Will expire on" %} <span class="fw-bold">{{ item.expiry_date|date:"d M Y" }}</span>
+            - {% trans "Remaining" %}: <span class="badge bg-warning text-dark">{{ item.quantity_remaining }} {{ item.medicine.get_unit_display }}</span>
+        </li>
+        {% endfor %}
+        {% if expiring_soon_count > 10 %}<li class="text-muted">... {% trans "and more" %}</li>{% endif %}
+    </ul>
 </div>
 {% endif %}
 
@@ -57,6 +84,7 @@
                     <th>{% trans "Batch No" %}</th>
                     <th>{% trans "Received Date" %}</th>
                     <th>{% trans "Expiry Date" %}</th>
+                    <th class="text-center">{% trans "Priority" %}</th>
                     <th>{% trans "Price" %}</th>
                     <th class="text-center">{% trans "Actions" %}</th>
                 </tr>
@@ -84,14 +112,14 @@
                             <br><small class="text-muted">{{ entry.donor_name }}</small>
                         {% endif %}
                     </td>
-                    <td class="text-center">{{ entry.quantity }}</td>
+                    <td class="text-center">{{ entry.quantity_received }}</td>
                     <td class="text-center">
-                        {% if entry.remaining_qty == 0 %}
+                        {% if entry.quantity_remaining == 0 %}
                             <span class="badge bg-secondary">0</span>
                         {% elif entry.is_expired %}
-                            <span class="badge bg-danger">{{ entry.remaining_qty }}</span>
+                            <span class="badge bg-danger">{{ entry.quantity_remaining }}</span>
                         {% else %}
-                            <span class="badge bg-success">{{ entry.remaining_qty }}</span>
+                            <span class="badge bg-success">{{ entry.quantity_remaining }}</span>
                         {% endif %}
                     </td>
                     <td>{{ entry.batch_number|default:"-" }}</td>
@@ -105,6 +133,15 @@
                             {% endif %}
                         {% else %}
                             <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if entry.quantity_remaining > 0 and not entry.is_expired %}
+                            {% if entry.expiry_date == entry.medicine.nearest_expiry %}
+                                <span class="badge bg-warning text-dark animate-pulse shadow-sm border border-warning" style="font-size: 0.7rem;">
+                                    <i class="bi bi-star-fill me-1"></i>{% trans "AMBIL INI DULU" %}
+                                </span>
+                            {% endif %}
                         {% endif %}
                     </td>
                     <td>${{ entry.unit_price }}</td>

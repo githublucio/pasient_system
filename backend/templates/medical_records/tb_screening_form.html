@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow border-0 overflow-hidden">
+            <div class="card-header bg-primary text-white py-3">
+                <h4 class="mb-0 fw-bold"><i class="bi bi-person-plus-fill me-2"></i>{{ title }}</h4>
+                <p class="mb-0 text-white-50 small">{% trans "Complete this form for field screening/outreach activities." %}</p>
+            </div>
+            <div class="card-body p-4 bg-light">
+                <form method="post" id="screeningForm">
+                    {% csrf_token %}
+                    
+                    <!-- Section 1: Identity -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body">
+                            <h5 class="text-primary mb-3"><i class="bi bi-person-circle me-2"></i>{% trans "Patient Information" %}</h5>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">{% trans "Is the patient already registered?" %}</label>
+                                {{ form.patient }}
+                                <div class="form-text">{% trans "Select if already in system, otherwise fill details below." %}</div>
+                            </div>
+                            
+                            <div id="newPatientFields">
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">{{ form.full_name.label }}</label>
+                                        {{ form.full_name }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">{{ form.gender.label }}</label>
+                                        {{ form.gender }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">{{ form.age.label }}</label>
+                                        {{ form.age }}
+                                    </div>
+                                    <div class="col-md-12">
+                                        <label class="form-label fw-bold">{{ form.phone_number.label }}</label>
+                                        {{ form.phone_number }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 2: Location -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body">
+                            <h5 class="text-primary mb-3"><i class="bi bi-geo-alt-fill me-2"></i>{% trans "Location of Screening" %}</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">{{ form.municipio.label }}</label>
+                                    {{ form.municipio }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">{{ form.posto.label }}</label>
+                                    {{ form.posto }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">{{ form.suco.label }}</label>
+                                    {{ form.suco }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">{{ form.aldeia.label }}</label>
+                                    {{ form.aldeia }}
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">{{ form.outreach_location.label }}</label>
+                                    {{ form.outreach_location }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 3: Symptoms -->
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body">
+                            <h5 class="text-danger mb-3"><i class="bi bi-exclamation-triangle-fill me-2"></i>{% trans "Symptom Checklist (4 Classics)" %}</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch p-3 border rounded h-100 bg-white">
+                                        {{ form.has_cough_2_weeks }}
+                                        <label class="form-check-label fw-bold ms-2" for="{{ form.has_cough_2_weeks.id_for_label }}">{% trans "Cough > 2 Weeks" %}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch p-3 border rounded h-100 bg-white">
+                                        {{ form.has_fever }}
+                                        <label class="form-check-label fw-bold ms-2" for="{{ form.has_fever.id_for_label }}">{% trans "Fever" %}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch p-3 border rounded h-100 bg-white">
+                                        {{ form.has_night_sweats }}
+                                        <label class="form-check-label fw-bold ms-2" for="{{ form.has_night_sweats.id_for_label }}">{% trans "Night Sweats" %}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch p-3 border rounded h-100 bg-white">
+                                        {{ form.has_weight_loss }}
+                                        <label class="form-check-label fw-bold ms-2" for="{{ form.has_weight_loss.id_for_label }}">{% trans "Weight Loss" %}</label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <hr class="my-4">
+                            <h6 class="fw-bold mb-3">{% trans "Risk Factors" %}</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-check p-2 border rounded bg-white">
+                                        {{ form.has_contact_history }}
+                                        <label class="form-check-label ms-2" for="{{ form.has_contact_history.id_for_label }}">{{ form.has_contact_history.label }}</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check p-2 border rounded bg-white">
+                                        {{ form.is_hiv_positive }}
+                                        <label class="form-check-label ms-2" for="{{ form.is_hiv_positive.id_for_label }}">{{ form.is_hiv_positive.label }}</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 4: Result & Action -->
+                    <div class="card border-0 shadow-sm mb-4 border-start border-4 border-warning">
+                        <div class="card-body">
+                            <h5 class="text-warning mb-3"><i class="bi bi-clipboard-check-fill me-2"></i>{% trans "Decision & Referral" %}</h5>
+                            <div class="p-3 bg-warning bg-opacity-10 rounded mb-4">
+                                <div class="form-check form-switch fs-5">
+                                    {{ form.is_suspect }}
+                                    <label class="form-check-label fw-bold ms-2 text-danger" for="{{ form.is_suspect.id_for_label }}">{% trans "IS THIS A TB SUSPECT?" %}</label>
+                                </div>
+                                <small class="text-muted">{% trans "Tick YES if the patient has any of the symptoms above or significant risk factors." %}</small>
+                            </div>
+                            
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">{{ form.referral_status.label }}</label>
+                                    {{ form.referral_status }}
+                                </div>
+                                <div class="col-md-12">
+                                    <div class="form-check p-3 border rounded bg-white">
+                                        {{ form.sputum_collected }}
+                                        <label class="form-check-label fw-bold ms-2" for="{{ form.sputum_collected.id_for_label }}">{% trans "Sputum Sample Collected?" %}</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section 5: Lab Confirmation (Only for Edit or specific cases) -->
+                    {% if is_edit or form.instance.pk %}
+                    <div class="card border-0 shadow-sm mb-4 border-start border-4 border-success">
+                        <div class="card-body">
+                            <h5 class="text-success mb-3"><i class="bi bi-droplet-fill me-2"></i>{% trans "Lab Confirmation" %}</h5>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">{{ form.lab_result.label }}</label>
+                                    {{ form.lab_result }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">{{ form.lab_test_date.label }}</label>
+                                    {{ form.lab_test_date }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-12">
+                                    <label class="form-label fw-bold">{{ form.notes.label }}</label>
+                                    {{ form.notes }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">{{ form.screening_date.label }}</label>
+                                    {{ form.screening_date }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{% url 'tb_screening_list' %}" class="btn btn-outline-secondary px-4 btn-lg">{% trans "Cancel" %}</a>
+                        <button type="submit" class="btn btn-primary px-5 btn-lg shadow-sm">
+                            <i class="bi bi-save me-1"></i> {% trans "Save Screening Log" %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // AJAX Select2 for Patients (Optimized for 6000+ records)
+        $('.select2-patient-ajax').select2({
+            theme: 'bootstrap-5',
+            placeholder: '{% trans "Type to search name or Patient ID..." %}',
+            allowClear: true,
+            minimumInputLength: 2,
+            width: '100%',
+            ajax: {
+                url: "{% url 'api_patient_search' %}",
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return { q: params.term };
+                },
+                processResults: function (data) {
+                    return { results: data.results };
+                },
+                cache: true
+            }
+        });
+
+        // Hide/Show logic for New Patient Fields
+        function toggleNewPatientFields() {
+            if ($('.select2-patient-ajax').val()) {
+                $('#newPatientFields').slideUp();
+            } else {
+                $('#newPatientFields').slideDown();
+            }
+        }
+
+        $('.select2-patient-ajax').on('change', toggleNewPatientFields);
+        toggleNewPatientFields();
+
+        // --- Dynamic Geography Loading ---
+        
+        $('#id_municipio').change(function() {
+            var url = "{% url 'load_postos' %}";
+            var municipioId = $(this).val();
+            $.ajax({
+                url: url,
+                data: { 'municipio': municipioId },
+                success: function (data) {
+                    $("#id_posto").html('<option value="">-- {% trans "Select Posto" %} --</option>');
+                    $.each(data, function (key, value) {
+                        $("#id_posto").append('<option value="' + value.id + '">' + value.name + '</option>');
+                    });
+                }
+            });
+        });
+
+        $('#id_posto').change(function() {
+            var url = "{% url 'load_sucos' %}";
+            var postoId = $(this).val();
+            $.ajax({
+                url: url,
+                data: { 'posto': postoId },
+                success: function (data) {
+                    $("#id_suco").html('<option value="">-- {% trans "Select Suco" %} --</option>');
+                    $.each(data, function (key, value) {
+                        $("#id_suco").append('<option value="' + value.id + '">' + value.name + '</option>');
+                    });
+                }
+            });
+        });
+
+        $('#id_suco').change(function() {
+            var url = "{% url 'load_aldeias' %}";
+            var sucoId = $(this).val();
+            $.ajax({
+                url: url,
+                data: { 'suco': sucoId },
+                success: function (data) {
+                    $("#id_aldeia").html('<option value="">-- {% trans "Select Aldeia" %} --</option>');
+                    $.each(data, function (key, value) {
+                        $("#id_aldeia").append('<option value="' + value.id + '">' + value.name + '</option>');
+                    });
+                }
+            });
+        });
+
+        // Auto-calculating Is Suspect
+        $('input[type="checkbox"]').on('change', function() {
+            var cough = $('#id_has_cough_2_weeks').is(':checked');
+            var fever = $('#id_has_fever').is(':checked');
+            var sweat = $('#id_has_night_sweats').is(':checked');
+            var loss = $('#id_has_weight_loss').is(':checked');
+            
+            if (cough || fever || sweat || loss) {
+                $('#id_is_suspect').prop('checked', true);
+            }
+        });
+    });
+</script>
+{% endblock %}

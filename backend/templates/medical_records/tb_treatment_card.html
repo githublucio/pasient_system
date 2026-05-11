@@ -1,0 +1,873 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% load vitals_tags %}
+
+{% block content %}
+<style>
+    /* Clean A4 Landscape Print Styles */
+    @media print {
+        @page { size: A4 landscape; margin: 0; }
+        body { margin: 0; padding: 0; background: #fff; -webkit-print-color-adjust: exact !important; }
+        .no-print, .navbar, .sidebar, .footer, .btn, header { display: none !important; }
+        .tb-form-container {
+            width: 297mm !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 2mm 5mm !important;
+            border: 1.2px solid #000 !important;
+            page-break-after: always;
+            box-sizing: border-box;
+            box-shadow: none !important;
+        }
+    }
+
+    /* Screen Styles */
+    .tb-form-container {
+        width: 287mm;
+        margin: 10px auto;
+        background: #fff;
+        padding: 4mm 6mm;
+        border: 1.5px solid #000 !important;
+        position: relative;
+        box-sizing: border-box;
+        font-family: 'Times New Roman', serif;
+        color: #000;
+    }
+
+    .tb-table { width: 100%; border-collapse: collapse; margin: 0; }
+    .tb-table th, .tb-table td { border: 1px solid #000; padding: 1px 3px; font-size: 7.5pt; }
+
+    .dotted-line-input {
+        border: none;
+        border-bottom: 1.2px dotted #444;
+        background: transparent;
+        font-family: inherit;
+        font-size: inherit;
+        padding: 0 4px;
+        display: inline-block;
+        min-height: 16px;
+    }
+    .flex-row-dotted {
+        display: flex;
+        align-items: flex-end;
+        margin-bottom: 4px;
+    }
+    .flex-fill-dotted {
+        flex-grow: 1;
+        border-bottom: 1.2px dotted #444;
+        margin-left: 5px;
+        min-height: 16px;
+        display: flex;
+        align-items: flex-end;
+    }
+
+    .fs-5 { font-size: 5pt; }
+    .fs-6 { font-size: 6pt; }
+    .fs-7 { font-size: 7pt; }
+    .fs-8 { font-size: 8pt; }
+    .fs-9 { font-size: 9pt; }
+    .fs-10 { font-size: 10pt; }
+    .fw-bold { font-weight: bold; }
+    .text-center { text-align: center; }
+
+    .rounded-box {
+        border: 1.2px solid #000;
+        border-radius: 6px;
+        box-sizing: border-box;
+        overflow: hidden;
+        margin-bottom: 5px;
+    }
+
+    .box-title {
+        border-bottom: 1.2px solid #000;
+        font-weight: bold;
+        text-align: center;
+        padding: 1px;
+        background: #f5f5f5;
+        font-size: 7.5pt;
+    }
+
+    .grid-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .grid-table th, .grid-table td { border: 1px solid #000; text-align: center; padding: 0; height: 14px; font-size: 7pt; }
+
+    .col-month { width: 70px; font-weight: bold; }
+    .col-day { width: 16px; }
+    .col-total { width: 80px; }
+    .col-cum { width: 140px; }
+
+    .dose-input {
+        width: 100%; height: 100%; border: none; text-align: center;
+        font-weight: bold; font-size: 8pt; background: transparent;
+    }
+
+    .form-checkbox { transform: scale(0.9); margin: 0 1px; vertical-align: middle; }
+    .bg-light-grey { background-color: #e7e7e7 !important; }
+    .bg-dark-grey { background-color: #7f7f7f !important; }
+    .bg-light-green { background-color: #77933c !important; }
+    
+    .color-box-green {
+        width: 15px;
+        height: 12px;
+        background-color: #77933c;
+        display: inline-block;
+        border: 0.5px solid #000;
+        vertical-align: middle;
+        margin-right: 5px;
+    }
+    
+    input[type="text"], input[type="month"], input[type="date"] {
+        border: none; background: transparent; font-family: inherit;
+        font-size: inherit; padding: 0; width: 100%;
+    }
+
+    textarea { border: 1px solid #000; padding: 2px; font-family: inherit; font-size: 7.5pt; resize: none; }
+    .legend-text { font-size: 6.5pt; font-style: italic; }
+
+    /* Delete row button */
+    .btn-delete-row {
+        background: none;
+        border: 1px solid #cc0000;
+        color: #cc0000;
+        border-radius: 3px;
+        width: 16px;
+        height: 16px;
+        font-size: 8pt;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        opacity: 0.6;
+    }
+    .btn-delete-row:hover { opacity: 1; background: #fff0f0; }
+    @media print { .btn-delete-row { display: none !important; } }
+
+    /* Auto-expanding textarea for action table */
+    .action-textarea {
+        width: 100%;
+        min-height: 16px;
+        border: none;
+        background: transparent;
+        font-family: inherit;
+        font-size: 7pt;
+        resize: none;
+        overflow: hidden;
+        padding: 1px 2px;
+        line-height: 1.3;
+        box-sizing: border-box;
+        display: block;
+    }
+    .action-textarea:focus { outline: none; background: #fffde7; }
+
+    /* Phase II Bottom Tables */
+    .outcome-table, .action-table, .screening-table { width: 100%; border-collapse: collapse; margin-top: 5px; table-layout: fixed; }
+    .outcome-table th, .outcome-table td, 
+    .action-table th, .action-table td,
+    .screening-table th, .screening-table td { 
+        border: 1px solid #000; font-size: 6.5pt; padding: 1px 3px; height: 16px; text-align: left;
+    }
+    .outcome-table th, .action-table th, .screening-table th { background-color: #e7e7e7; text-align: center; font-weight: bold; }
+    .text-center { text-align: center !important; }
+    .vertical-top { vertical-align: top; }
+</style>
+
+<div class="no-print p-3 bg-white border-bottom sticky-top shadow-sm d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-3">
+        <a href="{% url 'tb_treatment_dashboard' %}" class="btn btn-outline-dark btn-sm rounded-pill px-3">
+            <i class="fas fa-chevron-left me-1"></i> {% trans "Dashboard" %}
+        </a>
+        <div class="vr mx-2 text-muted opacity-25" style="height: 24px;"></div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-2 border border-danger border-opacity-25">
+                <i class="fas fa-lungs me-2"></i>
+                {% trans "TB Case" %}: <strong>{{ case.tb_registration_number }}</strong>
+            </span>
+            <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2 border border-primary border-opacity-25">
+                <i class="fas fa-calendar-check me-2"></i>
+                {% trans "Visits" %}: <strong>{{ tb_visit_count }}</strong>
+            </span>
+            <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2 border border-success border-opacity-25">
+                <i class="fas fa-clipboard-list me-2"></i>
+                {% trans "Logs" %}: <strong>{{ log_count }}</strong>
+            </span>
+        </div>
+    </div>
+    
+    <div class="d-flex gap-2">
+        <div class="btn-group shadow-sm">
+            <button type="submit" form="tbCardForm" class="btn btn-danger btn-sm px-4 fw-bold">
+                <i class="fas fa-save me-2"></i>{% trans "Save Data" %}
+            </button>
+            <button type="button" class="btn btn-danger btn-sm dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false">
+                <span class="visually-hidden">Toggle Dropdown</span>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                <li><button type="submit" form="tbCardForm" name="save_and_close" class="dropdown-item py-2"><i class="fas fa-door-open me-2"></i> {% trans "Save and Exit" %}</button></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item py-2" href="{% url 'tb_treatment_log_add' case.uuid %}"><i class="fas fa-plus-circle me-2"></i> {% trans "Add Treatment Log" %}</a></li>
+            </ul>
+        </div>
+        
+        <button onclick="window.print()" class="btn btn-dark btn-sm px-4 fw-bold shadow-sm rounded-3">
+            <i class="fas fa-print me-2"></i>{% trans "Print A4" %}
+        </button>
+    </div>
+</div>
+
+<form id="tbCardForm" method="POST" action="{% url 'tb_card_save' case.uuid %}">
+    {% csrf_token %}
+    
+    <div class="tb-form-container">
+        <!-- Header -->
+        <div style="display: flex; align-items: center; padding: 5px 0; margin-bottom: 5px;">
+            <div class="fw-bold fs-9" style="width: 150px;">TB FORM 4</div>
+            <div style="flex-grow: 1; display: flex; justify-content: center; align-items: center; gap: 60px;">
+                <div style="width: 65px; text-align: center;"><img src="{% static 'assets/logo mds.png' %}" style="height: 60px;"></div>
+                <div style="text-align: center;">
+                    <img src="{% static 'assets/emblema nacional.png' %}" style="height: 40px; margin-bottom: 4px;">
+                    <div class="fw-bold fs-10" style="line-height: 1.1; letter-spacing: 0.5px; font-weight: 900;">PROGRAMA NASIONAL KONTROLA TUBERKULOZU</div>
+                    <div class="fw-bold fs-9" style="letter-spacing: 0.8px; font-style: italic; margin-top: 2px;">KARTAUN TRATAMENTU TUBERKULOZU</div>
+                </div>
+                <div style="width: 65px; text-align: center;"><img src="{% static 'assets/logo end tb.png' %}" style="height: 60px;"></div>
+            </div>
+            <div style="width: 150px;"></div>
+        </div>
+
+        <!-- Section 1: Patient Info & Smear Table -->
+        <div style="display: flex; gap: 15px; margin-bottom: 10px; align-items: flex-start;">
+            <div style="flex: 0 0 53%; max-width: 53%;">
+                <div class="flex-row-dotted">
+                    <span class="fs-8">Naran Kompletu:</span> 
+                    <div class="flex-fill-dotted fw-bold fs-9" style="max-width: 70%;">{{ case.patient.full_name }}</div>
+                </div>
+                <div style="display: flex; gap: 10px; margin-bottom: 3px;">
+                    <div class="flex-row-dotted" style="flex: 1;">
+                        <span class="fs-8">Sexu:</span> 
+                        <div class="flex-fill-dotted" style="max-width: 110px;">
+                            <label class="fs-8" style="margin: 0;"><input type="checkbox" {% if case.patient.gender == 'M' %}checked{% endif %} class="form-checkbox"> Mane</label> 
+                            <label class="fs-8 ms-2" style="margin: 0;"><input type="checkbox" {% if case.patient.gender == 'F' %}checked{% endif %} class="form-checkbox"> Feto</label>
+                        </div>
+                    </div>
+                    <div class="flex-row-dotted" style="width: 90px;">
+                        <span class="fs-8">Idade:</span> 
+                        <div class="flex-fill-dotted fw-bold fs-9 text-center">{{ case.patient.age }}</div>
+                    </div>
+                </div>
+                <div class="flex-row-dotted">
+                    <span class="fs-8">Hela Fatin kompletu no numeru telefonu:</span> 
+                    <div class="flex-fill-dotted fs-8" style="max-width: 60%;">{{ case.patient.full_address }}</div>
+                </div>
+                <div class="flex-row-dotted">
+                    <span class="fs-8">Naran, hela fatin kompletu no numeru telefonu kontaktu pesoal:</span> 
+                    <div class="flex-fill-dotted fs-8" style="max-width: 45%;">
+                        <input type="text" name="card_p_contact" class="dotted-line-input fs-8" value="{{ case.card_data.p_contact|default:'' }}" style="width: 100%; border-bottom: none; padding: 0;">
+                    </div>
+                </div>
+                <div class="flex-row-dotted">
+                    <span class="fs-8">Vizita uma inisia husi no data:</span> 
+                    <div class="flex-fill-dotted fs-8" style="max-width: 65%;">
+                        <input type="text" name="card_p_visit" class="dotted-line-input fs-8" value="{{ case.card_data.p_visit|default:'' }}" style="width: 100%; border-bottom: none; padding: 0;">
+                    </div>
+                </div>
+                <div class="flex-row-dotted">
+                    <span class="fs-7">Istoria Tratamentu TB iha tempu uluk & Durasaun (se Sim, Numeru Rej. TB):</span> 
+                    <div class="flex-fill-dotted fs-7" style="max-width: 42%;">
+                        <input type="text" name="card_p_history" class="dotted-line-input fs-7" value="{{ case.card_data.p_history|default:'' }}" style="width: 100%; border-bottom: none; padding: 0;">
+                    </div>
+                </div>
+            </div>
+            <div style="flex: 0 0 47%; max-width: 47%;">
+                <div class="flex-row-dotted">
+                    <span class="fs-8">Numeru Rejistu TB / Tinan:</span> 
+                    <div class="flex-fill-dotted fw-bold fs-9 text-center">{{ case.tb_registration_number }}</div>
+                </div>
+                <div class="flex-row-dotted">
+                    <span class="fs-8">Naran fasilidade saude ne'ebe halo tratamentu:</span> 
+                    <div class="flex-fill-dotted fs-8">
+                        <input type="text" name="card_fac_name" class="dotted-line-input fs-8" value="{{ case.card_data.fac_name|default:'' }}" style="width: 100%; border-bottom: none; padding: 0;">
+                    </div>
+                </div>
+                <div class="flex-row-dotted" style="margin-bottom: 5px;">
+                    <span class="fs-8">Naran & Nu. telefonu fornese dor DOT:</span> 
+                    <div class="flex-fill-dotted fs-8">
+                        <input type="text" name="card_dot_info" class="dotted-line-input fs-8" value="{{ case.card_data.dot_info|default:'' }}" style="width: 100%; border-bottom: none; padding: 0;">
+                    </div>
+                </div>
+                
+                <table class="tb-table fs-7" style="margin-bottom: 5px; table-layout: fixed;">
+                    <tr>
+                        <td class="bg-light-grey" style="width: 32%; font-style: italic; font-weight: bold;">Pozisaun fornese dor DOT:</td>
+                        <td style="width: 4%; text-align: center;"><input type="checkbox" name="card_dot_pub" {% if case.card_data.dot_pub %}checked{% endif %} class="form-checkbox"></td>
+                        <td style="width: 18%; font-size: 6.5pt; line-height: 1.1;">Pesoal saude<br>Matan Di'ok</td>
+                        <td style="width: 4%; text-align: center;"><input type="checkbox" name="card_dot_priv" {% if case.card_data.dot_priv %}checked{% endif %} class="form-checkbox"></td>
+                        <td style="width: 18%; font-size: 6.5pt; line-height: 1.1;">Staff NGO<br>Klinika Privada</td>
+                        <td style="width: 4%; text-align: center;"><input type="checkbox" name="card_dot_psf" {% if case.card_data.dot_psf %}checked{% endif %} class="form-checkbox"></td>
+                        <td style="width: 20%; font-size: 6.5pt; line-height: 1.1;">PSF<br>Matan Di'ok</td>
+                    </tr>
+                </table>
+
+                <table class="tb-table fs-7">
+                    <tr class="bg-light-grey fw-bold text-center">
+                        <td width="15%">Fulan</td><td colspan="3">Meur Tasak Mikroskopiu</td><td colspan="3">Xpert/Ultra MTB/RIF</td><td width="15%">(kg)</td>
+                    </tr>
+                    <tr class="text-center fs-6 bg-light-grey">
+                        <td></td><td>Data</td><td>No. Lab</td><td>Res</td><td>Data</td><td>No. Lab</td><td>Res</td><td>Iain Todan</td>
+                    </tr>
+                    <tr style="height: 18px;">
+                        <td class="fw-bold text-center">Inisia</td>
+                        <td><input type="text" name="card_s_in_d" value="{{ case.card_data.s_in_d|default:pulled_data.lab_date|date:'Y-m-d'|default:'' }}"></td>
+                        <td><input type="text" name="card_s_in_l" value="{{ case.card_data.s_in_l|default:pulled_data.lab_no|default:'' }}"></td>
+                        <td><input type="text" name="card_s_in_r" value="{{ case.card_data.s_in_r|default:pulled_data.afb_result|default:'' }}"></td>
+                        <td><input type="text" name="card_x_in_d" value="{{ case.card_data.x_in_d|default:'' }}"></td>
+                        <td><input type="text" name="card_x_in_l" value="{{ case.card_data.x_in_l|default:'' }}"></td>
+                        <td><input type="text" name="card_x_in_r" value="{{ case.card_data.x_in_r|default:'' }}"></td>
+                        <td><input type="text" name="card_w_in" value="{{ case.card_data.w_in|default:case.initial_weight|default:'' }}"></td>
+                    </tr>
+                    <tr style="height: 18px;">
+                        <td class="fw-bold text-center">Fulan 2</td>
+                        <td><input type="text" name="card_s_m2_d" value="{{ case.card_data.s_m2_d|default:'' }}"></td>
+                        <td><input type="text" name="card_s_m2_l" value="{{ case.card_data.s_m2_l|default:'' }}"></td>
+                        <td><input type="text" name="card_s_m2_r" value="{{ case.card_data.s_m2_r|default:'' }}"></td>
+                        <td class="bg-light-green"></td><td class="bg-light-green"></td><td class="bg-light-green"></td>
+                        <td><input type="text" name="card_w_m2" value="{{ case.card_data.w_m2|default:'' }}"></td>
+                    </tr>
+                    <tr style="height: 18px;">
+                        <td class="fw-bold text-center">Fim tratamentu</td>
+                        <td><input type="text" name="card_s_fi_d" value="{{ case.card_data.s_fi_d|default:'' }}"></td>
+                        <td><input type="text" name="card_s_fi_l" value="{{ case.card_data.s_fi_l|default:'' }}"></td>
+                        <td><input type="text" name="card_s_fi_r" value="{{ case.card_data.s_fi_r|default:'' }}"></td>
+                        <td class="bg-light-green"></td><td class="bg-light-green"></td><td class="bg-light-green"></td>
+                        <td><input type="text" name="card_w_fi" value="{{ case.card_data.w_fi|default:'' }}"></td>
+                    </tr>
+                </table>
+                <div class="fs-8 italic mt-1" style="white-space: nowrap; text-align: center;">
+                    <div class="color-box-green" style="width: 14px; height: 14px; margin-right: 5px;"></div>
+                    <span>Kor matak aplika deit ba follow up examinasaun meur tasak mikroskopiu positivu</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Middle Row (Classification, Ray-X, HIV) -->
+        <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+            <div style="width: 32%;">
+                <div class="rounded-box">
+                    <div class="box-title">Klasifikasaun Moras</div>
+                    <div style="padding: 3px 10px; line-height: 1.2;">
+                        <label class="fs-7"><input type="checkbox" name="card_cl_pul"
+                            {% if case.classification == 'P' or case.card_data.cl_pul %}checked
+                            {% elif pulled_data.suggested_classification == 'P' %}checked
+                            {% endif %} class="form-checkbox"> Pulmonar</label><br>
+                        <label class="fs-7"><input type="checkbox" name="card_cl_ep"
+                            {% if case.classification == 'EP' or case.card_data.cl_ep %}checked
+                            {% elif pulled_data.suggested_classification == 'EP' %}checked
+                            {% endif %} class="form-checkbox"> Ekstra-Pulmuar</label>
+                        <span class="fs-7 ms-2">Site: <input type="text" name="card_cl_site" class="dotted-line-input"
+                            value="{{ case.card_data.cl_site|default:case.site_of_eptb|default:pulled_data.suggested_site|default:'' }}"
+                            style="width: 100px;"></span>
+                        {% if pulled_data.suggested_classification and not case.card_data.cl_pul and not case.card_data.cl_ep %}
+                        <div class="no-print" style="margin-top:3px; padding:2px 4px; background:#fffde7; border:1px solid #f9a825; border-radius:3px;">
+                            <span style="font-size:6pt; color:#795548;">
+                                ⚕ Auto-detect husi Dokter OPD/IGD:
+                                <strong>{{ pulled_data.visit_diag_code }}</strong> – {{ pulled_data.visit_diag_name }}
+                                ({{ pulled_data.visit_diag_date|date:"d/m/Y" }})
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="rounded-box">
+                    <div class="box-title">Tipu pasiente</div>
+                    <div style="padding: 3px 10px; display: grid; grid-template-columns: 1fr 1.2fr; gap: 1px; line-height: 1.3;">
+                        <div>
+                            <label class="fs-7 d-block"><input type="checkbox" name="card_tp_foun" {% if case.patient_type == 'FOUN' or case.card_data.tp_foun %}checked{% endif %} class="form-checkbox"> Foun</label>
+                            <label class="fs-7 d-block"><input type="checkbox" name="card_tp_relap" {% if case.patient_type == 'RELAPSU' or case.card_data.tp_relap %}checked{% endif %} class="form-checkbox"> Rekaida</label>
+                            <label class="fs-7 d-block"><input type="checkbox" name="card_tp_falla" {% if case.patient_type == 'FALHA' or case.card_data.tp_falla %}checked{% endif %} class="form-checkbox"> T. Hafoin Falla</label>
+                        </div>
+                        <div>
+                            <label class="fs-7 d-block"><input type="checkbox" name="card_tp_lakon" {% if case.patient_type == 'DEPOIS_LAKON' or case.card_data.tp_lakon %}checked{% endif %} class="form-checkbox"> Depois lakon husi FU</label>
+                            <label class="fs-7 d-block"><input type="checkbox" name="card_tp_seluk" {% if case.patient_type == 'OUTRU' or case.card_data.tp_seluk %}checked{% endif %} class="form-checkbox"> Seluk</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="width: 25%;">
+                <div class="rounded-box" style="height: 100%;">
+                    <div class="box-title">Ray-X iha Inisia</div>
+                    <div style="padding: 5px 8px;">
+                        <div class="fs-7">Data: <input type="text" name="card_xr_d" value="{{ case.card_data.xr_d|default:pulled_data.xray_date|date:'Y-m-d'|default:'' }}" class="dotted-line-input" style="width: 70px;"></div>
+                        <div class="mt-2">
+                            <label class="fs-7 d-block mb-1"><input type="checkbox" name="card_xr_n" {% if case.card_data.xr_n or not pulled_data.xray_abnormal and pulled_data.xray_result %}checked{% endif %} class="form-checkbox"> ( - ) Normal</label>
+                            <label class="fs-7 d-block mb-1"><input type="checkbox" name="card_xr_ab" {% if case.card_data.xr_ab or pulled_data.xray_abnormal %}checked{% endif %} class="form-checkbox"> ( + ) Abnormalidade</label>
+                            <label class="fs-7 d-block"><input type="checkbox" name="card_xr_lae" {% if case.card_data.xr_lae %}checked{% endif %} class="form-checkbox"> Lae (La 'ia fuan)</label>
+                        </div>
+                        {% if pulled_data.xray_result and not case.card_data.xr_d %}
+                        <div style="font-size: 5pt; color: #d32f2f; margin-top: 2px;">
+                            <i class="fas fa-info-circle"></i> Sugest: {{ pulled_data.xray_result|truncatechars:40 }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div style="flex-grow: 1;">
+                <table class="tb-table fs-7">
+                    <tr class="bg-light-grey fw-bold text-center"><td colspan="3">TB / HIV</td></tr>
+                    <tr class="text-center fs-6 bg-light-grey"><td></td><td>Data</td><td>Rezultadu</td></tr>
+                    <tr style="height: 16px;">
+                        <td class="ps-1">Teste HIV</td>
+                        <td><input type="text" name="card_h_t_d" value="{{ case.card_data.h_t_d|default:pulled_data.hiv_date|date:'Y-m-d'|default:'' }}"></td>
+                        <td><input type="text" name="card_h_t_r" value="{{ case.card_data.h_t_r|default:pulled_data.hiv_result|default:'' }}"></td>
+                    </tr>
+                    <tr style="height: 16px;">
+                        <td class="ps-1">Hahu CPT</td>
+                        <td><input type="text" name="card_h_c_d" value="{{ case.card_data.h_c_d|default:'' }}"></td>
+                        <td class="bg-dark-grey"></td>
+                    </tr>
+                    <tr style="height: 16px;">
+                        <td class="ps-1">Hahu ART</td>
+                        <td><input type="text" name="card_h_a_d" value="{{ case.card_data.h_a_d|default:'' }}"></td>
+                        <td class="bg-dark-grey"></td>
+                    </tr>
+                    <tr style="height: 16px;">
+                        <td class="ps-1">Rezultadu CD4</td>
+                        <td><input type="text" name="card_h_cd_d" value="{{ case.card_data.h_cd_d|default:'' }}"></td>
+                        <td><input type="text" name="card_h_cd_r" value="{{ case.card_data.h_cd_r|default:'' }}"></td>
+                    </tr>
+                    <tr style="height: 16px;">
+                        <td class="ps-1">No. Rej ART & Data</td>
+                        <td colspan="2"><input type="text" name="card_h_art_reg" value="{{ case.card_data.h_art_reg|default:'' }}"></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 3: Phase I -->
+        <div class="fw-bold fs-9 mt-1 mb-1">1. FASE INTENSIVU (Data) <input type="text" name="card_p1_start" value="{{ case.card_data.p1_start|default:'' }}" class="dotted-line-input" style="width: 150px;"></div>
+        <div class="text-center fs-8 fw-bold mb-1">REGIMENTU NO DOSAGEM (Sirklu ho apropriadu ba kategoria iha kraik)</div>
+        
+        <datalist id="tb_medicine_list">
+            {% for med in tb_medicines %}
+            <option value="{{ med.display_name }}"></option>
+            {% endfor %}
+        </datalist>
+
+        <div style="display: flex; gap: 15px; margin-bottom: 8px;">
+            <div class="rounded-box" style="flex: 1;">
+                <div class="box-title">Kazu Foun (lor-loron) ba fulan rua</div>
+                <div class="text-center p-1 fs-9 fw-bold">RHZE (150/75/275/400 mg)</div>
+                <div class="text-center border-top p-1">
+                    <input type="text" name="card_p1_reg_f" list="tb_medicine_list" value="{{ case.card_data.p1_reg_f|default:'' }}" placeholder="Hili Aimoruk...">
+                    <div style="margin-top: 2px; border-top: 1px dashed #ccc; padding-top: 2px;">
+                        <span class="fs-6">Qty:</span> <input type="text" name="card_p1_qty_f" value="{{ case.card_data.p1_qty_f|default:'' }}" style="width: 60px; border-bottom: 1px dotted #000;" placeholder="ex: 3 tab">
+                    </div>
+                </div>
+            </div>
+            <div class="rounded-box" style="flex: 1;">
+                <div class="box-title">Kazu Pediatria (lor-loron) ba fulan rua</div>
+                <div class="text-center p-1 fs-9 fw-bold">RHZ (75/50/150 mg)</div>
+                <div class="text-center border-top p-1">
+                    <input type="text" name="card_p1_reg_p" list="tb_medicine_list" value="{{ case.card_data.p1_reg_p|default:'' }}" placeholder="Hili Aimoruk...">
+                    <div style="margin-top: 2px; border-top: 1px dashed #ccc; padding-top: 2px;">
+                        <span class="fs-6">Qty:</span> <input type="text" name="card_p1_qty_p" value="{{ case.card_data.p1_qty_p|default:'' }}" style="width: 60px; border-bottom: 1px dotted #000;" placeholder="ex: 2 tab">
+                    </div>
+                </div>
+            </div>
+            <div class="rounded-box" style="flex: 1.4; overflow: hidden;">
+                <div class="box-title">Diabetes Status</div>
+                <table class="tb-table fs-7" style="border: none; table-layout: fixed;">
+                    <tr class="text-center bg-light-grey fw-bold"><td width="42%">FBS</td><td width="58%">RBS</td></tr>
+                    <tr class="text-center fs-6" style="height: 32px; line-height: 1.1;">
+                        <td style="padding: 1px;">>=126 mg/ dl or<br>mmol (>=7)</td>
+                        <td style="padding: 1px;">At least 2 hrs after meal, >=200mg/ dl or >=11 mmol</td>
+                    </tr>
+                    <tr style="height: 20px;">
+                        <td><input type="text" name="card_db_fbs" value="{{ case.card_data.db_fbs|default:'' }}"></td>
+                        <td>
+                            <input type="text" name="card_db_rbs" value="{{ case.card_data.db_rbs|default:pulled_data.glucose_value|default:'' }}" 
+                            {% if pulled_data.glucose_value and not case.card_data.db_rbs %}style="background:#fffde7;" title="Pulled from latest lab"{% endif %}>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px; padding: 0 5px;">
+            <div class="legend-text" style="font-size: 7.5pt;">R = Rifampicina &nbsp;&nbsp;&nbsp;&nbsp; H = Isoniazida &nbsp;&nbsp;&nbsp;&nbsp; Z = Pirazinamida &nbsp;&nbsp;&nbsp;&nbsp; E = Etambutol</div>
+        </div>
+        
+        <div class="d-flex justify-content-between align-items-end ps-1" style="border-top: 1px solid #ccc; padding-top: 2px; margin: 0 auto 6px auto; width: 940px;">
+            <div class="fs-6 italic pe-2">Tau marka (✔) iha loron ne'ebe pasiente hemu aimoruk ho observasaun direkta. Tau marka (-) iha loron ne'ebe pasiente hemu aimoruk la ho observasaun direkta. Tau marka (O) se pasiente la hemu aimoruk</div>
+            <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1 no-print" onclick="showNextRow('phase1Table')" title="Aumenta Fulan"><i class="fas fa-plus"></i></button>
+        </div>
+
+        <table class="grid-table" id="phase1Table" style="width: 940px; table-layout: fixed; margin: 0 auto;">
+            <colgroup>
+                <col style="width: 90px;">
+                {% for i in "1,2,3,4,5,6,7,8,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31"|split:"," %}<col style="width: 22px;">{% endfor %}
+                <col style="width: 75px;">
+                <col style="width: 95px;">
+                <col style="width: 25px;" class="no-print">
+            </colgroup>
+            <thead>
+                <tr class="bg-light-grey">
+                    <th rowspan="2">Fulan / Tinan</th>
+                    <th colspan="31">Data</th>
+                    <th colspan="2" style="font-size: 6pt;">Total Dosis ne'ebe hemu</th>
+                    <th rowspan="2" class="no-print" style="font-size: 5pt; font-weight: bold; vertical-align: middle;">Action</th>
+                </tr>
+                <tr class="bg-light-grey fs-6">
+                    {% for d in "01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31"|split:"," %}
+                    <th>{{ d }}</th>
+                    {% endfor %}
+                    <th style="font-size: 5.5pt; line-height: 1; vertical-align: middle;">Fulan<br>Ne'e</th>
+                    <th style="font-size: 5.5pt; line-height: 1; vertical-align: middle;">Kumulativu</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in "1,2,3,4,5,6,7,8"|split:"," %}
+                <tr>
+                    <td><input type="month" name="card_m1_r{{ r }}" value="{{ case.card_data|get_item:'m1_r'|add:r|default:'' }}"></td>
+                    {% for d in "01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31"|split:"," %}
+                    {% with key="d1_r"|add:r|add:"_d"|add:d %}<td><input type="text" name="card_{{ key }}" class="dose-input" onclick="cycleMark(this)" readonly value="{{ case.card_data|get_item:key|default:'' }}"></td>{% endwith %}
+                    {% endfor %}
+                    {% with tk="t1_r"|add:r %}<td><input type="text" name="card_{{ tk }}" value="{{ case.card_data|get_item:tk|default:'' }}"></td>{% endwith %}
+                    {% with ck="c1_r"|add:r %}<td><input type="text" name="card_{{ ck }}" value="{{ case.card_data|get_item:ck|default:'' }}"></td>{% endwith %}
+                    <td class="text-center no-print"><button type="button" class="btn-delete-row" onclick="deleteRow(this)" title="Hadia/Clear row">&#x2715;</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- PAGE 2 (BACK) -->
+    <div class="tb-form-container page-break">
+        <div class="fw-bold fs-9 mb-1">II. FASE KONTINUASAUN</div>
+        <div class="text-center fs-8 fw-bold mb-1">Sirklu ho apropriadu ba kategoria iha kraik</div>
+
+        <div style="display: flex; gap: 15px; margin-bottom: 8px;">
+            <div class="rounded-box" style="flex: 1;">
+                <div class="box-title">Kazu Foun (lor-loron) ba fulan 4</div>
+                <div class="text-center p-2 fs-9 fw-bold">RH (150/75 mg)</div>
+                <div class="text-center border-top p-1">
+                    <input type="text" name="card_p2_reg_f" list="tb_medicine_list" value="{{ case.card_data.p2_reg_f|default:'' }}" placeholder="Hili Aimoruk...">
+                    <div style="margin-top: 2px; border-top: 1px dashed #ccc; padding-top: 2px;">
+                        <span class="fs-6">Qty:</span> <input type="text" name="card_p2_qty_f" value="{{ case.card_data.p2_qty_f|default:'' }}" style="width: 60px; border-bottom: 1px dotted #000;" placeholder="ex: 2 tab">
+                    </div>
+                </div>
+            </div>
+            <div class="rounded-box" style="flex: 1;">
+                <div class="box-title">Kazu Pediatria (lor-loron) ba fulan 4</div>
+                <div class="text-center p-2 fs-9 fw-bold">RH (75/50 mg)</div>
+                <div class="text-center border-top p-1">
+                    <input type="text" name="card_p2_reg_p" list="tb_medicine_list" value="{{ case.card_data.p2_reg_p|default:'' }}" placeholder="Hili Aimoruk...">
+                    <div style="margin-top: 2px; border-top: 1px dashed #ccc; padding-top: 2px;">
+                        <span class="fs-6">Qty:</span> <input type="text" name="card_p2_qty_p" value="{{ case.card_data.p2_qty_p|default:'' }}" style="width: 60px; border-bottom: 1px dotted #000;" placeholder="ex: 1 tab">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-end ps-1" style="border-top: 1px solid #ccc; padding-top: 2px; margin: 0 auto 6px auto; width: 940px;">
+            <div class="fs-6 italic pe-2">Tau marka (✔) iha loron ne'ebe pasiente hemu aimoruk ho observasaun direkta. Tau marka (-) iha loron ne'ebe pasiente hemu aimoruk la ho observasaun direkta. Tau marka (O) se pasiente la hemu aimoruk</div>
+            <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1 no-print" onclick="showNextRow('phase2Table')" title="Aumenta Fulan"><i class="fas fa-plus"></i></button>
+        </div>
+
+        <table class="grid-table" id="phase2Table" style="width: 940px; table-layout: fixed; margin: 0 auto;">
+            <colgroup>
+                <col style="width: 90px;">
+                {% for i in "1,2,3,4,5,6,7,8,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31"|split:"," %}<col style="width: 22px;">{% endfor %}
+                <col style="width: 75px;">
+                <col style="width: 95px;">
+                <col style="width: 25px;" class="no-print">
+            </colgroup>
+            <thead>
+                <tr class="bg-light-grey">
+                    <th rowspan="2">Fulan / Tinan</th>
+                    <th colspan="31">Data</th>
+                    <th colspan="2" style="font-size: 6pt;">Total Dosis ne'ebe hemu</th>
+                    <th rowspan="2" class="no-print" style="font-size: 5pt; font-weight: bold; vertical-align: middle;">Action</th>
+                </tr>
+                <tr class="bg-light-grey fs-6">
+                    {% for d in "01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31"|split:"," %}
+                    <th>{{ d }}</th>
+                    {% endfor %}
+                    <th style="font-size: 5.5pt; line-height: 1; vertical-align: middle;">Fulan<br>Ne'e</th>
+                    <th style="font-size: 5.5pt; line-height: 1; vertical-align: middle;">Kumulativu</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in "1,2,3,4,5,6,7,8,9,10,11,12"|split:"," %}
+                <tr>
+                    <td><input type="month" name="card_m2_r{{ r }}" value="{{ case.card_data|get_item:'m2_r'|add:r|default:'' }}"></td>
+                    {% for d in "01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31"|split:"," %}
+                    {% with key="d2_r"|add:r|add:"_d"|add:d %}<td><input type="text" name="card_{{ key }}" class="dose-input" onclick="cycleMark(this)" readonly value="{{ case.card_data|get_item:key|default:'' }}"></td>{% endwith %}
+                    {% endfor %}
+                    {% with tk="t2_r"|add:r %}<td><input type="text" name="card_{{ tk }}" value="{{ case.card_data|get_item:tk|default:'' }}"></td>{% endwith %}
+                    {% with ck="c2_r"|add:r %}<td><input type="text" name="card_{{ ck }}" value="{{ case.card_data|get_item:ck|default:'' }}"></td>{% endwith %}
+                    <td class="text-center no-print"><button type="button" class="btn-delete-row" onclick="deleteRow(this)" title="Hadia/Clear row">&#x2715;</button></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- BOTTOM SECTIONS -->
+        <div style="display: flex; gap: 15px; margin-top: 10px;">
+            <!-- LEFT COLUMN -->
+            <div style="width: 32%;">
+                <div class="fw-bold fs-7 mb-1">Rezultadu Tratamentu (marka ✔ ida)</div>
+                <table class="outcome-table">
+                    <colgroup>
+                        <col style="width: 25px;">
+                        <col>
+                        <col style="width: 90px;">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th colspan="2">Rezultadu</th>
+                            <th>Data Deside</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for opt in "Kura,Tratamentu Kompletu,Mate,Falla Tratamentu,Lakon husi Follow up,La Avalia"|split:"," %}
+                        <tr>
+                            <td class="text-center"><input type="checkbox" name="card_outcome_{{ forloop.counter }}" {% if case.card_data|get_item:'outcome_'|add:forloop.counter %}checked{% endif %}></td>
+                            <td>{{ opt }}</td>
+                            <td><input type="date" name="card_outcome_date_{{ forloop.counter }}" value="{{ case.card_data|get_item:'outcome_date_'|add:forloop.counter|default:'' }}"></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <div class="d-flex justify-content-between align-items-center mt-3 mb-1">
+                    <div class="fw-bold fs-7">Asaun Buka Tuir Pasiente ne'ebe lakon no Rezultadu</div>
+                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1 no-print" onclick="showNextRow('actionTable')"><i class="fas fa-plus"></i></button>
+                </div>
+                <table class="action-table" id="actionTable">
+                    <colgroup>
+                        <col style="width: 55px;">
+                        <col style="width: 45px;">
+                        <col>
+                        <col>
+                        <col style="width: 20px;">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Husi</th>
+                            <th>Razaun La hemu Aimoruk</th>
+                            <th>Rezultadu husi atividade ne'e</th>
+                            <th class="no-print"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i in "1,2,3,4,5,6,7,8"|split:"," %}
+                        <tr>
+                            {% with k="act_d"|add:i %}<td><input type="date" name="card_{{ k }}" value="{{ case.card_data|get_item:k|default:'' }}"></td>{% endwith %}
+                            {% with k="act_h"|add:i %}<td><input type="text" name="card_{{ k }}" value="{{ case.card_data|get_item:k|default:'' }}"></td>{% endwith %}
+                            {% with k="act_r"|add:i %}<td style="vertical-align:top;"><textarea name="card_{{ k }}" class="action-textarea" rows="1">{{ case.card_data|get_item:k|default:'' }}</textarea></td>{% endwith %}
+                            {% with k="act_rs"|add:i %}<td><input type="text" name="card_{{ k }}" value="{{ case.card_data|get_item:k|default:'' }}"></td>{% endwith %}
+                            <td class="text-center no-print"><button type="button" class="btn-delete-row" onclick="deleteRow(this)" title="Hadia/Clear row">&#x2715;</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- RIGHT COLUMN -->
+            <div style="width: 68%;">
+                <div class="fw-bold fs-7 mb-1 italic" style="text-decoration: underline;">Observasaun</div>
+                <textarea name="card_observations" style="width: 100%; height: 40px; border: none; border-bottom: 1px solid #000; background: transparent;" placeholder="Hakerek observasaun iha ne'e...">{{ case.card_data.observations|default:pulled_data.clinical_notes|default:'' }}</textarea>
+                <div style="border-bottom: 1px solid #000; height: 18px;"></div>
+
+                <div class="d-flex justify-content-between align-items-center mt-3 mb-1">
+                    <div class="fw-bold fs-7">Sreening ba kontaktu Besik (Children, Adults and PLHIV contacts)</div>
+                    <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1 no-print" onclick="showNextRow('screeningTable')"><i class="fas fa-plus"></i></button>
+                </div>
+                <table class="screening-table" id="screeningTable">
+                    <colgroup>
+                        <col style="width: 25px;">
+                        <col style="width: 140px;">
+                        <col style="width: 35px;">
+                        <col style="width: 80px;">
+                        <col style="width: 65px;">
+                        <col style="width: 65px;">
+                        <col style="width: 35px;">
+                        <col style="width: 65px;">
+                        <col style="width: 20px;">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Naran Kompletu</th>
+                            <th>Idade</th>
+                            <th>Relasaun ho Pasiente</th>
+                            <th>Data Hare</th>
+                            <th>Rezultadu</th>
+                            <th>TPT</th>
+                            <th>Tratamentu TB (S/L)</th>
+                            <th class="no-print"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i in "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20"|split:"," %}
+                        <tr>
+                            <td class="text-center">{{ i }}</td>
+                            {% with k="scr_n"|add:i %}<td><input type="text" name="card_{{ k }}" value="{{ case.card_data|get_item:k|default:'' }}"></td>{% endwith %}
+                            {% with k="scr_a"|add:i %}<td><input type="text" name="card_{{ k }}" value="{{ case.card_data|get_item:k|default:'' }}"></td>{% endwith %}
+                            {% with k="scr_r"|add:i %}<td><input type="text" name="card_{{ k }}" value="{{ case.card_data|get_item:k|default:'' }}"></td>{% endwith %}
+                            {% with k="scr_d"|add:i %}<td><input type="date" name="card_{{ k }}" value="{{ case.card_data|get_item:k|default:'' }}"></td>{% endwith %}
+                            {% with k="scr_rs"|add:i %}<td><input type="text" name="card_{{ k }}" value="{{ case.card_data|get_item:k|default:'' }}"></td>{% endwith %}
+                            {% with k="scr_t"|add:i %}<td><input type="text" name="card_{{ k }}" value="{{ case.card_data|get_item:k|default:'' }}"></td>{% endwith %}
+                            {% with k="scr_tr"|add:i %}<td><input type="text" name="card_{{ k }}" value="{{ case.card_data|get_item:k|default:'' }}"></td>{% endwith %}
+                            <td class="text-center no-print"><button type="button" class="btn-delete-row" onclick="deleteRow(this)" title="Hadia/Clear row">&#x2715;</button></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+
+                <!-- LTBI Summary (feeds into Relatorio Trimestral Block 6) -->
+                <div style="margin-top:6px; padding:4px 6px; background:#e8f5e9; border:1px solid #a5d6a7; border-radius:4px;">
+                    <div class="fw-bold fs-8 mb-1" style="color:#2e7d32;">&#128197; Rezimu Tratamentu Preventivo (3HP) — Sumariu ba Relatorio Trimestral (Block 6)</div>
+                    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:4px; font-size:7pt;">
+                        <div>
+                            <label class="fs-8 d-block">Labarik &lt;2 anus + 3HP</label>
+                            <input type="number" name="card_ltbi_child_u2" min="0" value="{{ case.card_data.ltbi_child_u2|default:'0' }}" style="width:60px; border-bottom:1px solid #000;">
+                        </div>
+                        <div>
+                            <label class="fs-8 d-block">Labarik 2-14 anus + 3HP</label>
+                            <input type="number" name="card_ltbi_child_2to14" min="0" value="{{ case.card_data.ltbi_child_2to14|default:'0' }}" style="width:60px; border-bottom:1px solid #000;">
+                        </div>
+                        <div>
+                            <label class="fs-8 d-block">Adultu Kontaktu + 3HP</label>
+                            <input type="number" name="card_ltbi_adult" min="0" value="{{ case.card_data.ltbi_adult|default:'0' }}" style="width:60px; border-bottom:1px solid #000;">
+                        </div>
+                        <div>
+                            <label class="fs-8 d-block">PLHIV + 3HP</label>
+                            <input type="number" name="card_ltbi_plhiv" min="0" value="{{ case.card_data.ltbi_plhiv|default:'0' }}" style="width:60px; border-bottom:1px solid #000;">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<script>
+    (function() {
+        function initDynamicTable(tableId, defaultRows) {
+            let table = document.getElementById(tableId);
+            if(!table) return;
+            let rows = table.querySelectorAll("tbody tr");
+            
+            for (let i = defaultRows; i < rows.length; i++) {
+                let row = rows[i];
+                let inputs = row.querySelectorAll("input");
+                let hasData = false;
+                inputs.forEach(input => {
+                    if (input.type === 'checkbox' && input.checked) hasData = true;
+                    if (input.type !== 'checkbox' && input.value.trim() !== '') hasData = true;
+                });
+                if (!hasData) {
+                    row.style.display = "none";
+                    row.dataset.hidden = "true";
+                }
+            }
+        }
+        
+        initDynamicTable("actionTable", 2);
+        initDynamicTable("screeningTable", 2);
+        initDynamicTable("phase1Table", 2);
+        initDynamicTable("phase2Table", 4);
+    })();
+
+    function showNextRow(tableId) {
+        let table = document.getElementById(tableId);
+        let hiddenRow = table.querySelector("tbody tr[data-hidden='true']");
+        if (hiddenRow) {
+            hiddenRow.style.display = "";
+            hiddenRow.dataset.hidden = "false";
+        } else {
+            alert("Maksimal baris sesuai formulir telah tercapai.");
+        }
+    }
+
+    function autoResize(el) {
+        el.style.height = 'auto';
+        el.style.height = el.scrollHeight + 'px';
+    }
+
+    // Init all auto-resize textareas on load
+    document.querySelectorAll('.action-textarea').forEach(function(ta) {
+        autoResize(ta);
+        ta.addEventListener('input', function() { autoResize(this); });
+    });
+
+    function deleteRow(btn) {
+        let row = btn.closest('tr');
+        let table = row.closest('table');
+        
+        // Clear all inputs and textareas in this row
+        row.querySelectorAll('input, textarea').forEach(function(inp) {
+            if (inp.type === 'checkbox') {
+                inp.checked = false;
+            } else {
+                inp.value = '';
+            }
+        });
+        
+        // Hide the row and re-queue it as available for showNextRow
+        row.style.display = 'none';
+        row.dataset.hidden = 'true';
+        
+        // Recalculate totals if it's a phase table
+        if (table.id.startsWith('phase')) {
+            recalcTable(table);
+        }
+    }
+
+    function recalcTable(table) {
+        let rows = table.querySelectorAll('tbody tr');
+        let cumulative = 0;
+        rows.forEach(r => {
+            if (r.dataset.hidden === "true") return;
+            
+            // Fulan Ne'e and Kumulativu are now the 3rd and 2nd to last due to the delete button column
+            let tInput = r.querySelector('td:nth-last-child(3) input'); 
+            let cInput = r.querySelector('td:nth-last-child(2) input');
+            
+            if (tInput && tInput.value) {
+                cumulative += parseInt(tInput.value) || 0;
+                if (cInput) cInput.value = cumulative > 0 ? cumulative : '';
+            }
+        });
+    }
+
+    function cycleMark(el) {
+        const marks = ['', '✔', '-', '0'];
+        let idx = marks.indexOf(el.value);
+        el.value = marks[(idx + 1) % marks.length];
+        
+        // Auto-calculate Fulan Ne'e (Total for this month)
+        let row = el.closest('tr');
+        let doses = row.querySelectorAll('.dose-input');
+        let total = 0;
+        doses.forEach(d => {
+            if (d.value === '✔' || d.value === '-') {
+                total++;
+            }
+        });
+        
+        let totalInput = row.querySelector('td:nth-last-child(3) input');
+        if (totalInput) {
+            totalInput.value = total > 0 ? total : '';
+        }
+        
+        // Auto-calculate Kumulativu (Cumulative total for the table)
+        let table = el.closest('table');
+        recalcTable(table);
+    }
+</script>
+
+{% endblock %}

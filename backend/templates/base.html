@@ -272,8 +272,10 @@
             
             
             {% if perms.patients.view_menu_patients %}
-            <li><a href="{% url 'reception' %}"><i class="bi bi-search"></i> {% trans "Reception & Registration" %}</a></li>
-            <li><a href="{% url 'patient_list' %}"><i class="bi bi-people"></i> {% trans "Patients List" %}</a></li>
+            <li><a href="{% url 'reception' %}"><i class="bi bi-people-fill"></i> {% trans "Reception Dashboard" %}</a></li>
+            {% if is_admin or not profile.is_tb_staff and not profile.is_hiv_staff and dept != "DENTAL" %}
+            <li><a href="{% url 'patient_list' %}"><i class="bi bi-person-lines-fill"></i> {% trans "Patient List" %}</a></li>
+            {% endif %}
             {% endif %}
             
             {% if is_admin or dept == 'ADM' %}
@@ -294,6 +296,7 @@
             <li><a href="{% url 'emergency_direct_registration' %}" class="text-info"><i class="bi bi-person-plus-fill"></i> {% trans "Emergency Registration" %}</a></li>
             <li><a href="{% url 'emergency_triage_dashboard' %}" class="text-warning"><i class="bi bi-clipboard-check"></i> {% trans "Emergency Triage" %}</a></li>
             <li><a href="{% url 'emergency_dashboard' %}" class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> {% trans "Emergency Room (ER)" %}</a></li>
+            <li><a href="{% url 'department_completed_list' %}?dept=emergency" class="ps-5 small opacity-75"><i class="bi bi-clock-history"></i> {% trans "Emergency Visit History" %}</a></li>
             {% endif %}
             
             {% if is_admin or dept == 'RJ' %}
@@ -315,10 +318,20 @@
                 <li><a href="{% url 'medicine_list' %}" class="ps-5 small text-info"><i class="bi bi-box-seam"></i> {% trans "Stock Aimoruk ARV" %}</a></li>
                 {% endif %}
                 {% if is_admin or dept == 'TB' or perms.medical_records.view_menu_specialist_tb %}
-                <li><a href="{% url 'doctor_dashboard' %}?room=TB"><i class="bi bi-lungs"></i> {% trans "Specialist: TB" %}</a></li>
-                <li><a href="{% url 'department_completed_list' %}?dept=TB" class="ps-5 small opacity-75"><i class="bi bi-clock-history"></i> {% trans "TB Visit History" %}</a></li>
-                <li><a href="{% url 'pharmacy_dashboard' %}" class="ps-5 small text-info"><i class="bi bi-capsule-pill"></i> {% trans "Mini Farmásia (Distribui)" %}</a></li>
-                <li><a href="{% url 'medicine_list' %}" class="ps-5 small text-info"><i class="bi bi-box-seam"></i> {% trans "Stock Aimoruk TB" %}</a></li>
+                <li class="sb-sec text-danger opacity-75">{% trans "TB PROGRAM (DOTS)" %}</li>
+                <li><a href="{% url 'doctor_dashboard' %}?room=TB"><i class="bi bi-lungs"></i> {% trans "TB Doctor Dashboard" %}</a></li>
+                <li><a href="{% url 'tb_treatment_dashboard' %}" class="fw-bold text-white bg-danger bg-opacity-25"><i class="bi bi-card-checklist text-danger"></i> {% trans "TB Treatment (DOTS)" %}</a></li>
+                <li><a href="{% url 'patient_list' %}?dept=TB" class="ps-5 small opacity-75"><i class="bi bi-people"></i> {% trans "TB Patient List" %}</a></li>
+                <li><a href="{% url 'tb_screening_list' %}" class="ps-5 small" style="color: #0dcaf0;"><i class="bi bi-geo-fill"></i> {% trans "TB Outreach (Field)" %}</a></li>
+                <li><a href="{% url 'tb_trimestral_report' %}" class="ps-5 small" style="color: #ffc107;"><i class="bi bi-bar-chart-line-fill"></i> {% trans "Relatorio Trimestral TB" %}</a></li>
+                
+                {% if perms.pharmacy.view_menu_tb_pharmacy or is_admin %}
+                <li><a href="{% url 'pharmacy_dashboard' %}" class="ps-5 small text-info"><i class="bi bi-capsule-pill"></i> {% trans "TB Mini Pharmacy" %}</a></li>
+                {% endif %}
+                {% if perms.pharmacy.view_menu_tb_stock or is_admin %}
+                <li><a href="{% url 'medicine_list' %}?dept=TB" class="ps-5 small text-info"><i class="bi bi-box-seam"></i> {% trans "TB Drug Stock" %}</a></li>
+                <li><a href="{% url 'stock_entry_list' %}" class="ps-5 small text-info"><i class="bi bi-plus-square"></i> {% trans "Add TB Stock Entry" %}</a></li>
+                {% endif %}
                 {% endif %}
                 {% if is_admin or dept == 'DENTAL' or perms.medical_records.view_menu_specialist_dental %}
                 <li><a href="{% url 'doctor_dashboard' %}?room=DENTAL"><i class="bi bi-emoji-smile"></i> {% trans "Specialist: Dental" %}</a></li>
@@ -349,11 +362,17 @@
         <ul class="sb-nav">
             {% if is_admin or dept == 'LAB' or dept == 'LABORATORY' %}
             <li><a href="{% url 'lab_dashboard' %}"><i class="bi bi-eyedropper"></i> {% trans "Laboratory" %}</a></li>
+            <li><a href="{% url 'lab_patient_list' %}" class="ps-4 small"><i class="bi bi-person-lines-fill"></i> {% trans "Lab Patient List" %}</a></li>
             <li><a href="{% url 'pathology_dashboard' %}"><i class="bi bi-droplet-half"></i> {% trans "Pathology" %}</a></li>
+            <li><a href="{% url 'department_completed_list' %}?dept=LAB" class="ps-5 small opacity-75"><i class="bi bi-clock-history"></i> {% trans "Lab Visit History" %}</a></li>
             {% endif %}
 
             {% if is_admin or dept == 'FAR' or dept == 'PHA' or dept == 'PHARMACY' %}
-            <li><a href="{% url 'pharmacy_dashboard' %}"><i class="bi bi-capsule-pill"></i> {% trans "Pharmacy" %}</a></li>
+                {% if dept != 'TB' and dept != 'HIV' and dept != 'DENTAL' %}
+                <li><a href="{% url 'pharmacy_dashboard' %}"><i class="bi bi-capsule-pill"></i> {% trans "Pharmacy" %}</a></li>
+                <li><a href="{% url 'pharmacy_dispensing_log' %}" class="ps-5 small"><i class="bi bi-journal-text"></i> {% trans "Dispensing Log (Reports)" %}</a></li>
+                <li><a href="{% url 'department_completed_list' %}?dept=FAR" class="ps-5 small opacity-75"><i class="bi bi-clock-history"></i> {% trans "Pharmacy Visit History" %}</a></li>
+                {% endif %}
             {% endif %}
 
             {% if is_admin or dept == 'RAD' or dept == 'RADIOLOGY' %}
@@ -366,14 +385,14 @@
         {% if perms.medical_records.view_visit or is_admin or dept == 'ADM' %}
         <div class="sb-sec">{% trans "REPORTS & ANALYTICS" %}</div>
         <ul class="sb-nav">
-            {% if is_admin or dept != 'HIV' and dept != 'NUTRISI' %}
+            {% if is_admin or dept == 'ADM' or dept == 'RJ' %}
             <li><a href="{% url 'department_completed_list' %}"><i class="bi bi-clock-history"></i> {% trans "Visit History" %}</a></li>
             {% endif %}
             {% if is_admin or dept == 'RJ' or dept == 'ADM' %}
             <li><a href="{% url 'disease_statistics_report' %}"><i class="bi bi-bar-chart-line"></i> {% trans "Disease Statistics" %}</a></li>
             <li><a href="{% url 'geo_dashboard' %}"><i class="bi bi-geo-alt-fill text-danger"></i> {% trans "Geographical Dashboard" %}</a></li>
             {% endif %}
-            {% if perms.billing.view_menu_billing or is_admin or dept == 'PJ' %}
+            {% if is_admin or perms.billing.view_menu_billing and dept != 'FAR' and dept != 'PHA' and dept != 'PHARMACY' or dept == 'PJ' %}
             <li><a href="{% url 'billing_report' %}"><i class="bi bi-graph-up"></i> {% trans "Billing Reports" %}</a></li>
             {% endif %}
         </ul>
@@ -383,15 +402,17 @@
         {% if perms.billing.view_menu_billing or perms.pharmacy.view_medicine or is_admin %}
         <div class="sb-sec">{% trans "LOGISTICS & FINANCE" %}</div>
         <ul class="sb-nav">
-            {% if perms.billing.view_menu_billing or is_admin or dept == 'PJ' %}
+            {% if is_admin or perms.billing.view_menu_billing and dept != 'FAR' and dept != 'PHA' and dept != 'PHARMACY' or dept == 'PJ' %}
             <li><a href="{% url 'billing_dashboard' %}"><i class="bi bi-cash-stack"></i> {% trans "Billing Dashboard" %}</a></li>
             <li><a href="{% url 'invoice_create' %}"><i class="bi bi-plus-circle"></i> {% trans "New Invoice" %}</a></li>
+            <li><a href="{% url 'service_category_list' %}"><i class="bi bi-tags"></i> {% trans "Service Pricing" %}</a></li>
             {% endif %}
 
             {% if perms.pharmacy.view_medicine or is_admin %}
-            <li><a href="{% url 'medicine_list' %}"><i class="bi bi-box-seam"></i> {% trans "Medicine Catalog" %}</a></li>
-            <li><a href="{% url 'stock_entry_list' %}"><i class="bi bi-plus-square"></i> {% trans "Stock Entry" %}</a></li>
-            <li><a href="{% url 'service_category_list' %}"><i class="bi bi-tags"></i> {% trans "Service Pricing" %}</a></li>
+                {% if dept != 'TB' and dept != 'HIV' and dept != 'DENTAL' %}
+                <li><a href="{% url 'medicine_list' %}"><i class="bi bi-box-seam"></i> {% trans "Medicine Catalog" %}</a></li>
+                <li><a href="{% url 'stock_entry_list' %}"><i class="bi bi-plus-square"></i> {% trans "Stock Entry" %}</a></li>
+                {% endif %}
             {% endif %}
         </ul>
         {% endif %}
@@ -461,7 +482,24 @@
                 {% endif %}
             </div>
         </header>
-        <main class="content">{% block content %}{% endblock %}</main>
+        <main class="content">
+            {% if messages %}
+            <div class="container-fluid">
+                {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% elif message.tags %}{{ message.tags }}{% else %}info{% endif %} alert-dismissible fade show shadow-sm border-0 mb-4" role="alert">
+                    <div class="d-flex align-items-center">
+                        {% if message.tags == 'success' %}<i class="bi bi-check-circle-fill me-2"></i>
+                        {% elif message.tags == 'error' %}<i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        {% else %}<i class="bi bi-info-circle-fill me-2"></i>{% endif %}
+                        <div>{{ message }}</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="this.parentElement.remove()"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% block content %}{% endblock %}
+        </main>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>function tglSub(id) { const el = document.getElementById(id); el.classList.toggle('show'); el.previousElementSibling.querySelector('.bi-chevron-down').classList.toggle('bi-rotate-180'); }

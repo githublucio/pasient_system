@@ -29,7 +29,7 @@
                                     <option value="">-- {% trans "Select Medicine" %} --</option>
                                     {% for med in all_medicines %}
                                     <option value="{{ med.id }}" data-code="{{ med.code|default:'' }}" {% if request.GET.medicine == med.id|stringformat:"d" %}selected{% endif %}>
-                                        {{ med.display_name }} - {% trans "Stock" %}: {{ med.stock }}
+                                        {{ med.display_name }} - {% trans "Stock" %}: {{ med.total_stock }}
                                     </option>
                                     {% endfor %}
                                 </select>

@@ -1,3 +1,4 @@
+from django.utils import timezone
 import uuid
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -19,6 +20,7 @@ class Medicine(models.Model):
         ('SACHET', _('Sachet')),
         ('BOX', _('Box / Kotak')),
         ('ML', _('mL')),
+        ('LITER', _('Liter (L)')),
         ('PIECE', _('Piece')),
     ]
 
@@ -42,9 +44,14 @@ class Medicine(models.Model):
     form = models.CharField(_('Form / Sediaan'), max_length=20, choices=FORM_CHOICES, default='TABLET')
     code = models.CharField(_('Code'), max_length=50, unique=True, blank=True, null=True)
     unit = models.CharField(_('Unit'), max_length=20, choices=UNIT_CHOICES, default='TABLET')
-    stock = models.PositiveIntegerField(_('Current Stock'), default=0)
+    
+    # 💰 Billing Integration
+    selling_price = models.DecimalField(_('Selling Price (USD)'), max_digits=10, decimal_places=2, default=0.00)
+    
+    # ❌ NO static stock field anymore. Calculated from StockBatch.
     min_stock = models.PositiveIntegerField(_('Minimum Stock Alert'), default=10)
     description = models.TextField(_('Description'), blank=True, null=True)
+    
     DEPARTMENT_CHOICES = [
         ('GENERAL', _('General Pharmacy')),
         ('HIV', _('HIV/AIDS Department')),
@@ -53,6 +60,7 @@ class Medicine(models.Model):
         ('KIA', _('MCH/KIA Department')),
     ]
     department_category = models.CharField(_('Department Category'), max_length=20, choices=DEPARTMENT_CHOICES, default='GENERAL')
+    conversion_multiplier = models.PositiveIntegerField(_('Conversion Multiplier'), default=1, help_text=_("e.g. 10 tablets per strip"))
     is_active = models.BooleanField(_('Active'), default=True)
     created_at = models.DateTimeField(_('Created At'), auto_now_add=True)
     updated_at = models.DateTimeField(_('Updated At'), auto_now=True)
@@ -68,6 +76,12 @@ class Medicine(models.Model):
         ]
 
     @property
+    def total_stock(self):
+        """Calculates total stock from all active batches."""
+        from django.db.models import Sum
+        return self.stock_batches.aggregate(total=Sum('quantity_remaining'))['total'] or 0
+
+    @property
     def display_name(self):
         parts = [self.name]
         if self.strength:
@@ -76,29 +90,33 @@ class Medicine(models.Model):
         return ' '.join(parts)
 
     def __str__(self):
-        return f"{self.display_name} - Stock: {self.stock}"
+        return f"{self.display_name} - Stock: {self.total_stock}"
 
     @property
     def is_low_stock(self):
-        return self.stock <= self.min_stock
+        return self.total_stock <= self.min_stock
 
     @property
     def nearest_expiry(self):
         from django.utils import timezone
-        entry = self.stock_entries.filter(
-            expiry_date__isnull=False, remaining_qty__gt=0
+        batch = self.stock_batches.filter(
+            expiry_date__isnull=False, quantity_remaining__gt=0
         ).order_by('expiry_date').first()
-        return entry.expiry_date if entry else None
+        return batch.expiry_date if batch else None
 
     @property
     def has_expired_stock(self):
         from django.utils import timezone
-        return self.stock_entries.filter(
-            expiry_date__lt=timezone.localdate(), remaining_qty__gt=0
+        return self.stock_batches.filter(
+            expiry_date__lt=timezone.localdate(), quantity_remaining__gt=0
         ).exists()
 
 
-class StockEntry(models.Model):
+
+class StockBatch(models.Model):
+    """
+    Production-ready batch tracking for FEFO (First Expired, First Out).
+    """
     SOURCE_CHOICES = [
         ('PURCHASE', _('Clinic Purchase (Sosa Rasik)')),
         ('GOV_DONATION', _('Government Donation (Doasaun Governu)')),
@@ -108,31 +126,34 @@ class StockEntry(models.Model):
         ('OTHER', _('Other (Seluk)')),
     ]
 
-    medicine = models.ForeignKey(Medicine, on_delete=models.CASCADE, related_name='stock_entries', verbose_name=_('Medicine'))
-    source_type = models.CharField(_('Source / Origem'), max_length=20, choices=SOURCE_CHOICES, default='PURCHASE')
-    donor_name = models.CharField(_('Donor / Organization Name'), max_length=255, blank=True, null=True, help_text=_("Name of donor, NGO, or government program"))
-    quantity = models.PositiveIntegerField(_('Quantity Received'))
-    remaining_qty = models.PositiveIntegerField(_('Remaining Quantity'))
-    expiry_date = models.DateField(_('Expiry Date'), blank=True, null=True)
+    medicine = models.ForeignKey(Medicine, on_delete=models.CASCADE, related_name='stock_batches', verbose_name=_('Medicine'))
     batch_number = models.CharField(_('Batch Number'), max_length=100, blank=True, null=True)
+    expiry_date = models.DateField(_('Expiry Date'), blank=True, null=True)
+    
+    quantity_received = models.PositiveIntegerField(_('Quantity Received'), default=0)
+    quantity_remaining = models.PositiveIntegerField(_('Quantity Remaining'), default=0)
+    
+    source_type = models.CharField(_('Source / Origem'), max_length=20, choices=SOURCE_CHOICES, default='PURCHASE')
+    donor_name = models.CharField(_('Donor / Organization Name'), max_length=255, blank=True, null=True)
     supplier = models.CharField(_('Supplier / Vendor'), max_length=200, blank=True, null=True)
-    purchase_date = models.DateField(_('Received Date / Data Simu'))
-    unit_price = models.DecimalField(_('Unit Price (USD)'), max_digits=10, decimal_places=2, default=0, help_text=_("Set to 0 for donations"))
+    purchase_date = models.DateField(_('Received Date / Data Simu'), default=timezone.now)
+    unit_price = models.DecimalField(_('Unit Price (USD)'), max_digits=10, decimal_places=2, default=0)
+    
     notes = models.TextField(_('Notes'), blank=True, null=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, verbose_name=_('Created By'))
     created_at = models.DateTimeField(_('Created At'), auto_now_add=True)
 
     class Meta:
-        verbose_name = _('Stock Entry')
-        verbose_name_plural = _('Stock Entries')
-        ordering = ['-purchase_date', '-created_at']
+        verbose_name = _('Stock Batch')
+        verbose_name_plural = _('Stock Batches')
+        ordering = ['expiry_date', 'purchase_date'] # FEFO Ordering
         indexes = [
-            GinIndex(name='idx_stock_batch_trgm', fields=['batch_number'], opclasses=['gin_trgm_ops']),
-            GinIndex(name='idx_stock_supplier_trgm', fields=['supplier'], opclasses=['gin_trgm_ops']),
+            models.Index(fields=['expiry_date'], name='idx_batch_expiry'),
+            GinIndex(name='idx_batch_num_trgm', fields=['batch_number'], opclasses=['gin_trgm_ops']),
         ]
 
     def __str__(self):
-        return f"{self.medicine.name} +{self.quantity} ({self.purchase_date})"
+        return f"{self.medicine.name} - Batch: {self.batch_number} (Exp: {self.expiry_date})"
 
     @property
     def is_expired(self):
@@ -140,10 +161,6 @@ class StockEntry(models.Model):
         if self.expiry_date:
             return self.expiry_date < timezone.localdate()
         return False
-
-    @property
-    def total_cost(self):
-        return self.quantity * self.unit_price
 
 
 class Prescription(models.Model):
@@ -190,17 +207,46 @@ class Prescription(models.Model):
         return f"Prescription {self.uuid} - {self.visit.patient.full_name}"
 
 
+class PrescriptionItem(models.Model):
+    """
+    New model from ERD FINAL: Structured prescription items.
+    """
+    prescription = models.ForeignKey(Prescription, on_delete=models.CASCADE, related_name='items', verbose_name=_('Prescription'))
+    medicine = models.ForeignKey(Medicine, on_delete=models.PROTECT, related_name='prescribed_as', verbose_name=_('Medicine'))
+    dose = models.CharField(_('Dose'), max_length=50, blank=True, null=True) # e.g. 500mg
+    frequency = models.CharField(_('Frequency'), max_length=50, blank=True, null=True) # e.g. 3x1
+    duration = models.CharField(_('Duration'), max_length=50, blank=True, null=True) # e.g. 5 days
+    quantity = models.PositiveIntegerField(_('Total Quantity'), default=0)
+    instructions = models.TextField(_('Instructions'), blank=True, null=True)
+
+    class Meta:
+        verbose_name = _('Prescription Item')
+        verbose_name_plural = _('Prescription Items')
+
+    def __str__(self):
+        return f"{self.medicine.name} - {self.dose} {self.frequency}"
+
+
 class DispensedItem(models.Model):
+    """
+    Updated from ERD FINAL: Links to StockBatch for accurate inventory tracking.
+    """
+    prescription_item = models.ForeignKey(PrescriptionItem, on_delete=models.CASCADE, related_name='dispensed_records', verbose_name=_('Prescription Item'), null=True, blank=True)
+    # Compatibility with existing logic
     prescription = models.ForeignKey(Prescription, on_delete=models.CASCADE, related_name='dispensed_items', verbose_name=_('Prescription'))
     medicine = models.ForeignKey(Medicine, on_delete=models.PROTECT, related_name='dispensed_items', verbose_name=_('Medicine'))
-    quantity = models.PositiveIntegerField(_('Quantity'))
-    dosage_instructions = models.CharField(_('Dosage Instructions'), max_length=255, blank=True, null=True, help_text=_("e.g. 3x1 after meal"))
-    created_at = models.DateTimeField(_('Created At'), auto_now_add=True)
+    
+    # Critical for FEFO
+    stock_batch = models.ForeignKey(StockBatch, on_delete=models.PROTECT, related_name='dispensations', verbose_name=_('Stock Batch'), null=True)
+    
+    quantity_dispensed = models.PositiveIntegerField(_('Quantity Dispensed'), default=0)
+    dispensed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_('Dispensed By'))
+    dispensed_at = models.DateTimeField(_('Dispensed At'), default=timezone.now)
 
     class Meta:
         verbose_name = _('Dispensed Item')
         verbose_name_plural = _('Dispensed Items')
-        unique_together = ['prescription', 'medicine']
 
     def __str__(self):
-        return f"{self.medicine.name} x{self.quantity} - {self.prescription}"
+        return f"{self.medicine.name} x{self.quantity_dispensed} (Batch: {self.stock_batch.batch_number if self.stock_batch else 'N/A'})"
+

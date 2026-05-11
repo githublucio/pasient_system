@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>TB Outreach Report</title>
+    <style>
+        @page {
+            size: a4;
+            margin: 1cm;
+        }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 10px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        table { width: 100%; border: 1px solid #ddd; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .positive { color: red; font-weight: bold; }
+        .footer { text-align: right; font-size: 8px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>TB OUTREACH SCREENING REPORT</h1>
+        <p>Date: {{ report_date|date:"d M Y" }}</p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th width="15%">Date</th>
+                <th width="25%">Name</th>
+                <th width="25%">Location</th>
+                <th width="10%">Suspect?</th>
+                <th width="10%">Sputum</th>
+                <th width="15%">Lab Result</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for s in screenings %}
+            <tr>
+                <td>{{ s.screening_date|date:"d/m/Y" }}</td>
+                <td>
+                    {{ s.patient.full_name|default:s.full_name }}
+                    <br><small>{{ s.gender }} / {{ s.age }}</small>
+                </td>
+                <td>
+                    {{ s.municipio.name }}<br>
+                    <small>{{ s.suco.name }}, {{ s.aldeia.name }}</small>
+                </td>
+                <td>{{ s.is_suspect|yesno:"YES,No" }}</td>
+                <td>{{ s.sputum_collected|yesno:"YES,No" }}</td>
+                <td class="{% if s.lab_result == 'POSITIVE' %}positive{% endif %}">
+                    {{ s.get_lab_result_display }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="footer">
+        Printed on: {{ report_date }}
+    </div>
+</body>
+</html>

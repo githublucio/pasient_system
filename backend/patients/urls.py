@@ -15,6 +15,7 @@ urlpatterns = [
     # Master Data
     path('master/', views.master_data_dashboard, name='master_data_dashboard'),
     path('master/patients/', views.PatientListView.as_view(), name='patient_list'),
+    path('master/patients/delete/<uuid:pk>/', views.PatientDeleteView.as_view(), name='patient_delete'),
     
     path('master/municipio/', views.MunicipioListView.as_view(), name='municipio_list'),
     path('master/municipio/detail/<int:pk>/', views.MunicipioDetailView.as_view(), name='municipio_detail'),

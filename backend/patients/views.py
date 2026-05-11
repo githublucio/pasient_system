@@ -15,6 +15,29 @@ from .models import Patient, Municipio, PostoAdministrativo, Suco, Aldeia, Daily
 from medical_records.models import Visit
 
 @login_required
+def ajax_patient_search(request):
+    q = request.GET.get('q', '').strip()
+    results = []
+    if len(q) >= 2:
+        words = q.split()
+        name_query = Q()
+        for word in words:
+            name_query &= Q(full_name__icontains=word)
+            
+        patients = Patient.objects.filter(
+            name_query | 
+            Q(patient_id__icontains=q) |
+            Q(phone_number__icontains=q)
+        )[:20]  # Limit to 20 results for speed
+        
+        for p in patients:
+            results.append({
+                'id': p.id,
+                'text': f"{p.patient_id} - {p.full_name} ({p.gender}, {p.age})"
+            })
+    return JsonResponse({'results': results})
+
+@login_required
 @permission_required('patients.add_patient', raise_exception=True)
 def register_patient(request):
     if request.method == 'POST':
@@ -26,6 +49,10 @@ def register_patient(request):
             patient.patient_id = Patient.generate_next_id()
             patient.save()
             return redirect('patient_dashboard', uuid=patient.uuid)
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
     else:
         # Pre-calculate for display
         next_id = Patient.generate_next_id()
@@ -163,7 +190,12 @@ def edit_patient(request, uuid):
         form = PatientRegistrationForm(request.POST, instance=patient)
         if form.is_valid():
             form.save()
+            messages.success(request, _("Patient record updated successfully."))
             return redirect('patient_dashboard', uuid=patient.uuid)
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field.replace('_', ' ').title()}: {error}")
     else:
         form = PatientRegistrationForm(instance=patient)
     return render(request, 'patients/edit_patient.html', {'form': form, 'patient': patient})
@@ -191,11 +223,12 @@ def patient_dashboard(request, uuid):
 @permission_required('patients.view_patient', raise_exception=True)
 def reception_dashboard(request):
     is_hiv = hasattr(request.user, 'staff_profile') and request.user.staff_profile.is_hiv_staff
+    is_tb = hasattr(request.user, 'staff_profile') and request.user.staff_profile.is_tb_staff
     query = request.GET.get('q', '').strip()
     patients = []
     if query:
-        # Clean the query: strip spaces and convert to upper
-        clean_query = query.strip().upper()
+        # Clean the query: strip spaces
+        clean_query = query.strip()
         
         base_qs = Patient.objects.visible_to(request.user).select_related(
             'municipio', 'posto_administrativo', 'suco', 'aldeia'
@@ -203,7 +236,6 @@ def reception_dashboard(request):
 
         # 1. Exact or Cleaned Patient ID Match
         exact_match = base_qs.filter(
-            Q(patient_id__iexact=query) | 
             Q(patient_id__iexact=clean_query)
         ).first()
         
@@ -220,29 +252,38 @@ def reception_dashboard(request):
                 if p not in patients:
                     patients.append(p)
         
-        # 3. Fuzzy search (Only if we still haven't found a definitive match)
-        # This prevents "test002" from showing 100 other patients when an exact match exists.
+        # 3. Fuzzy search (Smart Name & ID search)
         if not patients:
-            fuzzy_query = Q(full_name__icontains=clean_query) | \
-                          Q(patient_id__icontains=clean_query) | \
-                          Q(phone_number__icontains=clean_query)
+            # Clean and split into individual words, removing empty ones
+            search_words = [w.strip() for w in clean_query.split() if w.strip()]
             
-            # Only try to match numeric sub-strings if the query is purely numeric
-            if clean_query.isdigit():
-                 fuzzy_query |= Q(patient_id__icontains=clean_query)
+            if search_words:
+                # Name search: Must contain ALL words
+                name_q = Q()
+                for word in search_words:
+                    name_q &= Q(full_name__icontains=word)
+                
+                # Broaden to ID and Phone
+                combined_q = name_q | \
+                             Q(patient_id__icontains=clean_query) | \
+                             Q(phone_number__icontains=clean_query)
 
-            fuzzy_results = base_qs.filter(fuzzy_query)[:15]
-            
-            for p in fuzzy_results:
-                if p not in patients:
-                    patients.append(p)
+                fuzzy_results = base_qs.filter(combined_q).distinct()[:20]
+                
+                for p in fuzzy_results:
+                    if p not in patients:
+                        patients.append(p)
         
         # Apply departmental filtering to search results
         if is_hiv:
-            # HIV staff focus only on patients tagged as HIV
+            # HIV staff only see HIV patients
             patients = [p for p in patients if p.is_hiv_patient]
+        elif is_tb:
+            # TB staff only see TB patients (focused view)
+            patients = [p for p in patients if p.is_tb_patient]
         elif not request.user.is_superuser:
-            # General staff (non-superusers) only see non-HIV patients
+            # General staff (Loket, etc.) can see all patients EXCEPT HIV patients
+            # (unless it's an emergency, handled by base_qs visible_to)
             patients = [p for p in patients if not p.is_hiv_patient]
         # Superusers bypass this filter and see everything
         
@@ -276,19 +317,22 @@ def check_in_patient(request, uuid):
     
     # Check for staff department to determine target room (Smart Routing)
     is_hiv_staff = hasattr(request.user, 'staff_profile') and request.user.staff_profile.is_hiv_staff
+    is_tb_staff = hasattr(request.user, 'staff_profile') and request.user.staff_profile.is_tb_staff
     is_emergency_staff = hasattr(request.user, 'staff_profile') and request.user.staff_profile.department.code.upper() in ['IGD', 'EMERGENCY']
     
+    from medical_records.models import Room
+
     if is_hiv_staff and patient.is_hiv_patient:
         dept = 'HIV'
-        from medical_records.models import Room
         target_room = Room.objects.filter(code='HIV').first()
+    elif is_tb_staff and patient.is_tb_patient:
+        dept = 'TB'
+        target_room = Room.objects.filter(code='TB').first()
     elif is_emergency_staff:
         dept = 'General'
-        from medical_records.models import Room
         target_room = Room.objects.filter(code__in=['IGD', 'EMERGENCY']).first()
     else:
         dept = 'General'
-        from medical_records.models import Room
         target_room = Room.objects.filter(code='TRIAGE').first() or Room.objects.filter(code='ROOM_2').first()
 
     # Get or create today's queue for the specific department
@@ -407,15 +451,23 @@ class PatientListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
         )
         q = self.request.GET.get('q', '').strip()
         if q:
+            words = q.split()
+            name_q = Q()
+            for word in words:
+                name_q &= Q(full_name__icontains=word)
+            
             qs = qs.filter(
-                Q(full_name__icontains=q) | Q(patient_id__icontains=q) | Q(phone_number__icontains=q)
+                name_q | Q(patient_id__icontains=q) | Q(phone_number__icontains=q)
             )
         
-        # HIV isolation: HIV staff only see HIV patients.
-        # Note: Non-HIV staff are already filtered out by Patient.objects.visible_to()
+        # Specialized Isolation:
         if not self.request.user.is_superuser:
-            if hasattr(self.request.user, 'staff_profile') and self.request.user.staff_profile.is_hiv_staff:
-                qs = qs.filter(is_hiv_patient=True)
+            profile = getattr(self.request.user, 'staff_profile', None)
+            if profile:
+                if profile.is_hiv_staff:
+                    qs = qs.filter(is_hiv_patient=True)
+                elif profile.is_tb_staff:
+                    qs = qs.filter(is_tb_patient=True)
                 
         # Nutrition Filtering
         nutrition_cat = self.request.GET.get('nutrition_cat')
@@ -434,6 +486,10 @@ class PatientListView(LoginRequiredMixin, PermissionRequiredMixin, ListView):
                 qs = qs.filter(is_pregnant=True)
             elif nutrition_cat == 'busui':
                 qs = qs.filter(is_lactating=True)
+
+        # TB Filtering
+        if self.request.GET.get('is_tb') or self.request.GET.get('dept') == 'TB':
+            qs = qs.filter(is_tb_patient=True)
 
         return qs.order_by('-created_at')
 
@@ -678,9 +734,13 @@ def api_patient_search(request):
     if len(query) < 2:
         return JsonResponse({'results': []})
     
-    from django.db.models import Q
+    words = query.split()
+    name_query = Q()
+    for word in words:
+        name_query &= Q(full_name__icontains=word)
+
     patients = Patient.objects.visible_to(request.user).filter(
-        Q(full_name__icontains=query) |
+        name_query |
         Q(patient_id__icontains=query) |
         Q(phone_number__icontains=query)
     ).order_by('full_name')[:30]
@@ -693,3 +753,20 @@ def api_patient_search(request):
         })
     
     return JsonResponse({'results': results})
+class PatientDeleteView(LoginRequiredMixin, PermissionRequiredMixin, DeleteView):
+    model = Patient
+    permission_required = 'patients.delete_patient'
+    template_name = 'master_data/confirm_delete.html'
+    success_url = reverse_lazy('patient_list')
+
+    def post(self, request, *args, **kwargs):
+        patient = self.get_object()
+        if patient.visits.exists():
+            messages.error(request, _("Cannot delete this patient because they have existing medical records (visits)."))
+            return redirect('patient_list')
+        
+        try:
+            return super().post(request, *args, **kwargs)
+        except ProtectedError:
+            messages.error(request, _("Cannot delete this patient because they are referenced by other records."))
+            return redirect('patient_list')

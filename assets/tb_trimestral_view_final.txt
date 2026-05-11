@@ -1,0 +1,128 @@
+﻿
+> medical_records\views.py:2479:def tb_trimestral_report(request):
+  medical_records\views.py:2480:    from .models import TBCase
+  medical_records\views.py:2481:    from datetime import date as date_cls
+  medical_records\views.py:2482:
+  medical_records\views.py:2483:    current_year = timezone.localdate().year
+  medical_records\views.py:2484:    current_quarter = (timezone.localdate().month - 1) // 3 + 1
+  medical_records\views.py:2485:    year = int(request.GET.get('year', current_year))
+  medical_records\views.py:2486:    quarter = int(request.GET.get('quarter', current_quarter))
+  medical_records\views.py:2487:
+  medical_records\views.py:2488:    quarter_map = {
+  medical_records\views.py:2489:        1: {'label': 'Q1: Janeiro - Marco',      'months': [1, 2, 3]},
+  medical_records\views.py:2490:        2: {'label': 'Q2: Abril - Junho',         'months': [4, 5, 6]},
+  medical_records\views.py:2491:        3: {'label': 'Q3: Julho - Setembro',      'months': [7, 8, 9]},
+  medical_records\views.py:2492:        4: {'label': 'Q4: Outobro - Dezembro',    'months': [10, 11, 12]},
+  medical_records\views.py:2493:    }
+  medical_records\views.py:2494:    quarter_info = quarter_map.get(quarter, quarter_map[1])
+  medical_records\views.py:2495:    months = quarter_info['months']
+  medical_records\views.py:2496:
+  medical_records\views.py:2497:    qs = TBCase.objects.filter(date_started__year=year, 
+date_started__month__in=months).select_related('patient')
+  medical_records\views.py:2498:
+  medical_records\views.py:2499:    FOUN    = ['FOUN']
+  medical_records\views.py:2500:    REKAIDA = ['RELAPSU']
+  medical_records\views.py:2501:    RETRAT  = ['DEPOIS_LAKON', 'FALHA']
+  medical_records\views.py:2502:    SELUK   = ['OUTRU']
+  medical_records\views.py:2503:
+  medical_records\views.py:2504:    def cnt(q, patient_types=None, gender=None):
+  medical_records\views.py:2505:        if patient_types:
+  medical_records\views.py:2506:            q = q.filter(patient_type__in=patient_types)
+  medical_records\views.py:2507:        if gender:
+  medical_records\views.py:2508:            q = q.filter(patient__gender=gender)
+  medical_records\views.py:2509:        return q.count()
+  medical_records\views.py:2510:
+  medical_records\views.py:2511:    def b1_row(label, filter_kwargs):
+  medical_records\views.py:2512:        q = qs.filter(**filter_kwargs)
+  medical_records\views.py:2513:        return {
+  medical_records\views.py:2514:            'label': label,
+  medical_records\views.py:2515:            'foun': cnt(q, FOUN), 'foun_m': cnt(q, FOUN, 'M'), 'foun_f': cnt(q, FOUN, 
+'F'),
+  medical_records\views.py:2516:            'rekaida': cnt(q, REKAIDA), 'rekaida_m': cnt(q, REKAIDA, 'M'), 
+'rekaida_f': cnt(q, REKAIDA, 'F'),
+  medical_records\views.py:2517:            'retrat': cnt(q, RETRAT), 'retrat_m': cnt(q, RETRAT, 'M'), 'retrat_f': 
+cnt(q, RETRAT, 'F'),
+  medical_records\views.py:2518:            'seluk': cnt(q, SELUK), 'seluk_m': cnt(q, SELUK, 'M'), 'seluk_f': cnt(q, 
+SELUK, 'F'),
+  medical_records\views.py:2519:            'total': q.count(),
+  medical_records\views.py:2520:        }
+  medical_records\views.py:2521:
+  medical_records\views.py:2522:    b1_rows = [
+  medical_records\views.py:2523:        b1_row('Pulmaun, bakteriolojiku konfirmadu',       {'classification': 'P',  
+'case_type': 'PTB_POS'}),
+  medical_records\views.py:2524:        b1_row('Pulmaun, diagnoza kliniku',                {'classification': 'P',  
+'case_type': 'PTB_NEG'}),
+  medical_records\views.py:2525:        b1_row('Extrapulmaun, bakteriolojiku konfirmadu',  {'classification': 'EP', 
+'case_type': 'PTB_POS'}),
+  medical_records\views.py:2526:        b1_row('Extrapulmonary, diagnoza kliniku',         {'classification': 'EP', 
+'case_type': 'EPTB'}),
+  medical_records\views.py:2527:    ]
+  medical_records\views.py:2528:
+  medical_records\views.py:2529:    def _s(rows, f): return sum(r[f] for r in rows)
+  medical_records\views.py:2530:
+  medical_records\views.py:2531:    b1 = {
+  medical_records\views.py:2532:        'rows': b1_rows,
+  medical_records\views.py:2533:        'total_foun': _s(b1_rows,'foun'), 'total_foun_m': _s(b1_rows,'foun_m'), 
+'total_foun_f': _s(b1_rows,'foun_f'),
+  medical_records\views.py:2534:        'total_rekaida': _s(b1_rows,'rekaida'), 'total_rekaida_m': 
+_s(b1_rows,'rekaida_m'), 'total_rekaida_f': _s(b1_rows,'rekaida_f'),
+  medical_records\views.py:2535:        'total_retrat': _s(b1_rows,'retrat'), 'total_retrat_m': 
+_s(b1_rows,'retrat_m'), 'total_retrat_f': _s(b1_rows,'retrat_f'),
+  medical_records\views.py:2536:        'total_seluk': _s(b1_rows,'seluk'), 'total_seluk_m': _s(b1_rows,'seluk_m'), 
+'total_seluk_f': _s(b1_rows,'seluk_f'),
+  medical_records\views.py:2537:        'total_all': qs.count(),
+  medical_records\views.py:2538:    }
+  medical_records\views.py:2539:
+  medical_records\views.py:2540:    today = date_cls.today()
+  medical_records\views.py:2541:    AGE_GROUPS = [(0,4),(5,14),(15,24),(25,34),(35,44),(45,54),(55,64),(65,999)]
+  medical_records\views.py:2542:
+  medical_records\views.py:2543:    def b2_row(label, filter_kwargs):
+  medical_records\views.py:2544:        filtered = list(qs.filter(**filter_kwargs).select_related('patient'))
+  medical_records\views.py:2545:        age_groups = []
+  medical_records\views.py:2546:        total_m = total_f = 0
+  medical_records\views.py:2547:        for lo, hi in AGE_GROUPS:
+  medical_records\views.py:2548:            m_c = f_c = 0
+  medical_records\views.py:2549:            for case in filtered:
+  medical_records\views.py:2550:                dob = case.patient.date_of_birth
+  medical_records\views.py:2551:                if not dob: continue
+  medical_records\views.py:2552:                age = (today - dob).days // 365
+  medical_records\views.py:2553:                if lo <= age <= hi:
+  medical_records\views.py:2554:                    if case.patient.gender == 'M': m_c += 1
+  medical_records\views.py:2555:                    else: f_c += 1
+  medical_records\views.py:2556:            total_m += m_c; total_f += f_c
+  medical_records\views.py:2557:            age_groups.append({'m': m_c, 'f': f_c})
+  medical_records\views.py:2558:        return {'label': label, 'age_groups': age_groups, 'total_m': total_m, 
+'total_f': total_f, 'total': total_m + total_f}
+  medical_records\views.py:2559:
+  medical_records\views.py:2560:    b2 = {'rows': [
+  medical_records\views.py:2561:        b2_row('Pulmaun, bakteriolojiku konfirmadu (Foun no Rekaida)', 
+{'classification':'P',  'case_type':'PTB_POS','patient_type__in':FOUN+REKAIDA}),
+  medical_records\views.py:2562:        b2_row('Pulmaun, diagnoza kliniku (Foun no Rekaida)',          
+{'classification':'P',  'case_type':'PTB_NEG','patient_type__in':FOUN+REKAIDA}),
+  medical_records\views.py:2563:        b2_row('Extrapulmaun, bakteriolojiku konfirmadu (F+R)',         
+{'classification':'EP', 'case_type':'PTB_POS','patient_type__in':FOUN+REKAIDA}),
+  medical_records\views.py:2564:        b2_row('Extrapulmonary, diagnoza kliniku (F+R)',                
+{'classification':'EP', 'case_type':'EPTB',   'patient_type__in':FOUN+REKAIDA}),
+  medical_records\views.py:2565:        b2_row('Re-Tratamentu (La Inklui Rekaida)',                    
+{'patient_type__in': RETRAT}),
+  medical_records\views.py:2566:        b2_row('Seluk',                                                 
+{'patient_type__in': SELUK}),
+  medical_records\views.py:2567:    ]}
+  medical_records\views.py:2568:
+  medical_records\views.py:2569:    patient_ids = list(qs.values_list('patient_id', flat=True))
+  medical_records\views.py:2570:    smear_exam = genexpert_exam = smear_pos = genexpert_pos = 0
+  medical_records\views.py:2571:    try:
+  medical_records\views.py:2572:        from laboratory.models import LabResult
+  medical_records\views.py:2573:        lr = LabResult.objects.filter(lab_request__visit__patient_id__in=patient_ids, 
+lab_request__status='COMPLETED', lab_request__tests__name__icontains='AFB').distinct()
+  medical_records\views.py:2574:        gx = LabResult.objects.filter(lab_request__visit__patient_id__in=patient_ids, 
+lab_request__status='COMPLETED', lab_request__tests__name__icontains='GeneXpert').distinct()
+  medical_records\views.py:2575:        smear_exam = lr.count()
+  medical_records\views.py:2576:        genexpert_exam = gx.count()
+  medical_records\views.py:2577:        smear_pos = sum(1 for r in lr if r.result_data and '+' in 
+str(r.result_data.get('microbiology',{}).get('zn_afb','')))
+  medical_records\views.py:2578:        genexpert_pos = sum(1 for r in gx if r.result_data and 'pos' in 
+str(r.result_data).lower())
+  medical_records\views.py:2579:    except Exception:
+
+

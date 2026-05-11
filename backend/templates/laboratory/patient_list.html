@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "Laboratory Patient List" %} - Clinic{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card p-4 text-white" style="background: linear-gradient(135deg, #1a6fc4, #0d47a1);">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-0"><i class="bi bi-flask me-2"></i>{% trans "Laboratory Patient List" %}</h2>
+                    <p class="mb-0 opacity-75">{% trans "Patients with laboratory test requests from OPD / IGD" %}</p>
+                </div>
+                <a href="{% url 'lab_dashboard' %}" class="btn btn-light btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i>{% trans "Back to Dashboard" %}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card p-3">
+            <form method="get" class="row g-2 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold">{% trans "Search Patient" %}</label>
+                    <input type="text" name="q" class="form-control" placeholder="{% trans 'Name or Patient ID...' %}" value="{{ query }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">{% trans "Status" %}</label>
+                    <select name="status" class="form-select">
+                        <option value="">{% trans "All" %}</option>
+                        <option value="PENDING" {% if status_filter == 'PENDING' %}selected{% endif %}>{% trans "Pending" %}</option>
+                        <option value="SAMPLE_COLLECTED" {% if status_filter == 'SAMPLE_COLLECTED' %}selected{% endif %}>{% trans "Sample Collected" %}</option>
+                        <option value="IN_PROGRESS" {% if status_filter == 'IN_PROGRESS' %}selected{% endif %}>{% trans "In Progress" %}</option>
+                        <option value="COMPLETED" {% if status_filter == 'COMPLETED' %}selected{% endif %}>{% trans "Completed" %}</option>
+                        <option value="CANCELLED" {% if status_filter == 'CANCELLED' %}selected{% endif %}>{% trans "Cancelled" %}</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">{% trans "Source" %}</label>
+                    <select name="source" class="form-select">
+                        <option value="">{% trans "All" %}</option>
+                        <option value="OPD" {% if source_filter == 'OPD' %}selected{% endif %}>OPD</option>
+                        <option value="IGD" {% if source_filter == 'IGD' %}selected{% endif %}>IGD</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">{% trans "Date" %}</label>
+                    <input type="date" name="date" class="form-control" value="{{ date_filter }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search me-1"></i>{% trans "Filter" %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="row mb-3 g-2">
+    <div class="col-md-3">
+        <div class="card p-3 text-center border-warning">
+            <div class="fs-3 fw-bold text-warning">{{ stats.pending }}</div>
+            <div class="small text-muted">{% trans "Pending" %}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 text-center border-info">
+            <div class="fs-3 fw-bold text-info">{{ stats.in_progress }}</div>
+            <div class="small text-muted">{% trans "In Progress" %}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 text-center border-success">
+            <div class="fs-3 fw-bold text-success">{{ stats.completed }}</div>
+            <div class="small text-muted">{% trans "Completed" %}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card p-3 text-center border-primary">
+            <div class="fs-3 fw-bold text-primary">{{ stats.total }}</div>
+            <div class="small text-muted">{% trans "Total" %}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Patient List Table -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>{% trans "Lab No" %}</th>
+                        <th>{% trans "Patient" %}</th>
+                        <th>{% trans "Age/Gender" %}</th>
+                        <th>{% trans "Tests Requested" %}</th>
+                        <th>{% trans "Source" %}</th>
+                        <th>{% trans "Requested By" %}</th>
+                        <th>{% trans "Date" %}</th>
+                        <th>{% trans "Status" %}</th>
+                        <th>{% trans "Result" %}</th>
+                        <th>{% trans "Action" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for req in lab_requests %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-secondary">{{ req.lab_no|default:"—" }}</span>
+                        </td>
+                        <td>
+                            <div class="fw-bold">{{ req.visit.patient.full_name }}</div>
+                            <div class="small text-muted">{{ req.visit.patient.patient_id }}</div>
+                        </td>
+                        <td class="small">
+                            {{ req.visit.patient.age }} /
+                            {% if req.visit.patient.gender == 'M' %}♂{% else %}♀{% endif %}
+                        </td>
+                        <td>
+                            {% for test in req.tests.all %}
+                                <span class="badge bg-light text-dark border me-1">{{ test.name }}</span>
+                            {% empty %}
+                                <span class="text-muted small">—</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            {% if req.source == 'IGD' %}
+                                <span class="badge bg-danger">IGD</span>
+                            {% else %}
+                                <span class="badge bg-primary">OPD</span>
+                            {% endif %}
+                        </td>
+                        <td class="small">
+                            {% if req.requesting_physician %}
+                                {% if req.requesting_physician.get_full_name %}
+                                    {{ req.requesting_physician.get_full_name }}
+                                {% else %}
+                                    {{ req.requesting_physician.username }}
+                                {% endif %}
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                        <td class="small">{{ req.date_of_request|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            {% if req.status == 'COMPLETED' %}
+                                <span class="badge bg-success">{% trans "Completed" %}</span>
+                            {% elif req.status == 'IN_PROGRESS' %}
+                                <span class="badge bg-info">{% trans "In Progress" %}</span>
+                            {% elif req.status == 'SAMPLE_COLLECTED' %}
+                                <span class="badge bg-warning text-dark">{% trans "Sample Collected" %}</span>
+                            {% elif req.status == 'CANCELLED' %}
+                                <span class="badge bg-danger" title="{{ req.cancel_reason }}">{% trans "Cancelled" %}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">{% trans "Pending" %}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if req.status == 'COMPLETED' %}
+                                {% if req.result_exists %}
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted small">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{% url 'lab_result_input' req.uuid %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil-square me-1"></i>
+                                    {% if req.status == 'COMPLETED' %}{% trans "View" %}{% else %}{% trans "Input" %}{% endif %}
+                                </a>
+                                {% if req.status != 'COMPLETED' and req.status != 'CANCELLED' %}
+                                <a href="{% url 'lab_request_cancel' req.uuid %}" class="btn btn-sm btn-outline-danger" title="{% trans 'Cancel' %}">
+                                    <i class="bi bi-x-circle"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            {% trans "No laboratory requests found." %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.has_other_pages %}
+<nav class="mt-3">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ query }}&status={{ status_filter }}&source={{ source_filter }}&date={{ date_filter }}">«</a>
+        </li>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+        <li class="page-item {% if page_obj.number == num %}active{% endif %}">
+            <a class="page-link" href="?page={{ num }}&q={{ query }}&status={{ status_filter }}&source={{ source_filter }}&date={{ date_filter }}">{{ num }}</a>
+        </li>
+        {% endfor %}
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ query }}&status={{ status_filter }}&source={{ source_filter }}&date={{ date_filter }}">»</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% endblock %}

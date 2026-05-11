@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="fw-bold mb-0 text-danger"><i class="bi bi-person-plus me-2"></i>{{ title }}</h3>
+                <a href="{% url 'tb_treatment_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i>{% trans "Back" %}
+                </a>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">{% trans "National TB Program Registration (DOTS)" %}</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Basic Info -->
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Patient" %} *</label>
+                                <div class="input-group">
+                                    <select name="patient" id="id_patient_select" class="form-select select2-patient" required>
+                                        {% for val, label in form.patient.field.choices %}
+                                            <option value="{{ val }}" {% if form.patient.value == val %}selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <a href="{% url 'register_patient' %}" class="btn btn-outline-primary" title="{% trans 'Register New Patient' %}">
+                                        <i class="bi bi-person-plus"></i>
+                                    </a>
+                                    <button type="button" id="btn-edit-patient" class="btn btn-outline-info" title="{% trans 'Edit Patient Profile' %}" disabled>
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </div>
+                                <div id="patient-info-hint" class="small text-muted mt-1">
+                                    {% trans "Ensure 'Identity' and 'Relation' (Family) info is complete." %}
+                                </div>
+                                {% if form.patient.errors %}<div class="text-danger small">{{ form.patient.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "TB Registration Number" %} *</label>
+                                <input type="text" name="tb_registration_number" class="form-control" value="{{ form.tb_registration_number.value|default:'' }}" required placeholder="e.g. 001/TB/2026">
+                                {% if last_tb_number %}
+                                <div class="small text-primary mt-1">
+                                    <i class="bi bi-info-circle"></i> {% trans "Last registered number was:" %} <strong>{{ last_tb_number }}</strong>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Timing & Weight -->
+                        <div class="row mb-4">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">{% trans "Treatment Category" %} *</label>
+                                <select name="category" class="form-select">
+                                    {% for val, label in form.category.field.choices %}
+                                        <option value="{{ val }}" {% if form.category.value == val %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">{% trans "Date Started" %} *</label>
+                                <input type="date" name="date_started" class="form-control" value="{{ form.date_started.value|date:'Y-m-d'|default:'' }}" required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">{% trans "Initial Weight" %} *</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.1" name="initial_weight" class="form-control" value="{{ form.initial_weight.value|default:'' }}" required>
+                                    <span class="input-group-text">kg</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Clinical Details -->
+                        <div class="row mb-4 border-top pt-3">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Classification" %} *</label>
+                                <select name="classification" class="form-select">
+                                    {% for val, label in form.classification.field.choices %}
+                                        <option value="{{ val }}" {% if form.classification.value == val %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Site of EPTB" %} ({% trans "Optional" %})</label>
+                                <input type="text" name="site_of_eptb" class="form-control" value="{{ form.site_of_eptb.value|default:'' }}" placeholder="e.g. Lymph Node, Meningitis...">
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Patient Type" %} *</label>
+                                <select name="patient_type" class="form-select">
+                                    {% for val, label in form.patient_type.field.choices %}
+                                        <option value="{{ val }}" {% if form.patient_type.value == val %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Treatment Regimen" %}</label>
+                                <input type="text" name="regimen" class="form-control" value="{{ form.regimen.value|default:'' }}" placeholder="e.g. RHZE (150/75/400/275 mg)">
+                            </div>
+                        </div>
+
+                        <!-- Co-morbidities & Baseline Tests -->
+                        <div class="row mb-4 border-top pt-3">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "HIV Status / Tests" %}</label>
+                                <input type="text" name="hiv_status" class="form-control" value="{{ form.hiv_status.value|default:'' }}" placeholder="Result / Date">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Diabetes Status" %}</label>
+                                <input type="text" name="diabetes_status" class="form-control" value="{{ form.diabetes_status.value|default:'' }}" placeholder="FBS/RBG Result">
+                            </div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Initial Sputum (BTA)" %}</label>
+                                <input type="text" name="initial_sputum" class="form-control" value="{{ form.initial_sputum.value|default:'' }}" placeholder="Baseline result">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">{% trans "Initial Ray-X" %}</label>
+                                <input type="text" name="initial_xray" class="form-control" value="{{ form.initial_xray.value|default:'' }}" placeholder="Baseline result">
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-flex justify-content-end gap-2">
+                            <a href="{% url 'tb_treatment_dashboard' %}" class="btn btn-outline-secondary px-4">{% trans "Cancel" %}</a>
+                            <button type="submit" class="btn btn-danger px-5">
+                                <i class="bi bi-save me-2"></i>{% trans "Save & Register DOTS" %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const patientSelect = $('#id_patient_select');
+        const editBtn = document.getElementById('btn-edit-patient');
+
+        if (typeof jQuery !== 'undefined' && jQuery.fn.select2) {
+            patientSelect.select2({
+                theme: 'bootstrap-5',
+                width: '100%'
+            });
+            
+            patientSelect.on('change', function() {
+                const patientId = $(this).val();
+                if (patientId) {
+                    editBtn.disabled = false;
+                    editBtn.onclick = function() {
+                        window.location.href = `/records/patients/${patientId}/edit/`;
+                    };
+                    
+                    // Reload the page to fetch lab data for this patient if not already fetched
+                    const currentUrl = new URL(window.location.href);
+                    if (currentUrl.searchParams.get('patient') !== patientId) {
+                        currentUrl.searchParams.set('patient', patientId);
+                        window.location.href = currentUrl.toString();
+                    }
+                } else {
+                    editBtn.disabled = true;
+                }
+            });
+
+            // Trigger on load if patient already selected
+            if (patientSelect.val()) {
+                patientSelect.trigger('change');
+            }
+        }
+    });
+</script>
+{% endblock %}

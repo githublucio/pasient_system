@@ -108,11 +108,11 @@
                 <td>{{ visit.current_room.name }}</td>
                 <td>{{ visit.doctor.get_full_name|default:visit.doctor.username }}</td>
                 <td>
-                    {% if visit.diagnosis %}
-                        {{ visit.diagnosis.code }} - {{ visit.diagnosis.name }}
-                    {% else %}
+                    {% for vd in visit.visit_diagnoses.all %}
+                        <div>{{ vd.diagnosis.code }} - {{ vd.diagnosis.name }}{% if vd.is_primary %} <small class="text-muted">({% trans "Primary" %})</small>{% endif %}</div>
+                    {% empty %}
                         -
-                    {% endif %}
+                    {% endfor %}
                 </td>
                 <td class="text-center">{{ visit.get_status_display }}</td>
             </tr>

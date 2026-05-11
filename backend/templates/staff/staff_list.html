@@ -5,10 +5,10 @@
 
 {% block content %}
 <nav aria-label="breadcrumb">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="/">{% trans "Dashboard" %}</a></li>
-    <li class="breadcrumb-item active" aria-current="page">{% trans "Staff" %}</li>
-  </ol>
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="/">{% trans "Dashboard" %}</a></li>
+        <li class="breadcrumb-item active" aria-current="page">{% trans "Staff" %}</li>
+    </ol>
 </nav>
 
 <div class="card shadow-sm border-0">
@@ -38,11 +38,13 @@
                         <td>
                             <div class="d-flex align-items-center">
                                 {% if item.photo %}
-                                    <img src="{{ item.photo.url }}" class="rounded-circle me-2" width="32" height="32" style="object-fit: cover;">
+                                <img src="{{ item.photo.url }}" class="rounded-circle me-2" width="32" height="32"
+                                    style="object-fit: cover;">
                                 {% else %}
-                                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2" width="32" height="32" style="width: 32px; height: 32px;">
-                                        <i class="bi bi-person text-muted"></i>
-                                    </div>
+                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-2"
+                                    width="32" height="32" style="width: 32px; height: 32px;">
+                                    <i class="bi bi-person text-muted"></i>
+                                </div>
                                 {% endif %}
                                 {{ item.user.get_full_name|default:item.user.username }}
                             </div>

@@ -212,7 +212,14 @@
             </div>
             <div class="info-group">
                 <label>Lab Number</label>
-                <input type="text" name="lab_no" class="form-control form-control-sm border-0 bg-transparent p-0" value="{{ lab_request.lab_no|default:'' }}" style="font-weight:600">
+                {% if lab_request.lab_no %}
+                    <span class="fw-bold text-primary">{{ lab_request.lab_no }}</span>
+                {% else %}
+                    <input type="text" name="lab_no" class="form-control form-control-sm border-0 bg-transparent p-0" 
+                           value="{{ lab_request.lab_no|default:'' }}" 
+                           placeholder="{% trans 'Last: ' %}{{ last_lab_no }}"
+                           style="font-weight:600">
+                {% endif %}
             </div>
             <div class="info-group">
                 <label>Ward / Bed</label>

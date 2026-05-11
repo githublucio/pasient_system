@@ -6,15 +6,33 @@
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-8">
-        <div class="card p-4">
+        <div class="card p-4 shadow-sm">
             <h2 class="text-center mb-4 text-primary">{% trans "Edit Patient Record" %}</h2>
-            <div class="alert alert-info py-2">
-                <i class="bi bi-info-circle me-2"></i>
-                <strong>{% trans "Patient ID" %}:</strong> {{ patient.patient_id }}
+            
+            <div class="alert alert-info py-2 shadow-sm border-0 mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-info-circle-fill fs-4 me-2"></i>
+                    <div>
+                        <strong>{% trans "Editing Patient" %}:</strong> {{ patient.full_name }} ({{ patient.patient_id }})
+                    </div>
+                </div>
             </div>
+
             <form method="post">
                 {% csrf_token %}
+                <div class="row">
                     <div class="col-md-6 mb-3">
+                        <label class="form-label font-weight-bold text-primary">{% trans "Patient ID" %}</label>
+                        {{ form.patient_id }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label font-weight-bold">{% trans "Patient Category" %}</label>
+                        {{ form.patient_category }}
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12 mb-3">
                         <label class="form-label font-weight-bold">{% trans "Full Name" %}</label>
                         {{ form.full_name }}
                     </div>
@@ -24,18 +42,21 @@
                     <label class="form-label font-weight-bold">{% trans "Nationality" %}</label>
                     {{ form.nationality }}
                 </div>
+
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">{% trans "Date of Birth" %}</label>
+                        <label class="form-label font-weight-bold">{% trans "Date of Birth" %}</label>
                         {{ form.date_of_birth }}
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">{% trans "Gender" %}</label>
+                        <label class="form-label font-weight-bold">{% trans "Gender" %}</label>
                         {{ form.gender }}
                     </div>
                 </div>
 
-                <h5 class="mt-4 mb-3 text-secondary border-bottom pb-2">{% trans "Official Identification" %}</h5>
+                <h5 class="mt-4 mb-3 text-secondary border-bottom pb-2 fw-bold">
+                    <i class="bi bi-card-heading me-2"></i>{% trans "Official Identification" %}
+                </h5>
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">{% trans "ID Type" %}</label>
@@ -44,12 +65,14 @@
                     <div class="col-md-6 mb-3">
                         <label class="form-label">{% trans "ID Number" %}</label>
                         {{ form.id_number }}
-                        <small class="text-muted">{% trans "Passport / Eleitoral / BI" %}</small>
+                        <small class="text-muted d-block mt-1">{% trans "Passport / Eleitoral / BI" %}</small>
                     </div>
                 </div>
 
                 <div id="parent-info-section">
-                    <h5 class="mt-4 mb-3 text-secondary border-bottom pb-2">{% trans "Parent Information" %}</h5>
+                    <h5 class="mt-4 mb-3 text-secondary border-bottom pb-2 fw-bold">
+                        <i class="bi bi-people me-2"></i>{% trans "Parent Information" %}
+                    </h5>
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">{% trans "Father Name" %}</label>
@@ -61,7 +84,10 @@
                         </div>
                     </div>
                 </div>
-                <h5 class="mt-4 mb-3 text-secondary border-bottom pb-2">{% trans "Address / Location" %}</h5>
+
+                <h5 class="mt-4 mb-3 text-secondary border-bottom pb-2 fw-bold">
+                    <i class="bi bi-geo-alt me-2"></i>{% trans "Address / Location" %}
+                </h5>
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label class="form-label">{% trans "Municipality" %}</label>
@@ -86,16 +112,18 @@
                     <label class="form-label">{% trans "Additional Address Detail" %}</label>
                     {{ form.address }}
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">{% trans "Phone Number" %}</label>
-                    {{ form.phone_number }}
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">{% trans "Contribution (USD)" %}</label>
-                    {{ form.registration_fee }}
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{% trans "Phone Number" %}</label>
+                        {{ form.phone_number }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{% trans "Contribution (USD)" %}</label>
+                        {{ form.registration_fee }}
+                    </div>
                 </div>
 
-                <div class="row mb-4 bg-light p-3 rounded border">
+                <div class="row mb-4 bg-light p-3 rounded border border-info border-opacity-25 shadow-sm">
                     <div class="col-md-6">
                         <div class="form-check form-switch">
                             {{ form.is_pregnant }}
@@ -113,20 +141,38 @@
                         </div>
                     </div>
                 </div>
-                <hr>
+
+                <h5 class="mt-4 mb-3 text-secondary border-bottom pb-2 fw-bold">
+                    <i class="bi bi-telephone-outbound me-2"></i>{% trans "Emergency Contact / Next of Kin" %}
+                </h5>
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">{% trans "Emergency Contact Name" %}</label>
+                        <label class="form-label">{% trans "Contact Name" %}</label>
                         {{ form.emergency_contact_name }}
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">{% trans "Emergency Contact Phone" %}</label>
-                        {{ form.emergency_contact_phone }}
+                        <label class="form-label">{% trans "Relationship" %}</label>
+                        {{ form.emergency_contact_relation }}
                     </div>
                 </div>
-                <div class="d-flex gap-2">
-                    <a href="{% url 'patient_dashboard' patient.uuid %}" class="btn btn-outline-secondary btn-lg flex-grow-1">{% trans "Cancel" %}</a>
-                    <button type="submit" class="btn btn-primary btn-lg flex-grow-2">{% trans "Save Changes" %}</button>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{% trans "Phone Number" %}</label>
+                        {{ form.emergency_contact_phone }}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">{% trans "Address" %}</label>
+                        {{ form.emergency_contact_address }}
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3 mt-5">
+                    <a href="{% url 'patient_dashboard' patient.uuid %}" class="btn btn-outline-secondary btn-lg flex-grow-1">
+                        <i class="bi bi-x-circle me-1"></i> {% trans "Cancel" %}
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-lg flex-grow-2 shadow-sm">
+                        <i class="bi bi-save me-1"></i> {% trans "Save Changes" %}
+                    </button>
                 </div>
             </form>
         </div>
@@ -140,15 +186,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const sucoSelect = document.getElementById('id_suco');
     const aldeiaSelect = document.getElementById('id_aldeia');
 
-    // Remove disabled if they have values (Edit mode)
-    if (postoSelect.value) postoSelect.removeAttribute('disabled');
-    if (sucoSelect.value) sucoSelect.removeAttribute('disabled');
-    if (aldeiaSelect.value) aldeiaSelect.removeAttribute('disabled');
-
     function fetchOptions(url, selectElement, defaultText) {
+        console.log('Fetching:', url);
         fetch(url)
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return response.json();
+            })
             .then(data => {
+                console.log('Data received:', data);
                 selectElement.innerHTML = `<option value="">${defaultText}</option>`;
                 data.forEach(item => {
                     const option = document.createElement('option');
@@ -157,6 +203,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     selectElement.appendChild(option);
                 });
                 selectElement.removeAttribute('disabled');
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                selectElement.innerHTML = `<option value="">--- {% trans "Error loading data" %} ---</option>`;
+                selectElement.setAttribute('disabled', 'disabled');
             });
     }
 
@@ -169,7 +220,11 @@ document.addEventListener('DOMContentLoaded', function() {
         aldeiaSelect.innerHTML = '<option value="">{% trans "--- Select Hamlet ---" %}</option>';
         aldeiaSelect.setAttribute('disabled', 'disabled');
 
-        if (municipioId) fetchOptions("{% url 'load_postos' %}?municipio=" + municipioId, postoSelect, '{% trans "--- Select Administrative Post ---" %}');
+        if (municipioId) {
+            fetchOptions("{% url 'load_postos' %}?municipio=" + municipioId, postoSelect, '{% trans "--- Select Administrative Post ---" %}');
+        } else {
+            postoSelect.innerHTML = '<option value="">{% trans "--- Select Administrative Post ---" %}</option>';
+        }
     });
 
     postoSelect.addEventListener('change', function() {
@@ -179,7 +234,11 @@ document.addEventListener('DOMContentLoaded', function() {
         aldeiaSelect.innerHTML = '<option value="">{% trans "--- Select Hamlet ---" %}</option>';
         aldeiaSelect.setAttribute('disabled', 'disabled');
 
-        if (postoId) fetchOptions("{% url 'load_sucos' %}?posto=" + postoId, sucoSelect, '{% trans "--- Select Village ---" %}');
+        if (postoId) {
+            fetchOptions("{% url 'load_sucos' %}?posto=" + postoId, sucoSelect, '{% trans "--- Select Village ---" %}');
+        } else {
+            sucoSelect.innerHTML = '<option value="">{% trans "--- Select Village ---" %}</option>';
+        }
     });
 
     sucoSelect.addEventListener('change', function() {
@@ -187,9 +246,14 @@ document.addEventListener('DOMContentLoaded', function() {
         aldeiaSelect.innerHTML = '<option value="">{% trans "--- Loading ---" %}</option>';
         aldeiaSelect.setAttribute('disabled', 'disabled');
 
-        if (sucoId) fetchOptions("{% url 'load_aldeias' %}?suco=" + sucoId, aldeiaSelect, '{% trans "--- Select Hamlet ---" %}');
+        if (sucoId) {
+            fetchOptions("{% url 'load_aldeias' %}?suco=" + sucoId, aldeiaSelect, '{% trans "--- Select Hamlet ---" %}');
+        } else {
+            aldeiaSelect.innerHTML = '<option value="">{% trans "--- Select Hamlet ---" %}</option>';
+        }
     });
 
+    // --- Category Logic (Show/Hide Parents) ---
     const categorySelect = document.getElementById('id_patient_category');
     const parentSection = document.getElementById('parent-info-section');
     const nationalitySection = document.getElementById('nationality-section');

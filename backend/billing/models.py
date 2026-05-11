@@ -85,8 +85,8 @@ class Invoice(models.Model):
 
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     invoice_number = models.CharField(_('Invoice Number'), max_length=30, unique=True, db_index=True)
-    visit = models.OneToOneField(Visit, on_delete=models.CASCADE, related_name='invoice', verbose_name=_('Visit'), blank=True, null=True)
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='invoices', verbose_name=_('Patient'))
+    visit = models.OneToOneField(Visit, on_delete=models.PROTECT, related_name='invoice', verbose_name=_('Visit'), blank=True, null=True)
+    patient = models.ForeignKey(Patient, on_delete=models.PROTECT, related_name='invoices', verbose_name=_('Patient'))
 
     subtotal = models.DecimalField(_('Subtotal'), max_digits=12, decimal_places=2, default=0.00)
     discount = models.DecimalField(_('Discount (USD)'), max_digits=10, decimal_places=2, default=0.00)
@@ -153,6 +153,10 @@ class Invoice(models.Model):
         from django.db.models import Sum, F
         agg = self.items.aggregate(total=Sum(F('quantity') * F('unit_price')))
         self.subtotal = agg['total'] or 0
+        # FIX RISK #4: Cap discount so it never exceeds subtotal.
+        # Prevents storing inconsistent data (e.g. discount=$1000 on a $5 bill).
+        if self.discount > self.subtotal:
+            self.discount = self.subtotal
         self.total_amount = max(self.subtotal - self.discount, 0)
         if self.amount_paid >= self.total_amount and self.total_amount > 0:
             self.status = 'PAID'
@@ -164,13 +168,45 @@ class Invoice(models.Model):
             self.status = 'UNPAID'
         self.save()
 
+    @classmethod
+    def create_next(cls, **kwargs):
+        """FIX BUG #2: Thread-safe invoice creation with atomic sequential numbering.
+        Generates the invoice number AND creates the record within a single
+        transaction.atomic() + select_for_update() block, eliminating the race
+        condition that existed between the old generate_invoice_number() call
+        and the subsequent objects.create() call.
+        """
+        from django.db import transaction
+        with transaction.atomic():
+            today = timezone.localdate()
+            prefix = f"INV-{today.strftime('%Y%m%d')}"
+            last = cls.objects.select_for_update().filter(
+                invoice_number__startswith=prefix
+            ).order_by('-invoice_number').first()
+            if last:
+                try:
+                    last_seq = int(last.invoice_number.split('-')[-1])
+                except (ValueError, IndexError):
+                    last_seq = 0
+                seq = last_seq + 1
+            else:
+                seq = 1
+            invoice_number = f"{prefix}-{seq:04d}"
+            return cls.objects.create(invoice_number=invoice_number, **kwargs)
+
     @staticmethod
     def generate_invoice_number():
+        """Deprecated: Use Invoice.create_next(**kwargs) instead.
+        Kept for backwards compatibility only.
+        """
         today = timezone.localdate()
         prefix = f"INV-{today.strftime('%Y%m%d')}"
         last = Invoice.objects.filter(invoice_number__startswith=prefix).order_by('-invoice_number').first()
         if last:
-            last_seq = int(last.invoice_number.split('-')[-1])
+            try:
+                last_seq = int(last.invoice_number.split('-')[-1])
+            except (ValueError, IndexError):
+                last_seq = 0
             seq = last_seq + 1
         else:
             seq = 1
@@ -178,8 +214,21 @@ class Invoice(models.Model):
 
 
 class InvoiceItem(models.Model):
+    ITEM_TYPE_CHOICES = [
+        ('SERVICE', _('Service / Consultation')),
+        ('MEDICINE', _('Medicine / Pharmacy')),
+        ('LAB', _('Laboratory Test')),
+        ('OTHER', _('Other')),
+    ]
+
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='items', verbose_name=_('Invoice'))
+    item_type = models.CharField(_('Item Type'), max_length=10, choices=ITEM_TYPE_CHOICES, default='SERVICE')
+    
+    # FKs for integrated items
     service = models.ForeignKey(ServicePrice, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_('Service'))
+    from pharmacy.models import Medicine
+    medicine = models.ForeignKey('pharmacy.Medicine', on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_('Medicine'))
+    
     category = models.ForeignKey(ServiceCategory, on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_('Category'))
     description = models.CharField(_('Description'), max_length=255)
     quantity = models.PositiveIntegerField(_('Quantity'), default=1)
@@ -190,7 +239,7 @@ class InvoiceItem(models.Model):
         verbose_name_plural = _('Invoice Items')
 
     def __str__(self):
-        return f"{self.description} x{self.quantity}"
+        return f"[{self.get_item_type_display()}] {self.description} x{self.quantity}"
 
     @property
     def line_total(self):

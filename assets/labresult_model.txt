@@ -1,0 +1,42 @@
+﻿
+> laboratory\models.py:100:class LabResult(models.Model):
+  laboratory\models.py:101:    uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+  laboratory\models.py:102:    lab_request = models.OneToOneField(LabRequest, on_delete=models.CASCADE, 
+related_name='result', verbose_name=_('Lab Request'))
+  laboratory\models.py:103:    result_text = models.TextField(_('Result Details'), blank=True, null=True)
+  laboratory\models.py:104:    result_data = models.JSONField(_('Result Data'), default=dict, blank=True)
+  laboratory\models.py:105:    
+  laboratory\models.py:106:    FLAG_CHOICES = [
+  laboratory\models.py:107:        ('NORMAL', _('Normal')),
+  laboratory\models.py:108:        ('HIGH', _('High')),
+  laboratory\models.py:109:        ('LOW', _('Low')),
+  laboratory\models.py:110:    ]
+  laboratory\models.py:111:    flag = models.CharField(_('Flag'), max_length=10, choices=FLAG_CHOICES, 
+default='NORMAL')
+  laboratory\models.py:112:    is_abnormal = models.BooleanField(_('Is Abnormal'), default=False)
+  laboratory\models.py:113:    
+  laboratory\models.py:114:    attachment = models.FileField(_('Attachment (PDF)'), upload_to='lab_results/', 
+blank=True, null=True)
+  laboratory\models.py:115:    notes = models.TextField(_('Notes'), blank=True, null=True)
+  laboratory\models.py:116:    verified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, 
+related_name='verified_lab_results', verbose_name=_('Verified By'))
+  laboratory\models.py:117:    completed_at = models.DateTimeField(_('Completed At'), blank=True, null=True)
+  laboratory\models.py:118:    created_at = models.DateTimeField(_('Created At'), auto_now_add=True)
+  laboratory\models.py:119:    updated_at = models.DateTimeField(_('Updated At'), auto_now=True)
+  laboratory\models.py:120:
+> laboratory\models.py:129:class LabResultAttachment(models.Model):
+  laboratory\models.py:130:    lab_result = models.ForeignKey(LabResult, on_delete=models.CASCADE, 
+related_name='attachments', verbose_name=_('Lab Result'))
+  laboratory\models.py:131:    file = models.FileField(_('File'), upload_to='lab_results/')
+  laboratory\models.py:132:    description = models.CharField(_('Description'), max_length=255, blank=True, default='')
+  laboratory\models.py:133:    uploaded_at = models.DateTimeField(_('Uploaded At'), auto_now_add=True)
+  laboratory\models.py:134:
+  laboratory\models.py:135:    class Meta:
+  laboratory\models.py:136:        verbose_name = _('Lab Result Attachment')
+  laboratory\models.py:137:        verbose_name_plural = _('Lab Result Attachments')
+  laboratory\models.py:138:        ordering = ['uploaded_at']
+  laboratory\models.py:139:
+  laboratory\models.py:140:    def __str__(self):
+  laboratory\models.py:141:        return f"Attachment for {self.lab_result}"
+
+

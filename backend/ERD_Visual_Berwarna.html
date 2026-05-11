@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database ERD - Class Diagram</title>
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({ 
+          startOnLoad: true, 
+          theme: 'default',
+          securityLevel: 'loose',
+          maxTextSize: 9000000
+      });
+    </script>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background: #f9f9f9; }
+        .mermaid { width: 100%; overflow: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .controls { margin-bottom: 20px; padding: 15px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid #0d6efd; }
+        button { padding: 10px 20px; margin-right: 10px; cursor: pointer; background: #0d6efd; color: white; border: none; border-radius: 4px; font-weight: bold; }
+        button:hover { background: #0b5ed7; }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <h2>ERD Visual (Mirip Gambar Anda)</h2>
+        <p>Saya telah mengelompokkan tabel ke dalam kotak-kotak modul (Namespace) seperti gambar yang Anda kirimkan. Karena ini adalah render vektor, kualitasnya sangat tinggi.</p>
+        <p><strong>Cara Menyimpan sebagai Gambar (PNG/JPG):</strong></p>
+        <ol>
+            <li>Gunakan ekstensi browser seperti "GoFullPage" atau "FireShot" untuk mengambil screenshot satu halaman penuh.</li>
+            <li>ATAU klik tombol di bawah ini untuk mencetaknya sebagai PDF berkualitas tinggi.</li>
+        </ol>
+        <button onclick="window.print()"><svg style="width:16px;height:16px;vertical-align:middle;margin-right:5px" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg> Cetak / Simpan ke PDF</button>
+    </div>
+    <div class="mermaid">
+classDiagram
+    namespace MasterWilayah {
+        class Municipio {
+            +BigAuto id
+            +Char name
+        }
+        class PostoAdministrativo {
+            +BigAuto id
+            +ForeignKey municipio
+            +Char name
+        }
+        class Suco {
+            +BigAuto id
+            +ForeignKey posto
+            +Char name
+        }
+        class Aldeia {
+            +BigAuto id
+            +ForeignKey suco
+            +Char name
+        }
+    }
+    namespace PatientManagement {
+        class Patient {
+            +UUID uuid
+            +Char patient_id
+            +Char patient_category
+            +Char full_name
+            +Date date_of_birth
+            +Char gender
+            +Char blood_type
+            +Char father_name
+            +Char mother_name
+            +Char nationality
+            +ForeignKey municipio
+            +ForeignKey posto_administrativo
+            +ForeignKey suco
+            +ForeignKey aldeia
+            +Text address
+            +Text phone_number
+            +Char emergency_contact_name
+            +Char emergency_contact_relation
+            +Text emergency_contact_phone
+            +Text emergency_contact_address
+            +File qr_code_image
+            +Char qr_code_data
+            +File barcode_image
+            +Decimal registration_fee
+            +Boolean is_hiv_patient
+            +Boolean is_tb_patient
+            +Boolean is_pregnant
+            +Boolean is_lactating
+            +DateTime created_at
+            +DateTime updated_at
+        }
+        class PatientID {
+            +UUID uuid
+            +ForeignKey patient
+            +Char id_type
+            +Text id_number
+            +Char id_search_hash
+        }
+        class PatientAllergy {
+            +UUID uuid
+            +ForeignKey patient
+            +Char allergen
+            +Char reaction
+            +Char severity
+            +Boolean is_active
+            +Date noted_date
+        }
+    }
+    namespace VisitAndRegistration {
+        class Visit {
+            +UUID uuid
+            +ForeignKey patient
+            +ForeignKey doctor
+            +DateTime visit_date
+            +PositiveInteger queue_number
+            +ForeignKey current_room
+            +Decimal visit_fee
+            +Text complaint
+            +Text clinical_notes
+            +Boolean lab_cbc
+            +Boolean pharmacy_requested
+            +Boolean refer_to_central
+            +Char patient_type
+            +Char status
+            +Char source
+            +ForeignKey checked_in_by
+            +ForeignKey triage_nurse
+            +Char triage_level
+            +Char arrival_mode
+            +Char brought_by_name
+            +Char companion_name
+            +Text arrival_notes
+            +Char discharge_condition
+            +Char referral_hospital
+            +Char referral_vehicle
+            +DateTime discharge_datetime
+            +Text discharge_summary
+            +ForeignKey continuation_of
+            +Date follow_up_date
+            +Char follow_up_notes
+        }
+        class VitalSigns {
+            +BigAuto id
+            +OneToOne visit
+            +Integer bp_sys
+            +Integer bp_dia
+            +Integer spo2
+            +Integer pulse
+            +Integer rr
+            +Decimal temp
+            +Decimal weight
+            +Decimal height_cm
+            +Decimal muac
+            +Char vas_score
+            +Char kia_category
+            +Integer er_bp_sys
+            +Integer er_bp_dia
+            +Integer er_spo2
+            +Integer er_pulse
+            +Decimal er_temp
+            +Text notes
+            +DateTime taken_at
+        }
+        class VisitDiagnosis {
+            +UUID uuid
+            +ForeignKey visit
+            +ForeignKey diagnosis
+            +Boolean is_primary
+            +Text notes
+            +DateTime created_at
+        }
+        class VisitLog {
+            +UUID uuid
+            +ForeignKey visit
+            +Char action
+            +ForeignKey performed_by
+            +DateTime timestamp
+            +ForeignKey room
+            +Text notes
+        }
+        class EmergencyObservation {
+            +UUID uuid
+            +ForeignKey visit
+            +DateTime check_time
+            +Integer bp_sys
+            +Integer bp_dia
+            +Integer spo2
+            +Integer pulse
+            +Integer rr
+            +Decimal temp
+            +Char vas_score
+            +Text clinical_notes
+            +ForeignKey checked_by
+        }
+        class EmergencyMedication {
+            +UUID uuid
+            +ForeignKey visit
+            +ForeignKey medicine
+            +PositiveInteger quantity
+            +Char admin_type
+            +Char dosage_instruction
+            +ForeignKey ordered_by
+            +ForeignKey given_by
+            +DateTime given_at
+        }
+        class HIVAssessment {
+            +UUID uuid
+            +ForeignKey patient
+            +ForeignKey visit
+            +Date date_registered_at_bpc
+            +Char patient_type
+            +Char previous_registrations
+            +Char previous_art
+            +Date first_positive_test_date
+            +Boolean confirmation_test_seen
+            +Char where_test_done
+            +Boolean prophylaxis_inh
+            +Boolean prophylaxis_cotrimoxazole
+            +Boolean prophylaxis_fluconazole
+            +Text investigation_tb_needed
+            +Text contraception_plans
+            +Boolean planned_for_art
+            +Char art_regime
+            +Date next_visit_scheduled
+            +Text other_plans
+            +ForeignKey completed_by
+            +DateTime created_at
+            +DateTime updated_at
+        }
+        class TBScreening {
+            +UUID uuid
+            +ForeignKey patient
+            +Char full_name
+            +Char phone_number
+            +Integer age
+            +Char gender
+            +ForeignKey municipio
+            +ForeignKey posto
+            +ForeignKey suco
+            +ForeignKey aldeia
+            +Char outreach_location
+            +Boolean has_cough_2_weeks
+            +Boolean has_fever
+            +Boolean has_night_sweats
+            +Boolean has_weight_loss
+            +Boolean has_contact_history
+            +Boolean is_hiv_positive
+            +Boolean is_suspect
+            +Char referral_status
+            +Boolean sputum_collected
+            +Char lab_result
+            +Date lab_test_date
+            +Text notes
+            +ForeignKey screened_by
+            +Date screening_date
+            +DateTime created_at
+        }
+        class Appointment {
+            +UUID uuid
+            +ForeignKey patient
+            +ForeignKey department
+            +ForeignKey doctor
+            +Date appointment_date
+            +Time appointment_time
+            +Text reason
+            +Text notes
+            +Char status
+            +ForeignKey created_by
+            +DateTime created_at
+            +DateTime updated_at
+            +Text cancelled_reason
+        }
+        class DailyQueue {
+            +BigAuto id
+            +Date date
+            +PositiveInteger current_number
+            +Char department
+        }
+    }
+    namespace BillingFinance {
+        class Invoice {
+            +UUID uuid
+            +Char invoice_number
+            +OneToOne visit
+            +ForeignKey patient
+            +Decimal subtotal
+            +Decimal discount
+            +Decimal total_amount
+            +Decimal amount_paid
+            +Char status
+            +Char payment_method
+            +Text notes
+            +ForeignKey created_by
+            +DateTime created_at
+            +DateTime updated_at
+            +DateTime paid_at
+        }
+        class InvoiceItem {
+            +BigAuto id
+            +ForeignKey invoice
+            +Char item_type
+            +ForeignKey service
+            +ForeignKey medicine
+            +ForeignKey category
+            +Char description
+            +PositiveInteger quantity
+            +Decimal unit_price
+        }
+        class Payment {
+            +UUID uuid
+            +ForeignKey invoice
+            +Decimal amount
+            +Char payment_method
+            +Char reference
+            +Text notes
+            +ForeignKey received_by
+            +DateTime created_at
+        }
+        class ServiceCategory {
+            +BigAuto id
+            +Char name
+            +Char code
+            +Char icon
+            +PositiveInteger order
+            +Boolean is_active
+        }
+        class ServicePrice {
+            +BigAuto id
+            +ForeignKey category
+            +Char name
+            +Char code
+            +Decimal price
+            +Text description
+            +Boolean is_active
+            +DateTime created_at
+            +DateTime updated_at
+        }
+    }
+    namespace Pharmacy {
+        class Medicine {
+            +BigAuto id
+            +Char name
+            +Char strength
+            +Char form
+            +Char code
+            +Char unit
+            +Decimal selling_price
+            +PositiveInteger min_stock
+            +Text description
+            +Char department_category
+            +PositiveInteger conversion_multiplier
+            +Boolean is_active
+            +DateTime created_at
+            +DateTime updated_at
+        }
+        class StockBatch {
+            +BigAuto id
+            +ForeignKey medicine
+            +Char batch_number
+            +Date expiry_date
+            +PositiveInteger quantity_received
+            +PositiveInteger quantity_remaining
+            +Char source_type
+            +Char donor_name
+            +Char supplier
+            +Date purchase_date
+            +Decimal unit_price
+            +Text notes
+            +ForeignKey created_by
+            +DateTime created_at
+        }
+        class Prescription {
+            +UUID uuid
+            +OneToOne visit
+            +DateTime date_created
+            +Char has_allergy
+            +Char allergy_medicine
+            +Text prescription_text
+            +ForeignKey doctor
+            +Char source
+            +Char dispensing_status
+            +ForeignKey dispensed_by
+            +DateTime dispensed_at
+            +Text dispensing_notes
+        }
+        class PrescriptionItem {
+            +BigAuto id
+            +ForeignKey prescription
+            +ForeignKey medicine
+            +Char dose
+            +Char frequency
+            +Char duration
+            +PositiveInteger quantity
+            +Text instructions
+        }
+        class DispensedItem {
+            +BigAuto id
+            +ForeignKey prescription_item
+            +ForeignKey prescription
+            +ForeignKey medicine
+            +ForeignKey stock_batch
+            +PositiveInteger quantity_dispensed
+            +ForeignKey dispensed_by
+            +DateTime dispensed_at
+        }
+    }
+    namespace Laboratory {
+        class LabTest {
+            +BigAuto id
+            +Char code
+            +Char name
+            +Decimal price
+            +Char normal_range
+            +Char unit
+            +Integer column_index
+            +PositiveInteger order
+        }
+        class LabRequest {
+            +UUID uuid
+            +OneToOne visit
+            +DateTime date_of_request
+            +Char lab_no
+            +Char patient_type
+            +Char urgency
+            +Char special_category
+            +Char others_note
+            +ForeignKey requesting_physician
+            +Char source
+            +Char status
+            +ForeignKey processed_by
+        }
+        class LabResult {
+            +UUID uuid
+            +OneToOne lab_request
+            +Text result_text
+            +JSON result_data
+            +Char flag
+            +Boolean is_abnormal
+            +File attachment
+            +Text notes
+            +ForeignKey verified_by
+            +DateTime completed_at
+            +DateTime created_at
+            +DateTime updated_at
+        }
+        class LabResultAttachment {
+            +BigAuto id
+            +ForeignKey lab_result
+            +File file
+            +Char description
+            +DateTime uploaded_at
+        }
+    }
+    namespace Radiology {
+        class RadiologyTest {
+            +BigAuto id
+            +Char name
+            +PositiveInteger order
+        }
+        class RadiologyRequest {
+            +UUID uuid
+            +OneToOne visit
+            +DateTime date_of_request
+            +ForeignKey requesting_physician
+            +Char source
+            +Char status
+            +ForeignKey performed_by
+        }
+        class RadiologyResult {
+            +UUID uuid
+            +OneToOne radiology_request
+            +Text findings
+            +Text impression
+            +File attachment
+            +Text notes
+            +ForeignKey verified_by
+            +DateTime completed_at
+            +DateTime created_at
+            +DateTime updated_at
+        }
+        class RadiologyResultAttachment {
+            +BigAuto id
+            +ForeignKey radiology_result
+            +File file
+            +Char description
+            +DateTime uploaded_at
+        }
+    }
+    namespace Pathology {
+        class PathologyTest {
+            +BigAuto id
+            +Char name
+            +PositiveInteger order
+        }
+        class PathologyRequest {
+            +UUID uuid
+            +OneToOne visit
+            +DateTime date_of_request
+            +ForeignKey requesting_physician
+            +Boolean fasting
+            +Text clinica_history
+            +Char billing_type
+            +Char tube_sst
+            +Char tube_edta
+            +Char tube_esr
+            +Char tube_plain
+            +Char tube_cit
+            +Char tube_flok
+            +Char tube_msu
+            +Char tube_swabs
+            +Char tube_pap
+            +Char tube_other
+            +Char source
+            +Char status
+            +ForeignKey processed_by
+        }
+        class PathologyResult {
+            +UUID uuid
+            +OneToOne pathology_request
+            +Text result_text
+            +File attachment
+            +Text notes
+            +ForeignKey verified_by
+            +DateTime completed_at
+            +DateTime created_at
+            +DateTime updated_at
+        }
+        class PathologyResultAttachment {
+            +BigAuto id
+            +ForeignKey pathology_result
+            +File file
+            +Char description
+            +DateTime uploaded_at
+        }
+    }
+    namespace StaffHR {
+        class Department {
+            +BigAuto id
+            +Char name
+            +Char code
+            +Text description
+            +Boolean is_active
+        }
+        class Position {
+            +BigAuto id
+            +Char name
+            +Text description
+        }
+        class StaffCategory {
+            +BigAuto id
+            +Char name
+            +Text description
+        }
+        class StaffProfile {
+            +BigAuto id
+            +OneToOne user
+            +Char staff_id
+            +ForeignKey department
+            +ForeignKey category
+            +ForeignKey position
+            +Char phone
+            +Text address
+            +Text bio
+            +File photo
+            +Boolean is_active
+            +DateTime created_at
+            +DateTime updated_at
+        }
+        class AuditLog {
+            +BigAuto id
+            +DateTime timestamp
+            +ForeignKey user
+            +Char action
+            +Char module
+            +Char model_name
+            +Char object_id
+            +Char object_repr
+            +GenericIPAddress ip_address
+            +JSON changes
+        }
+    }
+    namespace Reference {
+        class Room {
+            +BigAuto id
+            +Char name
+            +Char code
+            +Text description
+            +PositiveInteger order
+        }
+        class Diagnosis {
+            +BigAuto id
+            +Char code
+            +Char name
+            +ForeignKey category
+            +ForeignKey parent
+        }
+        class DiagnosisCategory {
+            +BigAuto id
+            +Char name
+            +Text description
+        }
+    }
+    PostoAdministrativo -->  Municipio : municipio
+    Suco -->  PostoAdministrativo : posto
+    Aldeia -->  Suco : suco
+    Patient -->  Municipio : municipio
+    Patient -->  PostoAdministrativo : posto_administrativo
+    Patient -->  Suco : suco
+    Patient -->  Aldeia : aldeia
+    PatientID -->  Patient : patient
+    PatientAllergy -->  Patient : patient
+    Diagnosis -->  DiagnosisCategory : category
+    Diagnosis -->  Diagnosis : parent
+    Visit --  VitalSigns : vital_signs_record
+    Visit --  Invoice : invoice
+    Visit --  LabRequest : lab_request
+    Visit --  Prescription : prescription
+    Visit --  RadiologyRequest : radiology_request
+    Visit --  PathologyRequest : pathology_request
+    Visit -->  Patient : patient
+    Visit -->  Room : current_room
+    Visit -->  Visit : continuation_of
+    VisitDiagnosis -->  Visit : visit
+    VisitDiagnosis -->  Diagnosis : diagnosis
+    VitalSigns --  Visit : visit
+    VisitLog -->  Visit : visit
+    VisitLog -->  Room : room
+    EmergencyObservation -->  Visit : visit
+    EmergencyMedication -->  Visit : visit
+    EmergencyMedication -->  Medicine : medicine
+    HIVAssessment -->  Patient : patient
+    HIVAssessment -->  Visit : visit
+    TBScreening -->  Patient : patient
+    TBScreening -->  Municipio : municipio
+    TBScreening -->  PostoAdministrativo : posto
+    TBScreening -->  Suco : suco
+    TBScreening -->  Aldeia : aldeia
+    Appointment -->  Patient : patient
+    Appointment -->  Room : department
+    ServicePrice -->  ServiceCategory : category
+    Invoice --  Visit : visit
+    Invoice -->  Patient : patient
+    InvoiceItem -->  Invoice : invoice
+    InvoiceItem -->  ServicePrice : service
+    InvoiceItem -->  Medicine : medicine
+    InvoiceItem -->  ServiceCategory : category
+    Payment -->  Invoice : invoice
+    LabTest <-->  LabRequest : labrequest
+    LabRequest --  LabResult : result
+    LabRequest --  Visit : visit
+    LabRequest <-->  LabTest : tests
+    LabResult --  LabRequest : lab_request
+    LabResultAttachment -->  LabResult : lab_result
+    StockBatch -->  Medicine : medicine
+    Prescription --  Visit : visit
+    PrescriptionItem -->  Prescription : prescription
+    PrescriptionItem -->  Medicine : medicine
+    DispensedItem -->  PrescriptionItem : prescription_item
+    DispensedItem -->  Prescription : prescription
+    DispensedItem -->  Medicine : medicine
+    DispensedItem -->  StockBatch : stock_batch
+    RadiologyTest <-->  RadiologyRequest : radiologyrequest
+    RadiologyRequest --  RadiologyResult : result
+    RadiologyRequest --  Visit : visit
+    RadiologyRequest <-->  RadiologyTest : tests
+    RadiologyResult --  RadiologyRequest : radiology_request
+    RadiologyResultAttachment -->  RadiologyResult : radiology_result
+    PathologyTest <-->  PathologyRequest : pathologyrequest
+    PathologyRequest --  PathologyResult : result
+    PathologyRequest --  Visit : visit
+    PathologyRequest <-->  PathologyTest : tests
+    PathologyResult --  PathologyRequest : pathology_request
+    PathologyResultAttachment -->  PathologyResult : pathology_result
+    StaffProfile -->  Department : department
+    StaffProfile -->  StaffCategory : category
+    StaffProfile -->  Position : position
+
+    </div>
+</body>
+</html>

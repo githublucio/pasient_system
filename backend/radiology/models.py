@@ -24,7 +24,9 @@ class RadiologyRequest(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     visit = models.OneToOneField(Visit, on_delete=models.CASCADE, related_name='radiology_request', verbose_name=_('Visit'))
     
-    date_of_request = models.DateTimeField(_('Data Riquest'), auto_now_add=True)
+    date_of_request = models.DateTimeField(_('Date of Request'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('Updated At'), auto_now=True)
+    radiology_no = models.CharField(_('Radiology No'), max_length=50, blank=True, null=True, unique=True)
     tests = models.ManyToManyField(RadiologyTest, verbose_name=_('Test Requests'), blank=True)
     
     requesting_physician = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='radiology_requests', verbose_name=_('Medico'))

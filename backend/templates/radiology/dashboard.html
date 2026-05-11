@@ -15,28 +15,56 @@
     </form>
 </div>
 
-<div class="card shadow-sm border-0">
+<!-- Radiology Stats Row -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm" style="border-left: 5px solid #ffc107 !important;">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase small fw-bold">{% trans "Pending Requests" %}</h6>
+                <h2 class="mb-0 fw-bold">{{ stats.pending }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm" style="border-left: 5px solid #198754 !important;">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase small fw-bold">{% trans "Completed Today" %}</h6>
+                <h2 class="mb-0 fw-bold">{{ stats.completed }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm" style="border-left: 5px solid #0d6efd !important;">
+            <div class="card-body">
+                <h6 class="text-muted text-uppercase small fw-bold">{% trans "Total Overall" %}</h6>
+                <h2 class="mb-0 fw-bold">{{ stats.total }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if continued_requests %}
+<div class="card shadow-sm border-start border-warning border-4 mb-4">
+    <div class="card-header bg-warning bg-opacity-10 py-3">
+        <h5 class="mb-0 text-warning-emphasis"><i class="bi bi-clock-history me-2"></i>{% trans "Continued Requests (Carry-over)" %}</h5>
+    </div>
     <div class="card-body p-0">
         <table class="table table-hover align-middle mb-0">
             <thead class="table-dark">
                 <tr>
-                    <th>#</th>
                     <th>{% trans "Patient" %}</th>
                     <th>{% trans "Source" %}</th>
-                    <th>{% trans "Doctor" %}</th>
-                    <th>{% trans "Tests Requested" %}</th>
-                    <th>{% trans "Date/Time" %}</th>
-                    <th>{% trans "Status" %}</th>
+                    <th>{% trans "Tests" %}</th>
+                    <th>{% trans "Original Date" %}</th>
                     <th class="text-center">{% trans "Actions" %}</th>
                 </tr>
             </thead>
             <tbody>
-                {% for req in requests %}
+                {% for req in continued_requests %}
                 <tr>
-                    <td>{{ forloop.counter }}</td>
                     <td>
                         <div class="fw-bold">{{ req.visit.patient.full_name }}</div>
-                        <small class="text-muted">ID: {{ req.visit.patient.patient_id }}</small>
+                        <small class="text-muted">{{ req.visit.patient.patient_id }}</small>
                     </td>
                     <td>
                         {% if req.source == 'IGD' %}
@@ -46,55 +74,110 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if req.requesting_physician %}
-                            {{ req.requesting_physician.get_full_name|default:req.requesting_physician.username }}
-                        {% else %}
-                            <span class="text-muted">{% trans "Unknown" %}</span>
-                        {% endif %}
-                    </td>
-                    <td>
                         {% for test in req.tests.all %}
-                            <span class="badge bg-secondary me-1">{{ test.name }}</span>
-                        {% empty %}
-                            <span class="text-muted">-</span>
+                            <span class="badge bg-secondary me-1" style="font-size:11px;">{{ test.name }}</span>
                         {% endfor %}
                     </td>
-                    <td><small>{{ req.date_of_request|date:"d M H:i" }}</small></td>
-                    <td>
-                        {% if req.status == 'COMPLETED' %}
-                            <span class="badge bg-success">{% trans "Completed" %}</span>
-                        {% elif req.status == 'IN_PROGRESS' %}
-                            <span class="badge bg-warning text-dark">{% trans "In Progress" %}</span>
-                        {% else %}
-                            <span class="badge bg-secondary">{% trans "Pending" %}</span>
-                        {% endif %}
-                    </td>
+                    <td><span class="badge bg-secondary">{{ req.date_of_request|date:"d M" }}</span></td>
                     <td class="text-center">
-                        <a href="{% url 'radiology_request_create' req.visit.uuid %}?from=radiology" class="btn btn-sm btn-outline-warning me-1">
-                            <i class="bi bi-printer me-1"></i>{% trans "View" %}
+                        <a href="{% url 'radiology_result_input' req.uuid %}" class="btn btn-sm btn-warning fw-bold">
+                            <i class="bi bi-pencil-square me-1"></i>{% trans "Process" %}
                         </a>
-                        <a href="{% url 'radiology_result_input' req.uuid %}" class="btn btn-sm btn-outline-success">
-                            {% if req.status == 'COMPLETED' %}
-                                <i class="bi bi-eye-fill me-1"></i>{% trans "View Result" %}
-                            {% else %}
-                                <i class="bi bi-pencil-square me-1"></i>{% trans "Input Result" %}
-                            {% endif %}
-                        </a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7" class="text-center text-muted py-5">
-                        <i class="bi bi-inbox fs-2 d-block mb-2"></i>
-                        {% trans "No radiology requests for this date." %}
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    <div class="card-footer text-muted small">
-        {% trans "Total" %}: <strong>{{ requests.count }}</strong> {% trans "requests on" %} {{ filter_date|date:"d M Y" }}
+</div>
+{% endif %}
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-primary bg-opacity-10 py-3">
+        <h5 class="mb-0 text-primary"><i class="bi bi-calendar-check me-2"></i>{% trans "New Requests (Today)" %}</h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>{% trans "Patient" %}</th>
+                    <th>{% trans "Source" %}</th>
+                    <th>{% trans "Tests" %}</th>
+                    <th>{% trans "Time" %}</th>
+                    <th>{% trans "Status" %}</th>
+                    <th class="text-center">{% trans "Actions" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in new_requests %}
+                <tr>
+                    <td>
+                        <div class="fw-bold">{{ req.visit.patient.full_name }}</div>
+                        <small class="text-muted">{{ req.visit.patient.patient_id }}</small>
+                    </td>
+                    <td>
+                        {% if req.source == 'IGD' %}
+                            <span class="badge bg-danger">IGD</span>
+                        {% else %}
+                            <span class="badge bg-primary">OPD</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% for test in req.tests.all %}
+                            <span class="badge bg-secondary me-1" style="font-size:11px;">{{ test.name }}</span>
+                        {% endfor %}
+                    </td>
+                    <td><small>{{ req.date_of_request|date:"H:i" }}</small></td>
+                    <td>
+                        <span class="badge bg-secondary">{% trans "Pending" %}</span>
+                    </td>
+                    <td class="text-center">
+                        <a href="{% url 'radiology_result_input' req.uuid %}" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-pencil-square me-1"></i>{% trans "Input Result" %}
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-5">
+                        {% trans "No new radiology requests for today." %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0 border-top border-success border-4">
+    <div class="card-header bg-success bg-opacity-10 py-3">
+        <h5 class="mb-0 text-success"><i class="bi bi-check-circle-fill me-2"></i>{% trans "Completed Results (Today)" %}</h5>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <tbody>
+                {% for req in completed_requests %}
+                <tr>
+                    <td>
+                        <div class="fw-bold text-muted">{{ req.visit.patient.full_name }}</div>
+                    </td>
+                    <td><small class="text-muted">{{ req.visit.patient.patient_id }}</small></td>
+                    <td><span class="badge bg-light text-dark border">{{ req.date_of_request|date:"H:i" }}</span></td>
+                    <td class="text-end">
+                        <a href="{% url 'radiology_result_input' req.uuid %}" class="btn btn-sm btn-link text-success">
+                            <i class="bi bi-eye"></i> {% trans "View" %}
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center text-muted py-3 small">
+                        {% trans "No radiology results completed yet today." %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

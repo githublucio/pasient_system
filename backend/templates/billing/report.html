@@ -117,9 +117,9 @@
                     <td>{{ inv.created_at|date:"d/m/Y" }}</td>
                     <td>{{ inv.patient.full_name }}</td>
                     <td class="small">
-                        {% if inv.visit.diagnosis %}
-                            <span class="badge bg-light text-dark border">{{ inv.visit.diagnosis.code }}</span><br>
-                            <span class="text-muted" style="font-size: 0.8rem;">{{ inv.visit.diagnosis.name }}</span>
+                        {% if inv.visit.primary_diagnosis %}
+                            <span class="badge bg-light text-dark border">{{ inv.visit.primary_diagnosis.code }}</span><br>
+                            <span class="text-muted" style="font-size: 0.8rem;">{{ inv.visit.primary_diagnosis.name }}</span>
                         {% else %}
                             <span class="text-muted">—</span>
                         {% endif %}

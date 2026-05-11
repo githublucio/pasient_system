@@ -14,8 +14,15 @@
 <div class="card">
     <div class="card-header bg-white py-3">
         <div class="d-flex justify-content-between align-items-center mb-2">
-            <h5 class="mb-0 fw-bold"><i class="bi bi-people-fill me-2"></i>{% trans "Patient Master List" %}
-                <span class="badge bg-secondary ms-2">{{ total_count }}</span>
+            <h5 class="mb-0 fw-bold"><i class="bi bi-people-fill me-2"></i>
+                {% if request.GET.dept == 'TB' %}
+                    {% trans "TB Patient Master List" %}
+                {% elif request.GET.nutrition_cat %}
+                    {% trans "Nutrition Patient List" %}
+                {% else %}
+                    {% trans "Patient Master List" %}
+                {% endif %}
+                <span class="badge bg-secondary ms-2">{{ paginator.count|default:total_count }}</span>
             </h5>
             {% if perms.patients.add_patient %}
             <a href="{% url 'register_patient' %}" class="btn btn-primary btn-sm">
@@ -24,10 +31,15 @@
             {% endif %}
         </div>
         <form method="get" class="d-flex gap-2">
+            {% for key, value in request.GET.items %}
+                {% if key != 'q' and key != 'page' %}
+                    <input type="hidden" name="{{ key }}" value="{{ value }}">
+                {% endif %}
+            {% endfor %}
             <input type="text" name="q" class="form-control form-control-sm" style="max-width:350px;"
                 placeholder="{% trans 'Search name, ID, or phone...' %}" value="{{ query }}" autofocus>
             <button type="submit" class="btn btn-sm btn-primary">{% trans "Search" %}</button>
-            {% if query %}<a href="{% url 'patient_list' %}" class="btn btn-sm btn-outline-secondary">{% trans "Clear" %}</a>{% endif %}
+            {% if query %}<a href="{% url 'patient_list' %}?{% for key,value in request.GET.items %}{% if key != 'q' and key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" class="btn btn-sm btn-outline-secondary">{% trans "Clear" %}</a>{% endif %}
         </form>
     </div>
     <div class="card-body p-0">
@@ -40,7 +52,7 @@
                         <th>{% trans "Gender" %}</th>
                         <th>{% trans "Date of Birth" %}</th>
                         <th>{% trans "Address" %}</th>
-                        <th>{% trans "Fee (USD)" %}</th>
+                        <th>{% trans "Age" %}</th>
                         <th class="text-end pe-3">{% trans "Actions" %}</th>
                     </tr>
                 </thead>
@@ -56,7 +68,7 @@
                         <td>{{ patient.get_gender_display }}</td>
                         <td>{{ patient.date_of_birth|date:"d/m/Y" }}</td>
                         <td class="small">{{ patient.full_address }}</td>
-                        <td>${{ patient.registration_fee }}</td>
+                        <td>{{ patient.age }} {% trans "yr" %}</td>
                         <td class="text-end pe-3">
                             <a href="{% url 'patient_dashboard' patient.uuid %}" class="btn btn-sm btn-outline-info me-1" title="{% trans 'View Dashboard' %}">
                                 <i class="bi bi-eye"></i>
@@ -74,6 +86,7 @@
                                 <i class="bi bi-box-arrow-in-right"></i>
                             </button>
 
+                            {% if request.user.staff_profile.department.code == 'NUTRISI' or request.user.staff_profile.department.code == 'KIA' %}
                             {# ── MCH Direct Registration Dropdown ── #}
                             <div class="btn-group ms-1" title="{% trans 'MCH Direct Registration' %}">
                                 <button class="btn btn-warning btn-sm dropdown-toggle shadow-sm text-dark fw-bold border-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -139,6 +152,12 @@
                                 </ul>
                             </div>
                             {% endif %}
+                            {% endif %}
+                            {% if perms.patients.delete_patient %}
+                            <a href="{% url 'patient_delete' patient.uuid %}" class="btn btn-sm btn-outline-danger ms-1" title="{% trans 'Delete Patient' %}">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}
@@ -159,25 +178,25 @@
             <nav aria-label="Page navigation">
                 <ul class="pagination pagination-sm mb-0">
                     {% if page_obj.has_previous %}
-                    <li class="page-item"><a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}page=1">&laquo;</a></li>
-                    <li class="page-item"><a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}page={{ page_obj.previous_page_number }}">{% trans "Prev" %}</a></li>
+                    <li class="page-item"><a class="page-link" href="?page=1{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&laquo;</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{% trans "Prev" %}</a></li>
                     {% endif %}
  
                     {% for num in page_obj.paginator.page_range %}
                         {% if num == page_obj.number %}
                             <li class="page-item active"><span class="page-link">{{ num }}</span></li>
                         {% elif num >= page_obj.number|add:"-3" and num <= page_obj.number|add:"3" %}
-                            <li class="page-item"><a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}page={{ num }}">{{ num }}</a></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
                         {% elif num == 1 or num == page_obj.paginator.num_pages %}
-                            <li class="page-item"><a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}page={{ num }}">{{ num }}</a></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
                         {% elif num == page_obj.number|add:"-4" or num == page_obj.number|add:"4" %}
                             <li class="page-item disabled"><span class="page-link">...</span></li>
                         {% endif %}
                     {% endfor %}
  
                     {% if page_obj.has_next %}
-                    <li class="page-item"><a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}page={{ page_obj.next_page_number }}">{% trans "Next" %}</a></li>
-                    <li class="page-item"><a class="page-link" href="?{% if query %}q={{ query }}&{% endif %}page={{ page_obj.paginator.num_pages }}">&raquo;</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{% trans "Next" %}</a></li>
+                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% for key,value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">&raquo;</a></li>
                     {% endif %}
                 </ul>
             </nav>

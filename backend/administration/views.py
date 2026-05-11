@@ -158,7 +158,7 @@ def geographical_dashboard(request):
     
     # Base Querysets
     patients = Patient.objects.all()
-    visits = Visit.objects.filter(status='COM', diagnosis__isnull=False)
+    visits = Visit.objects.filter(status='COM', visit_diagnoses__isnull=False).distinct()
 
     # Filtering Logic
     current_level = 'Município'
@@ -198,7 +198,7 @@ def geographical_dashboard(request):
 
     # 2. Top Diseases Stats
     disease_stats = visits.values(
-        'diagnosis__name', 'diagnosis__code'
+        'visit_diagnoses__diagnosis__name', 'visit_diagnoses__diagnosis__code'
     ).annotate(
         total=Count('pk')
     ).order_by('-total')[:10]

@@ -160,3 +160,5 @@ class UserRoleMapperView(LoginRequiredMixin, PermissionRequiredMixin, View):
         
         messages.success(request, f"Roles updated for {user.get_full_name() or user.username}")
         return redirect('user_role_assignment')
+        messages.success(request, f"Roles updated for {user.get_full_name() or user.username}")
+        return redirect('user_role_assignment')

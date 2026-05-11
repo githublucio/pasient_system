@@ -78,6 +78,12 @@ MIDDLEWARE = [
     'clinic_core.middleware.AuditLogMiddleware',
 ]
 
+# --- Global Page Cache Settings ---
+CACHE_MIDDLEWARE_SECONDS = 300  # 5 minutes
+CACHE_MIDDLEWARE_KEY_PREFIX = 'clinic_core'
+# Ensure different users don't see each other's cached data
+CACHE_MIDDLEWARE_ANONYMOUS_ONLY = False 
+
 # --- Security Headers ---
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
@@ -116,6 +122,15 @@ DATABASES = {
         default=f"postgresql://{os.getenv('DB_USER', 'postgres')}:{os.getenv('DB_PASSWORD', '')}@{os.getenv('DB_HOST', '127.0.0.1')}:{os.getenv('DB_PORT', '5432')}/{os.getenv('DB_NAME', 'pasient_db')}",
         conn_max_age=600
     )
+}
+
+# --- Caching Configuration ---
+# Using Database Cache for reliable persistence across worker processes
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'clinic_cache_table',
+    }
 }
 
 

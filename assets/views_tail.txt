@@ -1,0 +1,50 @@
+﻿    FOUN = ['FOUN']; REKAIDA = ['RELAPSU']; RETRAT = ['DEPOIS_LAKON', 'FALHA']; SELUK = ['OUTRU']
+    def cnt(q, pt=None, g=None):
+        if pt: q = q.filter(patient_type__in=pt)
+        if g: q = q.filter(patient__gender=g)
+        return q.count()
+
+    b1_rows = []
+    for lbl, fk in [('Pulmaun, bakteriolojiku konfirmadu', {'classification':'P', 'case_type':'PTB_POS'}), ('Pulmaun, diagnoza kliniku', {'classification':'P', 'case_type':'PTB_NEG'}), ('Extrapulmaun, bakteriolojiku konf.', {'classification':'EP', 'case_type':'PTB_POS'}), ('Extrapulmonary, diagnoza kliniku', {'classification':'EP', 'case_type':'EPTB'})]:
+        q = qs.filter(**fk)
+        b1_rows.append([lbl, cnt(q,FOUN), cnt(q,FOUN,'M'), cnt(q,FOUN,'F'), cnt(q,REKAIDA), cnt(q,REKAIDA,'M'), cnt(q,REKAIDA,'F'), cnt(q,RETRAT), cnt(q,RETRAT,'M'), cnt(q,RETRAT,'F'), cnt(q,SELUK), cnt(q,SELUK,'M'), cnt(q,SELUK,'F'), q.count()])
+
+    today = date_cls.today()
+    AGS = [(0,4),(5,14),(15,24),(25,34),(35,44),(45,54),(55,64),(65,999)]
+    b2_rows = []
+    for lbl, fk in [('Pulmaun, bakt. konf. (F+R)', {'classification':'P', 'case_type':'PTB_POS','patient_type__in':FOUN+REKAIDA}), ('Pulmaun, diag. klin. (F+R)', {'classification':'P', 'case_type':'PTB_NEG','patient_type__in':FOUN+REKAIDA}), ('Extrapulmaun, bakt. konf. (F+R)', {'classification':'EP','case_type':'PTB_POS','patient_type__in':FOUN+REKAIDA}), ('Extrapulmonary, diag. klin. (F+R)', {'classification':'EP','case_type':'EPTB', 'patient_type__in':FOUN+REKAIDA}), ('Re-Tratamentu (la rekaida)', {'patient_type__in':RETRAT}), ('Seluk', {'patient_type__in':SELUK})]:
+        f = list(qs.filter(**fk).select_related('patient'))
+        v = [lbl]; tm = tf = 0
+        for lo, hi in AGS:
+            m = fc = 0
+            for c in f:
+                dob = c.patient.date_of_birth
+                if dob and lo <= (today - dob).days // 365 <= hi:
+                    if c.patient.gender == 'M': m += 1
+                    else: fc += 1
+            tm += m; tf += fc; v += [m, fc]
+        v += [tm, tf, tm+tf]; b2_rows.append(v)
+
+    wb = openpyxl.Workbook(); ws = wb.active; ws.title = f'TB_Q{quarter}_{year}'
+    f_hdr = Font(bold=True, size=10); f_blk = Font(bold=True, size=9, color='FFFFFF'); fill_blk = PatternFill('solid', fgColor='1565C0'); fill_sub = PatternFill('solid', fgColor='BBDEFB'); fill_tot = PatternFill('solid', fgColor='FFF8E1'); border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+
+    for i, t in enumerate(['REPUBLICA DEMOCRATICA DE TIMOR LESTE','MINISTÃ‰RIO DA SAÃšDE','SERVIÃ‡O SAÃšDE MUNICIPIO DE DILI','PROGRAMA NASIONAL KONTROLA TUBERKULOZU'], 1):
+        ws.merge_cells(start_row=i, start_column=1, end_row=i, end_column=15)
+        c = ws.cell(i, 1, t); c.font = f_hdr; c.alignment = Alignment(horizontal='center')
+
+    ws.merge_cells(5,1,5,15); c = ws.cell(5,1, 'RELATORIO TRIMESTRAL DETEKSAUN KAZU TUBERKULOZU'); c.font = Font(bold=True, size=12, underline='single'); c.alignment = Alignment(horizontal='center')
+    
+    # Block 1 Header
+    r = 12; ws.merge_cells(r,1,r,14); c = ws.cell(r,1, "Block 1 : Kazu TB hotu ne'ebe rejistu"); c.font=f_blk; c.fill=fill_blk
+    r += 1; hdrs1 = ['Tipu Kazu','Foun Total','M','F','Rekaida Total','M','F','Re-Tratamentu Total','M','F','Seluk Total','M','F','TOTAL']
+    for i, h in enumerate(hdrs1, 1): c=ws.cell(r,i,h); c.font=Font(bold=True, size=8); c.fill=fill_sub; c.border=border
+
+    for row_data in b1_rows:
+        r += 1
+        for i, val in enumerate(row_data, 1): c=ws.cell(r,i,val); c.border=border; c.font=Font(size=8)
+        ws.cell(r,14).fill=fill_tot
+
+    buf = io.BytesIO(); wb.save(buf); buf.seek(0)
+    response = HttpResponse(buf.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="TB_Report_Q{quarter}_{year}.xlsx"'
+    return response

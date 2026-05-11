@@ -369,6 +369,11 @@
                     <div class="d-flex flex-column gap-2">
                         <div class="d-flex gap-2">
                             <a href="{% url 'patient_dashboard' p.uuid %}" class="btn btn-sm btn-outline-secondary">{% trans "Dashboard" %}</a>
+                            {% if perms.patients.delete_patient %}
+                            <a href="{% url 'patient_delete' p.uuid %}" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                            {% endif %}
 
                             {% if p.pending_visit %}
                             <!-- Continuation Form (Fee = 0) -->

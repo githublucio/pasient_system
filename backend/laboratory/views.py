@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required, permission_required
 from django.utils import timezone
 
 from medical_records.models import Visit
-from .models import LabTest, LabRequest
+from .models import LabTest, LabRequest, LabResult
 
 CBC_PARAMS = [
     {'key': 'wbc', 'name': 'WBC', 'unit': '10^9/L'},
@@ -203,9 +203,22 @@ def lab_result_input(request, request_uuid):
         result_text = request.POST.get('result_text', '')
         notes = request.POST.get('notes', '')
         
-        lab_req.status = status
-        lab_req.processed_by = request.user
-        lab_req.save()
+        try:
+            lab_req.status = status
+            lab_req.processed_by = request.user
+            
+            # Save Lab No if provided
+            lab_no = request.POST.get('lab_no')
+            if lab_no:
+                lab_req.lab_no = lab_no
+            
+            lab_req.save()
+        except Exception as e:
+            if "unique constraint" in str(e).lower() or "duplicate key" in str(e).lower():
+                messages.error(request, _("Error: Lab No already exists. Please use a unique number."))
+            else:
+                messages.error(request, f"Error: {str(e)}")
+            return redirect(request.path)
         
         if status in ['IN_PROGRESS', 'COMPLETED']:
             from .models import LabResult
@@ -217,11 +230,7 @@ def lab_result_input(request, request_uuid):
             result.notes = notes
             result.verified_by = request.user
             
-            # Save Lab No if provided
-            lab_no = request.POST.get('lab_no')
-            if lab_no:
-                lab_req.lab_no = lab_no
-                lab_req.save()
+            # (Already handled above in the try block for better atomicity)
             
             # Save Structured Data
             if is_cbc_only:
@@ -285,6 +294,11 @@ def lab_result_input(request, request_uuid):
     except ObjectDoesNotExist:
         existing_result = None
     
+    # Get last lab number for placeholder
+    from django.db.models import Max
+    last_req = LabRequest.objects.exclude(lab_no__isnull=True).exclude(lab_no='').order_by('-date_of_request').first()
+    last_lab_no = last_req.lab_no if last_req else "None"
+    
     if is_cbc_only:
         # Prepare parameters with ranges for the template
         params_with_ranges = []
@@ -308,8 +322,8 @@ def lab_result_input(request, request_uuid):
             'cbc_parameters': params_with_ranges,
             'age_category': ref_group,
             'age_display': age_display,
-            'existing_results': existing_results,
             'existing_raw': existing_raw,
+            'last_lab_no': last_lab_no,
         })
     
     # COMPREHENSIVE FORM
@@ -351,8 +365,76 @@ def lab_result_input(request, request_uuid):
         'existing_cbc': res_data.get('cbc', {}),
         'existing_cbc_raw': res_data.get('raw', {}),
         'active_columns': active_columns,
+        'last_lab_no': last_lab_no,
     })
 
+
+
+@login_required
+@permission_required('laboratory.view_labrequest', raise_exception=True)
+def lab_patient_list(request):
+    """Daftar semua pasien yang punya lab request (dari OPD/IGD). Khusus lab staff."""
+    from django.db.models import Q, Exists, OuterRef
+    from django.core.paginator import Paginator
+
+    query = request.GET.get('q', '').strip()
+    status_filter = request.GET.get('status', '')
+    source_filter = request.GET.get('source', '')
+    date_filter = request.GET.get('date', '')
+
+    qs = LabRequest.objects.select_related(
+        'visit__patient', 'requesting_physician', 'processed_by'
+    ).prefetch_related('tests').order_by('-date_of_request')
+
+    # Annotate whether a LabResult exists
+    qs = qs.annotate(
+        result_exists=Exists(
+            LabResult.objects.filter(lab_request=OuterRef('pk'))
+        )
+    )
+
+    if query:
+        qs = qs.filter(
+            Q(visit__patient__full_name__icontains=query) |
+            Q(visit__patient__patient_id__icontains=query) |
+            Q(lab_no__icontains=query)
+        )
+
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+
+    if source_filter:
+        qs = qs.filter(source=source_filter)
+
+    if date_filter:
+        try:
+            from datetime import datetime
+            fd = datetime.strptime(date_filter, '%Y-%m-%d').date()
+            qs = qs.filter(date_of_request__date=fd)
+        except ValueError:
+            pass
+
+    # Stats (before pagination)
+    stats = {
+        'pending': qs.filter(status='PENDING').count(),
+        'in_progress': qs.filter(status__in=['SAMPLE_COLLECTED', 'IN_PROGRESS']).count(),
+        'completed': qs.filter(status='COMPLETED').count(),
+        'total': qs.count(),
+    }
+
+    paginator = Paginator(qs, 25)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'laboratory/patient_list.html', {
+        'lab_requests': page_obj,
+        'page_obj': page_obj,
+        'query': query,
+        'status_filter': status_filter,
+        'source_filter': source_filter,
+        'date_filter': date_filter,
+        'stats': stats,
+    })
 
 
 @login_required
@@ -368,19 +450,53 @@ def lab_dashboard(request):
         filter_date = timezone.localdate()
 
     from django.db.models import Q
-    requests = LabRequest.objects.filter(
-        ~Q(status='COMPLETED') | Q(date_of_request__date=filter_date)
-    ).select_related('visit__patient', 'requesting_physician').prefetch_related('tests').order_by('-date_of_request')
+    all_requests = LabRequest.objects.select_related('visit__patient', 'requesting_physician').prefetch_related('tests').order_by('-date_of_request')
 
-    pending_count = requests.exclude(status='COMPLETED').count()
-    completed_count = requests.filter(status='COMPLETED').count()
+    # New requests for the selected date, excluding finished ones (COMPLETED/CANCELLED)
+    new_requests = all_requests.filter(
+        date_of_request__date=filter_date
+    ).exclude(status__in=['COMPLETED', 'CANCELLED'])
+
+    # Continued requests (pending from previous days), strictly excluding finished ones
+    continued_requests = all_requests.filter(
+        date_of_request__date__lt=filter_date
+    ).exclude(status__in=['COMPLETED', 'CANCELLED'])
+
+    # Completed requests strictly based on when the RESULT was finished (today/filtered date)
+    completed_today = all_requests.filter(
+        status='COMPLETED',
+        result__completed_at__date=filter_date
+    )
+
+    stats = {
+        'pending': all_requests.exclude(status__in=['COMPLETED', 'CANCELLED']).count(),
+        'completed': completed_today.count(),
+        'total': all_requests.filter(date_of_request__date=filter_date).count(),
+    }
 
     return render(request, 'laboratory/dashboard.html', {
-        'requests': requests,
+        'new_requests': new_requests,
+        'continued_requests': continued_requests,
+        'completed_requests': completed_today,
         'filter_date': filter_date,
-        'stats': {
-            'pending': pending_count,
-            'completed': completed_count,
-            'total': requests.count(),
-        }
+        'stats': stats,
     })
+
+@login_required
+@permission_required('laboratory.change_labrequest', raise_exception=True)
+def lab_request_cancel(request, request_uuid):
+    lab_req = get_object_or_404(LabRequest, uuid=request_uuid)
+    if request.method == 'POST':
+        reason = request.POST.get('cancel_reason', '')
+        lab_req.status = 'CANCELLED'
+        lab_req.cancel_reason = reason
+        lab_req.cancelled_by = request.user
+        lab_req.save()
+        
+        from medical_records.utils import log_visit_action
+        log_visit_action(lab_req.visit, 'LAB_CANCELLED', request.user)
+        
+        messages.warning(request, _('Laboratory request has been cancelled.'))
+        return redirect('lab_dashboard')
+    
+    return render(request, 'laboratory/confirm_cancel.html', {'lab_req': lab_req})

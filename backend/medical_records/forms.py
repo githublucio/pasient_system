@@ -1,18 +1,63 @@
 from django import forms
-from .models import Visit
+from .models import Visit, VitalSigns, Diagnosis, TBCase
 from django.utils.translation import gettext_lazy as _
 from django.urls import reverse_lazy
 
 class TriageForm(forms.ModelForm):
     class Meta:
         model = Visit
-        fields = [
-            'complaint', 'triage_level', 'bp_sys', 'bp_dia', 'spo2', 'pulse', 'rr', 
-            'temp', 'weight', 'muac', 'current_room'
-        ]
+        fields = ['complaint', 'triage_level', 'current_room', 'doctor']
         widgets = {
             'complaint': forms.Textarea(attrs={'rows': 2, 'class': 'form-control', 'placeholder': _('Reason for visit (e.g. Fever for 3 days, dry cough...)')}),
             'triage_level': forms.HiddenInput(),
+            'current_room': forms.Select(attrs={'class': 'form-select'}),
+            'doctor': forms.Select(attrs={'class': 'form-select select2-basic'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from .models import Room
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        self.fields['current_room'].queryset = Room.objects.filter(code__in=[
+            'ROOM_3', 'ROOM_4', 'ROOM_5', 'ROOM_6', 'EMERGENCY',
+            'DOKTER', 'KIA', 'HIV', 'TB', 'DENTAL', 'NUTRISI', 'IGD',
+        ])
+        self.fields['current_room'].label = _("Next Room / Department")
+        self.fields['current_room'].required = True
+
+        from django.db.models import Q
+        self.fields['doctor'].queryset = User.objects.filter(
+            Q(staff_profile__category__name__icontains='Medis') |
+            Q(staff_profile__category__name__icontains='Dokter') |
+            Q(staff_profile__category__name__icontains='Doctor')
+        ).distinct().order_by('first_name')
+        self.fields['doctor'].label = _("Select Doctor (Optional)")
+        self.fields['doctor'].empty_label = _("--- Any Available Doctor ---")
+        self.fields['doctor'].required = False
+
+class TBCaseForm(forms.ModelForm):
+    class Meta:
+        model = TBCase
+        fields = [
+            'patient', 'tb_registration_number', 'category', 'date_started', 
+            'initial_weight', 'classification', 'site_of_eptb', 'patient_type',
+            'regimen', 'hiv_status', 'diabetes_status', 'initial_sputum', 'initial_xray'
+        ]
+        widgets = {
+            'date_started': forms.DateInput(attrs={'type': 'date'}),
+            'notes': forms.Textarea(attrs={'rows': 3}),
+        }
+
+class VitalSignsForm(forms.ModelForm):
+    class Meta:
+        model = VitalSigns
+        fields = [
+            'bp_sys', 'bp_dia', 'spo2', 'pulse', 'rr', 
+            'temp', 'weight', 'muac', 'vas_score'
+        ]
+        widgets = {
             'bp_sys': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': _('e.g. 120 (S)')}),
             'bp_dia': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': _('e.g. 80 (D)')}),
             'spo2': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': _('e.g. 98%')}),
@@ -21,26 +66,16 @@ class TriageForm(forms.ModelForm):
             'temp': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': _('e.g. 36.5 °C')}),
             'weight': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': _('e.g. 60 kg')}),
             'muac': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': _('e.g. 25 cm')}),
-            'current_room': forms.Select(attrs={'class': 'form-select'}),
+            'vas_score': forms.Select(attrs={'class': 'form-select'}),
         }
 
     def __init__(self, *args, **kwargs):
+        self.triage_level = kwargs.pop('triage_level', None)
         super().__init__(*args, **kwargs)
-        from .models import Room
-        # Only show rooms 3-6 (Doctors) and EMERGENCY for redirection from Triage
-        self.fields['current_room'].queryset = Room.objects.filter(code__in=[
-            'ROOM_3', 'ROOM_4', 'ROOM_5', 'ROOM_6', 'EMERGENCY',
-            'DOKTER', 'KIA', 'HIV', 'TB', 'DENTAL', 'NUTRISI', 'IGD',
-        ])
-        self.fields['current_room'].label = _("Next Room (Doctor)")
-        self.fields['current_room'].required = True
-
-
 
     def clean_bp_sys(self):
         val = self.cleaned_data.get('bp_sys')
-        triage_level = self.cleaned_data.get('triage_level')
-        if triage_level == 'BLACK' and val == 0:
+        if self.triage_level == 'BLACK' and val == 0:
             return val
         if val is not None and (val < 40 or val > 300):
             raise forms.ValidationError(_("BP Systolic must be between 40 and 300 mmHg."))
@@ -48,8 +83,7 @@ class TriageForm(forms.ModelForm):
 
     def clean_bp_dia(self):
         val = self.cleaned_data.get('bp_dia')
-        triage_level = self.cleaned_data.get('triage_level')
-        if triage_level == 'BLACK' and val == 0:
+        if self.triage_level == 'BLACK' and val == 0:
             return val
         if val is not None and (val < 20 or val > 200):
             raise forms.ValidationError(_("BP Diastolic must be between 20 and 200 mmHg."))
@@ -63,8 +97,7 @@ class TriageForm(forms.ModelForm):
 
     def clean_pulse(self):
         val = self.cleaned_data.get('pulse')
-        triage_level = self.cleaned_data.get('triage_level')
-        if triage_level == 'BLACK' and val == 0:
+        if self.triage_level == 'BLACK' and val == 0:
             return val
         if val is not None and (val < 20 or val > 300):
             raise forms.ValidationError(_("Pulse must be between 20 and 300 bpm."))
@@ -72,8 +105,7 @@ class TriageForm(forms.ModelForm):
 
     def clean_rr(self):
         val = self.cleaned_data.get('rr')
-        triage_level = self.cleaned_data.get('triage_level')
-        if triage_level == 'BLACK' and val == 0:
+        if self.triage_level == 'BLACK' and val == 0:
             return val
         if val is not None and (val < 4 or val > 60):
             raise forms.ValidationError(_("Respiratory rate must be between 4 and 60 bpm."))
@@ -81,8 +113,7 @@ class TriageForm(forms.ModelForm):
 
     def clean_temp(self):
         val = self.cleaned_data.get('temp')
-        triage_level = self.cleaned_data.get('triage_level')
-        if triage_level == 'BLACK' and val == 0:
+        if self.triage_level == 'BLACK' and val == 0:
             return val
         if val is not None and (val < 25 or val > 45):
             raise forms.ValidationError(_("Temperature must be between 25 and 45 °C."))
@@ -91,19 +122,33 @@ class TriageForm(forms.ModelForm):
     def clean_weight(self):
         val = self.cleaned_data.get('weight')
         if val is not None and (val < 0.1 or val > 500):
-            # For weight, we might still want a minimum for newborns, 
-            # but if it's 0 (maybe placeholder), let's allow 0 for BLACK too
-            triage_level = self.cleaned_data.get('triage_level')
-            if triage_level == 'BLACK' and val == 0:
+            if self.triage_level == 'BLACK' and val == 0:
                 return val
             raise forms.ValidationError(_("Weight must be between 0.1 and 500 kg."))
         return val
 
+
 class ExaminationForm(forms.ModelForm):
+    diagnosis = forms.ModelChoiceField(
+        queryset=Diagnosis.objects.all(),
+        widget=forms.HiddenInput(),
+        required=False
+    )
+    secondary_diagnoses = forms.ModelMultipleChoiceField(
+        queryset=Diagnosis.objects.all(),
+        widget=forms.SelectMultiple(attrs={
+            'class': 'form-select select2-diagnosis', 
+            'data-ajax-url': reverse_lazy('search_diagnosis_ajax'),
+            'data-placeholder': _('Search and select one or more diagnoses...')
+        }),
+        required=False,
+        label=_('Diagnoses')
+    )
+
     class Meta:
         model = Visit
         fields = [
-            'complaint', 'diagnosis', 'secondary_diagnoses', 'clinical_notes', 
+            'complaint', 'clinical_notes', 
             'lab_cbc', 'pharmacy_requested', 'refer_to_central',
             'status', 'follow_up_date', 'follow_up_notes'
         ]
@@ -124,15 +169,22 @@ class ExaminationForm(forms.ModelForm):
             'follow_up_notes': forms.TextInput(attrs={'class': 'form-control', 'placeholder': _('e.g. Check lab results')}),
         }
 
+    is_pregnant = forms.BooleanField(required=False, label=_('Is Pregnant'), widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+    is_lactating = forms.BooleanField(required=False, label=_('Is Lactating'), widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if self.instance and self.instance.patient:
+            self.fields['is_pregnant'].initial = self.instance.patient.is_pregnant
+            self.fields['is_lactating'].initial = self.instance.patient.is_lactating
+        
         self.fields['secondary_diagnoses'].label = _('Secondary Diagnoses')
         self.fields['secondary_diagnoses'].help_text = _('Search and select as many as required. The first one will be treated as Primary.')
         self.fields['status'].required = False
         
         # Room referral logic
         from .models import Room
-        referral_codes = ['ROOM_7', 'RADIOLOGY', 'PHARMACY', 'LAB', 'PATHOLOGY', 'IGD', 'EMERGENCY', 'TRAB', 'DENTAL', 'NUTRISI', 'KIA', 'USG', 'HIV', 'TB']
+        referral_codes = ['ROOM_7', 'RADIOLOGY', 'ROOM_8', 'LAB', 'PATHOLOGY', 'IGD', 'EMERGENCY', 'TRAB', 'DENTAL', 'NUTRISI', 'KIA', 'USG', 'HIV', 'TB']
         self.fields['referral_rooms'] = forms.ModelMultipleChoiceField(
             queryset=Room.objects.filter(code__in=referral_codes).order_by('name'),
             widget=forms.SelectMultiple(attrs={
@@ -145,33 +197,61 @@ class ExaminationForm(forms.ModelForm):
 
         # If editing existing visit, combine primary and secondary into the placeholder field
         if self.instance.pk:
-            initial_ids = []
-            if self.instance.diagnosis_id:
-                initial_ids.append(self.instance.diagnosis_id)
-            initial_ids.extend(self.instance.secondary_diagnoses.values_list('id', flat=True))
-            self.initial['secondary_diagnoses'] = list(dict.fromkeys(initial_ids)) # Unique list
+            # New logic: Use VisitDiagnosis model
+            self.initial['secondary_diagnoses'] = list(
+                self.instance.visit_diagnoses.order_by('-is_primary', 'uuid').values_list('diagnosis_id', flat=True)
+            )
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        # Unified logic: Pick the first item from secondary_diagnoses to be the 'Primary'
-        # Note: M2M data is in self.cleaned_data['secondary_diagnoses']
-        diagnoses = self.cleaned_data.get('secondary_diagnoses', [])
-        if diagnoses:
-            instance.diagnosis = diagnoses[0]
-        else:
-            instance.diagnosis = None
-            
+        
         if commit:
             instance.save()
             self.save_m2m()
+
+            # Handle VisitDiagnosis (New Model)
+            from .models import VisitDiagnosis
+            diagnoses = self.cleaned_data.get('secondary_diagnoses', [])
+            
+            # Update diagnoses: First one is primary
+            instance.visit_diagnoses.all().delete()
+            for i, diagnosis in enumerate(diagnoses):
+                VisitDiagnosis.objects.create(
+                    visit=instance,
+                    diagnosis=diagnosis,
+                    is_primary=(i == 0)
+                )
+
+            # Update patient KIA status
+            patient = instance.patient
+            if patient:
+                patient.is_pregnant = self.cleaned_data.get('is_pregnant', False)
+                patient.is_lactating = self.cleaned_data.get('is_lactating', False)
+                patient.save(update_fields=['is_pregnant', 'is_lactating'])
+
         return instance
 
 class EmergencyExaminationForm(forms.ModelForm):
+    diagnosis = forms.ModelChoiceField(
+        queryset=Diagnosis.objects.all(),
+        widget=forms.HiddenInput(),
+        required=False
+    )
+    secondary_diagnoses = forms.ModelMultipleChoiceField(
+        queryset=Diagnosis.objects.all(),
+        widget=forms.SelectMultiple(attrs={
+            'class': 'form-select select2-diagnosis', 
+            'data-ajax-url': reverse_lazy('search_diagnosis_ajax'),
+            'data-placeholder': _('Search and select one or more diagnoses...')
+        }),
+        required=False,
+        label=_('Diagnoses')
+    )
+
     class Meta:
         model = Visit
         fields = [
-            'complaint', 'triage_level', 'er_bp_sys', 'er_bp_dia', 'er_spo2', 'er_pulse', 'er_rr', 
-            'er_temp', 'er_weight', 'er_muac', 'vas_score', 'diagnosis', 'secondary_diagnoses', 'clinical_notes', 
+            'complaint', 'triage_level', 'clinical_notes', 
             'lab_cbc', 'pharmacy_requested', 'refer_to_central',
             'status', 'allergy_noted',
             'follow_up_date', 'follow_up_notes',
@@ -179,15 +259,6 @@ class EmergencyExaminationForm(forms.ModelForm):
         widgets = {
             'complaint': forms.Textarea(attrs={'rows': 2, 'class': 'form-control', 'placeholder': _('Main emergency complaint (e.g. Acute chest pain, Severe bleeding)...')}),
             'triage_level': forms.HiddenInput(),
-            'er_bp_sys': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': _('e.g. 120 (S)')}),
-            'er_bp_dia': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': _('e.g. 80 (D)')}),
-            'er_spo2': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': _('e.g. 98%')}),
-            'er_pulse': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': _('e.g. 80 bpm')}),
-            'er_rr': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': _('e.g. 20 bpm')}),
-            'er_temp': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': _('e.g. 36.5 °C')}),
-            'er_weight': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': _('e.g. 60 kg')}),
-            'er_muac': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.1', 'placeholder': _('e.g. 25 cm')}),
-            'vas_score': forms.HiddenInput(),
             'diagnosis': forms.HiddenInput(),
             'secondary_diagnoses': forms.SelectMultiple(attrs={
                 'class': 'form-select select2-diagnosis', 
@@ -203,6 +274,9 @@ class EmergencyExaminationForm(forms.ModelForm):
             'follow_up_notes': forms.Textarea(attrs={'rows': 2, 'class': 'form-control', 'placeholder': _('Instructions for follow-up visit...')}),
         }
     
+    is_pregnant = forms.BooleanField(required=False, label=_('Is Pregnant'), widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+    is_lactating = forms.BooleanField(required=False, label=_('Is Lactating'), widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+
     allergy_noted = forms.CharField(
         label=_("Identify New Allergy"),
         required=False,
@@ -211,12 +285,16 @@ class EmergencyExaminationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if self.instance and self.instance.patient:
+            self.fields['is_pregnant'].initial = self.instance.patient.is_pregnant
+            self.fields['is_lactating'].initial = self.instance.patient.is_lactating
+
         self.fields['secondary_diagnoses'].label = _('Secondary Diagnoses')
         self.fields['secondary_diagnoses'].help_text = _('Search and select as many as required. The first one will be treated as Primary.')
         self.fields['status'].required = False
         
         from .models import Room
-        referral_codes = ['ROOM_7', 'RADIOLOGY', 'PHARMACY', 'LAB', 'PATHOLOGY', 'IGD', 'EMERGENCY', 'TRAB', 'KIA', 'HIV', 'TB', 'DENTAL', 'NUTRISI', 'USG']
+        referral_codes = ['ROOM_7', 'RADIOLOGY', 'ROOM_8', 'LAB', 'PATHOLOGY', 'IGD', 'EMERGENCY', 'TRAB', 'KIA', 'HIV', 'TB', 'DENTAL', 'NUTRISI', 'USG']
         self.fields['referral_rooms'] = forms.ModelMultipleChoiceField(
             queryset=Room.objects.filter(code__in=referral_codes).order_by('name'),
             widget=forms.SelectMultiple(attrs={
@@ -227,94 +305,40 @@ class EmergencyExaminationForm(forms.ModelForm):
             label=_('Next Room / Referrals')
         )
 
-        # Custom VAS choices data for rich UI rendering
-        self.fields['vas_score'].choices_data = [
-            ('0', _('0 (No Pain)'), '<i class="bi bi-emoji-smile"></i>', '#28a745'),
-            ('1-3', _('1-3 (Mild)'), '<i class="bi bi-emoji-neutral"></i>', '#8bc34a'),
-            ('4-6', _('4-6 (Moderate)'), '<i class="bi bi-emoji-frown"></i>', '#ffc107'),
-            ('7-9', _('7-9 (Severe)'), '<i class="bi bi-emoji-tear"></i>', '#fd7e14'),
-            ('10', _('10 (Worst Pain)'), '<i class="bi bi-emoji-dizzy"></i>', '#dc3545'),
-        ]
-
         if self.instance.pk:
-            initial_ids = []
-            if self.instance.diagnosis_id:
-                initial_ids.append(self.instance.diagnosis_id)
-            initial_ids.extend(self.instance.secondary_diagnoses.values_list('id', flat=True))
-            self.initial['secondary_diagnoses'] = list(dict.fromkeys(initial_ids))
+            # New logic: Use VisitDiagnosis model
+            self.initial['secondary_diagnoses'] = list(
+                self.instance.visit_diagnoses.order_by('-is_primary', 'uuid').values_list('diagnosis_id', flat=True)
+            )
 
     def save(self, commit=True):
         instance = super().save(commit=False)
-        diagnoses = self.cleaned_data.get('secondary_diagnoses', [])
-        if diagnoses:
-            instance.diagnosis = diagnoses[0]
-        else:
-            instance.diagnosis = None
-            
+        
         if commit:
             instance.save()
             self.save_m2m()
+
+            # Handle VisitDiagnosis (New Model)
+            from .models import VisitDiagnosis
+            diagnoses = self.cleaned_data.get('secondary_diagnoses', [])
+            
+            # Update diagnoses: First one is primary
+            instance.visit_diagnoses.all().delete()
+            for i, diagnosis in enumerate(diagnoses):
+                VisitDiagnosis.objects.create(
+                    visit=instance,
+                    diagnosis=diagnosis,
+                    is_primary=(i == 0)
+                )
+
+            # Update patient KIA status
+            patient = instance.patient
+            if patient:
+                patient.is_pregnant = self.cleaned_data.get('is_pregnant', False)
+                patient.is_lactating = self.cleaned_data.get('is_lactating', False)
+                patient.save(update_fields=['is_pregnant', 'is_lactating'])
+
         return instance
-
-    def clean_er_bp_sys(self):
-        val = self.cleaned_data.get('er_bp_sys')
-        triage_level = self.cleaned_data.get('triage_level')
-        if triage_level == 'BLACK' and val == 0:
-            return val
-        if val is not None and (val < 40 or val > 300):
-            raise forms.ValidationError(_("BP Systolic must be between 40 and 300 mmHg."))
-        return val
-
-    def clean_er_bp_dia(self):
-        val = self.cleaned_data.get('er_bp_dia')
-        triage_level = self.cleaned_data.get('triage_level')
-        if triage_level == 'BLACK' and val == 0:
-            return val
-        if val is not None and (val < 20 or val > 200):
-            raise forms.ValidationError(_("BP Diastolic must be between 20 and 200 mmHg."))
-        return val
-
-    def clean_er_spo2(self):
-        val = self.cleaned_data.get('er_spo2')
-        if val is not None and (val < 0 or val > 100):
-            raise forms.ValidationError(_("SPO2 must be between 0 and 100%."))
-        return val
-
-    def clean_er_pulse(self):
-        val = self.cleaned_data.get('er_pulse')
-        triage_level = self.cleaned_data.get('triage_level')
-        if triage_level == 'BLACK' and val == 0:
-            return val
-        if val is not None and (val < 20 or val > 300):
-            raise forms.ValidationError(_("Pulse must be between 20 and 300 bpm."))
-        return val
-
-    def clean_er_rr(self):
-        val = self.cleaned_data.get('er_rr')
-        triage_level = self.cleaned_data.get('triage_level')
-        if triage_level == 'BLACK' and val == 0:
-            return val
-        if val is not None and (val < 4 or val > 60):
-            raise forms.ValidationError(_("Respiratory rate must be between 4 and 60 bpm."))
-        return val
-
-    def clean_er_temp(self):
-        val = self.cleaned_data.get('er_temp')
-        triage_level = self.cleaned_data.get('triage_level')
-        if triage_level == 'BLACK' and val == 0:
-            return val
-        if val is not None and (val < 25 or val > 45):
-            raise forms.ValidationError(_("Temperature must be between 25 and 45 °C."))
-        return val
-
-    def clean_er_weight(self):
-        val = self.cleaned_data.get('er_weight')
-        triage_level = self.cleaned_data.get('triage_level')
-        if triage_level == 'BLACK' and val == 0:
-            return val
-        if val is not None and (val < 0.1 or val > 500):
-            raise forms.ValidationError(_("Weight must be between 0.1 and 500 kg."))
-        return val
 
 
 class EmergencyAdmissionUpdateForm(forms.ModelForm):
@@ -375,7 +399,9 @@ class EmergencyMedicationForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         from pharmacy.models import Medicine
-        self.fields['medicine'].queryset = Medicine.objects.filter(is_active=True, stock__gt=0).order_by('name')
+        self.fields['medicine'].queryset = Medicine.objects.filter(
+            is_active=True
+        ).order_by('name')
 
 
 class EmergencyDischargeForm(forms.ModelForm):
@@ -426,3 +452,55 @@ class HIVAssessmentForm(forms.ModelForm):
             'next_visit_scheduled': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'other_plans': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
         }
+
+class TBScreeningForm(forms.ModelForm):
+    class Meta:
+        from .models import TBScreening
+        model = TBScreening
+        fields = [
+            'patient', 'full_name', 'phone_number', 'age', 'gender',
+            'municipio', 'posto', 'suco', 'aldeia', 'outreach_location',
+            'has_cough_2_weeks', 'has_fever', 'has_night_sweats', 'has_weight_loss',
+            'has_contact_history', 'is_hiv_positive',
+            'is_suspect', 'referral_status', 'sputum_collected', 'notes',
+            'screening_date', 'lab_result', 'lab_test_date'
+        ]
+        widgets = {
+            'patient': forms.Select(attrs={'class': 'form-select select2-patient-ajax'}),
+            'full_name': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'age': forms.NumberInput(attrs={'class': 'form-control'}),
+            'gender': forms.Select(attrs={'class': 'form-select'}),
+            'municipio': forms.Select(attrs={'class': 'form-select'}),
+            'posto': forms.Select(attrs={'class': 'form-select'}),
+            'suco': forms.Select(attrs={'class': 'form-select'}),
+            'aldeia': forms.Select(attrs={'class': 'form-select'}),
+            'outreach_location': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. Market, School'}),
+            'has_cough_2_weeks': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_fever': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_night_sweats': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_weight_loss': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'has_contact_history': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_hiv_positive': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'is_suspect': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'referral_status': forms.Select(attrs={'class': 'form-select'}),
+            'sputum_collected': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'screening_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'lab_result': forms.Select(attrs={'class': 'form-select'}),
+            'lab_test_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from patients.models import Patient
+        # If we have an instance with a patient, keep that patient in the queryset
+        if self.instance and self.instance.pk and self.instance.patient:
+            self.fields['patient'].queryset = Patient.objects.filter(id=self.instance.patient.id)
+        else:
+            self.fields['patient'].queryset = Patient.objects.none()
+        
+        # Limit geography fields to empty initially to speed up load
+        self.fields['posto'].queryset = self.fields['posto'].queryset.none()
+        self.fields['suco'].queryset = self.fields['suco'].queryset.none()
+        self.fields['aldeia'].queryset = self.fields['aldeia'].queryset.none()

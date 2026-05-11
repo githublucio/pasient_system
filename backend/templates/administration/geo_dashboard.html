@@ -103,7 +103,9 @@
                 <span class="badge bg-light text-dark">Top 15 {{ current_level }}s</span>
             </div>
             <div class="card-body">
-                <canvas id="geoChart" height="300"></canvas>
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="geoChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -115,7 +117,9 @@
                 <h5 class="mb-0 fw-bold">{% trans "Top Diseases in Area" %}</h5>
             </div>
             <div class="card-body">
-                <canvas id="diseaseChart" height="300"></canvas>
+                <div style="position: relative; height: 300px; width: 100%;">
+                    <canvas id="diseaseChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -174,7 +178,7 @@
             <div class="card-body p-4">
                 <h6 class="text-muted text-uppercase small fw-bold">{% trans "Dominant Disease" %}</h6>
                 <h3 class="fw-bold text-danger">
-                    {% if disease_stats %}{{ disease_stats.0.diagnosis__name }}{% else %}-{% endif %}
+                    {% if disease_stats %}{{ disease_stats.0.visit_diagnoses__diagnosis__name }}{% else %}-{% endif %}
                 </h3>
                 <p class="mb-0 text-muted">
                     {% if disease_stats %}
@@ -189,7 +193,9 @@
                 <h5 class="mb-0 fw-bold">{% trans "Monthly Trend" %}</h5>
             </div>
             <div class="card-body">
-                <canvas id="trendChart" height="200"></canvas>
+                <div style="position: relative; height: 200px; width: 100%;">
+                    <canvas id="trendChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
@@ -234,7 +240,7 @@
         new Chart(diseaseCtx, {
             type: 'doughnut',
             data: {
-                labels: [{% for s in disease_stats %}"{{ s.diagnosis__name|escapejs }}"{% if not forloop.last %}, {% endif %}{% endfor %}],
+                labels: [{% for s in disease_stats %}"{{ s.visit_diagnoses__diagnosis__name|escapejs }}"{% if not forloop.last %}, {% endif %}{% endfor %}],
                 datasets: [{
                     data: [{% for s in disease_stats %}{{ s.total }}{% if not forloop.last %}, {% endif %}{% endfor %}],
                     backgroundColor: [

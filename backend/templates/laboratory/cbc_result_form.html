@@ -163,8 +163,14 @@
         <!-- PATIENT INFO -->
         <div class="patient-info-grid">
             <div class="info-item">
-                <label>Sample ID</label>
-                <span>{{ lab_request.lab_no|default:lab_request.uuid|truncatechars:10 }}</span>
+                <label>Lab No (Manual)</label>
+                {% if lab_request.lab_no %}
+                    <span class="fw-bold text-primary">{{ lab_request.lab_no }}</span>
+                {% else %}
+                    <input type="text" name="lab_no" class="form-control form-control-sm" 
+                           placeholder="{% trans 'Last: ' %}{{ last_lab_no }}" 
+                           value="{{ lab_request.lab_no|default:'' }}">
+                {% endif %}
             </div>
             <div class="info-item">
                 <label>Name</label>

@@ -85,6 +85,11 @@ class StaffProfile(models.Model):
         return self.department.code.upper() in ['HIV', 'AIDS']
 
     @property
+    def is_tb_staff(self):
+        """Returns True if the staff belongs to the TB department."""
+        return self.department.code.upper() == 'TB'
+
+    @property
     def home_url(self):
         """Returns the appropriate dashboard URL based on department code."""
         from django.urls import reverse

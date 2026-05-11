@@ -52,7 +52,15 @@
                                 <option value="{{ val }}" {% if medicine.unit == val %}selected{% endif %}>{{ label }}</option>
                                 {% endfor %}
                             </select>
-                            <small class="text-muted">{% trans "How you count stock (per tablet, per bottle, etc.)" %}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">{% trans "Department Category" %} *</label>
+                            <select name="department_category" class="form-select border-primary">
+                                {% for val, label in dept_choices %}
+                                <option value="{{ val }}" {% if medicine.department_category == val or val == default_dept %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">{% trans "Who manages this stock?" %}</small>
                         </div>
                     </div>
 
@@ -64,7 +72,7 @@
                         <div class="col-md-6">
                             {% if medicine %}
                             <label class="form-label fw-bold">{% trans "Current Stock" %}</label>
-                            <input type="text" class="form-control" value="{{ medicine.stock }}" disabled>
+                            <input type="text" class="form-control" value="{{ medicine.total_stock }}" disabled>
                             <small class="text-muted">{% trans "Stock is managed through Stock Entries" %}</small>
                             {% endif %}
                         </div>

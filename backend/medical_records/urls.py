@@ -40,4 +40,20 @@ urlpatterns = [
     path('master/diagnosis/delete/<int:pk>/', views.DiagnosisDeleteView.as_view(), name='diagnosis_delete'),
     path('kia/direct-registration/', views.kia_direct_registration, name='kia_direct_registration'),
     path('nutrition/statistics/', views.nutrition_statistics, name='nutrition_statistics'),
+    
+    # TB Screening Outreach
+    path('tb/screening/', views.tb_screening_list, name='tb_screening_list'),
+    path('tb/screening/new/', views.tb_screening_create, name='tb_screening_create'),
+    path('tb/screening/edit/<uuid:uuid>/', views.tb_screening_edit, name='tb_screening_edit'),
+    path('tb/screening/export/excel/', views.tb_screening_export_excel, name='tb_screening_export_excel'),
+    path('tb/screening/export/pdf/', views.tb_screening_export_pdf, name='tb_screening_export_pdf'),
+
+    # TB Treatment Management (DOTS)
+    path('tb/treatment/', views.tb_treatment_dashboard, name='tb_treatment_dashboard'),
+    path('tb/treatment/case/new/', views.tb_case_create, name='tb_case_create'),
+    path('tb/treatment/card/<uuid:case_uuid>/', views.tb_treatment_card, name='tb_treatment_card'),
+    path('tb/treatment/card/save/<uuid:case_uuid>/', views.tb_card_save, name='tb_card_save'),
+    path('tb/treatment/log/add/<uuid:case_uuid>/', views.tb_treatment_log_add, name='tb_treatment_log_add'),
+    path('tb/report/trimestral/', views.tb_trimestral_report, name='tb_trimestral_report'),
+    path('tb/report/trimestral/export/excel/', views.tb_trimestral_export_excel, name='tb_trimestral_export_excel'),
 ]

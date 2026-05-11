@@ -180,8 +180,16 @@
             {% if lab_req.status == 'COMPLETED' %}<span class="badge bg-success ms-2">{% trans "Completed" %}</span>
             {% elif lab_req.status == 'IN_PROGRESS' %}<span class="badge bg-warning text-dark ms-2">{% trans "In Progress" %}</span>
             {% elif lab_req.status == 'SAMPLE_COLLECTED' %}<span class="badge bg-info text-dark ms-2">{% trans "Sample Collected" %}</span>
+            {% elif lab_req.status == 'CANCELLED' %}<span class="badge bg-danger ms-2">{% trans "Cancelled" %}</span>
             {% else %}<span class="badge bg-secondary ms-2">{% trans "Pending" %}</span>{% endif %}
         </h6>
+        {% if lab_req.status == 'CANCELLED' %}
+        <div class="alert alert-danger py-1 px-2 mb-2 border-0" style="font-size: 0.75rem;">
+            <i class="bi bi-exclamation-octagon-fill me-1"></i>
+            <strong>{% trans "Reason:" %}</strong> {{ lab_req.cancel_reason|default:_("No reason provided.") }}
+            <div class="smaller opacity-75">{% trans "By:" %} {{ lab_req.cancelled_by.get_full_name|default:lab_req.cancelled_by.username }}</div>
+        </div>
+        {% endif %}
         <div class="border rounded p-2 bg-white small">
             <div class="mb-1"><strong>{% trans "Tests" %}:</strong>
                 {% for test in lab_req.tests.all %}

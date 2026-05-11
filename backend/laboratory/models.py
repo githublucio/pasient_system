@@ -14,6 +14,9 @@ class LabTest(models.Model):
 
     code = models.CharField(_('Code'), max_length=50, unique=True, blank=True, null=True)
     name = models.CharField(_('Test Name'), max_length=100)
+    price = models.DecimalField(_('Price (USD)'), max_digits=10, decimal_places=2, default=0.00)
+    normal_range = models.CharField(_('Normal Range'), max_length=100, blank=True, null=True)
+    unit = models.CharField(_('Unit'), max_length=50, blank=True, null=True)
     column_index = models.IntegerField(_('Form Column'), choices=COLUMN_CHOICES, default=1)
     order = models.PositiveIntegerField(_('Order'), default=0)
 
@@ -52,7 +55,8 @@ class LabRequest(models.Model):
     visit = models.OneToOneField(Visit, on_delete=models.CASCADE, related_name='lab_request', verbose_name=_('Visit'))
     
     date_of_request = models.DateTimeField(_('Date of request'), auto_now_add=True)
-    lab_no = models.CharField(_('Lab No'), max_length=50, blank=True, null=True)
+    updated_at = models.DateTimeField(_('Updated At'), auto_now=True)
+    lab_no = models.CharField(_('Lab No'), max_length=50, blank=True, null=True, unique=True)
     
     patient_type = models.CharField(_('Patient Type'), max_length=10, choices=PATIENT_TYPE_CHOICES, default='OUT')
     urgency = models.CharField(_('Urgency'), max_length=10, choices=URGENCY_CHOICES, default='NORMAL')
@@ -75,9 +79,14 @@ class LabRequest(models.Model):
         ('SAMPLE_COLLECTED', _('Sample Collected')),
         ('IN_PROGRESS', _('In Progress')),
         ('COMPLETED', _('Completed')),
+        ('CANCELLED', _('Cancelled')),
     ]
     status = models.CharField(_('Status'), max_length=20, choices=STATUS_CHOICES, default='PENDING')
     processed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='processed_lab_requests', verbose_name=_('Processed By'))
+    
+    # Cancellation Info
+    cancel_reason = models.CharField(_('Cancel Reason'), max_length=255, blank=True, null=True)
+    cancelled_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='cancelled_lab_requests', verbose_name=_('Cancelled By'))
 
     class Meta:
         verbose_name = _('Lab Request')
@@ -93,6 +102,15 @@ class LabResult(models.Model):
     lab_request = models.OneToOneField(LabRequest, on_delete=models.CASCADE, related_name='result', verbose_name=_('Lab Request'))
     result_text = models.TextField(_('Result Details'), blank=True, null=True)
     result_data = models.JSONField(_('Result Data'), default=dict, blank=True)
+    
+    FLAG_CHOICES = [
+        ('NORMAL', _('Normal')),
+        ('HIGH', _('High')),
+        ('LOW', _('Low')),
+    ]
+    flag = models.CharField(_('Flag'), max_length=10, choices=FLAG_CHOICES, default='NORMAL')
+    is_abnormal = models.BooleanField(_('Is Abnormal'), default=False)
+    
     attachment = models.FileField(_('Attachment (PDF)'), upload_to='lab_results/', blank=True, null=True)
     notes = models.TextField(_('Notes'), blank=True, null=True)
     verified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='verified_lab_results', verbose_name=_('Verified By'))
@@ -103,6 +121,9 @@ class LabResult(models.Model):
     class Meta:
         verbose_name = _('Lab Result')
         verbose_name_plural = _('Lab Results')
+        indexes = [
+            models.Index(fields=['completed_at'], name='idx_labres_completed'),
+        ]
 
     def __str__(self):
         return f"Result for {self.lab_request}"

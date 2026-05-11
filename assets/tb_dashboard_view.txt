@@ -1,0 +1,107 @@
+﻿
+> medical_records\views.py:2054:def tb_treatment_dashboard(request):
+  medical_records\views.py:2055:    from .models import TBCase, Visit
+  medical_records\views.py:2056:    from django.db.models import Count, Q
+  medical_records\views.py:2057:
+  medical_records\views.py:2058:    today = timezone.localdate()
+  medical_records\views.py:2059:
+  medical_records\views.py:2060:    cases = TBCase.objects.all().select_related('patient').order_by('-date_started')
+  medical_records\views.py:2061:
+  medical_records\views.py:2062:    # Simple search
+  medical_records\views.py:2063:    q = request.GET.get('q', '')
+  medical_records\views.py:2064:    if q:
+  medical_records\views.py:2065:        cases = cases.filter(
+  medical_records\views.py:2066:            Q(patient__full_name__icontains=q) |
+  medical_records\views.py:2067:            Q(tb_registration_number__icontains=q)
+  medical_records\views.py:2068:        )
+  medical_records\views.py:2069:
+  medical_records\views.py:2070:    # --- Visit statistics for TB room ---
+  medical_records\views.py:2071:    tb_visits_qs = Visit.objects.filter(current_room__code='TB')
+  medical_records\views.py:2072:
+  medical_records\views.py:2073:    stats = {
+  medical_records\views.py:2074:        'active_cases':    TBCase.objects.filter(is_active=True).count(),
+  medical_records\views.py:2075:        'inactive_cases':  TBCase.objects.filter(is_active=False).count(),
+  medical_records\views.py:2076:        'visits_today':    tb_visits_qs.filter(visit_date__date=today).count(),
+  medical_records\views.py:2077:        'visits_month':    tb_visits_qs.filter(
+  medical_records\views.py:2078:                               visit_date__year=today.year,
+  medical_records\views.py:2079:                               visit_date__month=today.month
+  medical_records\views.py:2080:                           ).count(),
+  medical_records\views.py:2081:        'visits_total':    tb_visits_qs.count(),
+  medical_records\views.py:2082:    }
+  medical_records\views.py:2083:
+  medical_records\views.py:2084:    # Annotate each case with patient's TB room visit count
+  medical_records\views.py:2085:    patient_ids = [c.patient_id for c in cases]
+  medical_records\views.py:2086:    visit_counts = (
+  medical_records\views.py:2087:        Visit.objects.filter(patient_id__in=patient_ids, current_room__code='TB')
+  medical_records\views.py:2088:        .values('patient_id')
+  medical_records\views.py:2089:        .annotate(cnt=Count('uuid'))
+  medical_records\views.py:2090:    )
+  medical_records\views.py:2091:    visit_map = {row['patient_id']: row['cnt'] for row in visit_counts}
+  medical_records\views.py:2092:    for case in cases:
+  medical_records\views.py:2093:        case.tb_visit_count = visit_map.get(case.patient_id, 0)
+  medical_records\views.py:2094:
+  medical_records\views.py:2095:    # --- Pagination ---
+  medical_records\views.py:2096:    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+  medical_records\views.py:2097:    paginator = Paginator(cases, 15) # Show 15 cases per page
+  medical_records\views.py:2098:    page = request.GET.get('page')
+  medical_records\views.py:2099:    try:
+  medical_records\views.py:2100:        cases_page = paginator.page(page)
+  medical_records\views.py:2101:    except PageNotAnInteger:
+  medical_records\views.py:2102:        cases_page = paginator.page(1)
+  medical_records\views.py:2103:    except EmptyPage:
+  medical_records\views.py:2104:        cases_page = paginator.page(paginator.num_pages)
+  medical_records\views.py:2105:
+  medical_records\views.py:2106:    return render(request, 'medical_records/tb_treatment_dashboard.html', {
+  medical_records\views.py:2107:        'cases': cases_page,
+  medical_records\views.py:2108:        'query': q,
+  medical_records\views.py:2109:        'stats': stats,
+  medical_records\views.py:2110:        'today': today,
+  medical_records\views.py:2111:    })
+  medical_records\views.py:2112:
+  medical_records\views.py:2113:@login_required
+  medical_records\views.py:2114:def tb_case_create(request):
+  medical_records\views.py:2115:    from .forms import TBCaseForm
+  medical_records\views.py:2116:    if request.method == 'POST':
+  medical_records\views.py:2117:        form = TBCaseForm(request.POST)
+  medical_records\views.py:2118:        if form.is_valid():
+  medical_records\views.py:2119:            case = form.save()
+  medical_records\views.py:2120:            
+  medical_records\views.py:2121:            # Auto-check-in to TB Room for today if not already there
+  medical_records\views.py:2122:            from .models import Visit, Room
+  medical_records\views.py:2123:            from patients.models import DailyQueue
+  medical_records\views.py:2124:            today = timezone.localdate()
+  medical_records\views.py:2125:            tb_room = Room.objects.filter(code='TB').first()
+  medical_records\views.py:2126:            
+  medical_records\views.py:2127:            # Check if patient already has a visit today in TB room
+  medical_records\views.py:2128:            existing_visit = Visit.objects.filter(patient=case.patient, 
+visit_date__date=today, current_room=tb_room).exists()
+  medical_records\views.py:2129:            if not existing_visit and tb_room:
+  medical_records\views.py:2130:                queue, created = DailyQueue.objects.get_or_create(date=today, 
+department='TB')
+  medical_records\views.py:2131:                Visit.objects.create(
+  medical_records\views.py:2132:                    patient=case.patient,
+  medical_records\views.py:2133:                    current_room=tb_room,
+  medical_records\views.py:2134:                    queue_number=queue.get_next_number(),
+  medical_records\views.py:2135:                    status='IP', # Set directly to In Progress
+  medical_records\views.py:2136:                    checked_in_by=request.user,
+  medical_records\views.py:2137:                )
+  medical_records\views.py:2138:            
+  medical_records\views.py:2139:            messages.success(request, _("TB Patient registered to DOTS program 
+successfully."))
+  medical_records\views.py:2140:            return redirect('tb_treatment_card', case_uuid=case.uuid)
+  medical_records\views.py:2141:    else:
+  medical_records\views.py:2142:        # Pre-select patient and pull clinical data from latest visit
+  medical_records\views.py:2143:        patient_id = request.GET.get('patient')
+  medical_records\views.py:2144:        initial = {'patient': patient_id} if patient_id else {}
+  medical_records\views.py:2145:        
+  medical_records\views.py:2146:        if patient_id:
+  medical_records\views.py:2147:            from .models import VisitDiagnosis
+  medical_records\views.py:2148:            from laboratory.models import LabResult
+  medical_records\views.py:2149:            from radiology.models import RadiologyResult
+  medical_records\views.py:2150:            
+  medical_records\views.py:2151:            # Get latest primary diagnosis for this patient
+  medical_records\views.py:2152:            latest_diag = VisitDiagnosis.objects.filter(
+  medical_records\views.py:2153:                visit__patient_id=patient_id, 
+  medical_records\views.py:2154:                is_primary=True
+
+

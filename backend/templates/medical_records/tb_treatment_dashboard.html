@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}{% trans "TB Treatment Dashboard (DOTS)" %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: none !important;
+        border-radius: 16px;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+    .icon-shape {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px;
+    }
+    .table-container {
+        border-radius: 16px;
+        overflow: hidden;
+        background: white;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .tb-table thead th {
+        background-color: #f8f9fa;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        font-weight: 700;
+        color: #6c757d;
+        padding: 1.25rem 1rem;
+        border-bottom: 1px solid #edf2f7;
+    }
+    .tb-table tbody td {
+        padding: 1.25rem 1rem;
+        border-bottom: 1px solid #edf2f7;
+        font-size: 0.875rem;
+    }
+    .tb-table tbody tr:hover {
+        background-color: #fcfcfd;
+    }
+    .search-input-group {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+        transition: border-color 0.2s;
+    }
+    .search-input-group:focus-within {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+    }
+    .search-input-group .form-control {
+        border: none;
+        padding-top: 0.6rem;
+        padding-bottom: 0.6rem;
+    }
+    .search-input-group .form-control:focus {
+        box-shadow: none;
+    }
+    .status-badge {
+        padding: 0.5em 1em;
+        font-weight: 600;
+        border-radius: 8px;
+        font-size: 0.75rem;
+    }
+    .btn-dots {
+        border-radius: 10px;
+        padding: 0.5rem 1rem;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    .btn-dots:hover {
+        background-color: #dc3545;
+        color: white;
+    }
+    .patient-avatar {
+        width: 38px;
+        height: 38px;
+        background: #f1f5f9;
+        color: #475569;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        font-weight: bold;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-2">
+    <!-- Header Area -->
+    <div class="row align-items-center mb-4">
+        <div class="col-md-6">
+            <h2 class="fw-bold text-dark mb-1">
+                <span class="text-danger"><i class="bi bi-lungs-fill"></i></span> 
+                {% trans "TB Treatment Dashboard" %}
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="/" class="text-decoration-none">{% trans "Home" %}</a></li>
+                    <li class="breadcrumb-item active">{% trans "TB Program (DOTS)" %}</li>
+                </ol>
+            </nav>
+        </div>
+        <div class="col-md-6 text-md-end mt-3 mt-md-0">
+            <div class="d-flex gap-2 justify-content-md-end">
+                <a href="{% url 'tb_screening_list' %}" class="btn btn-outline-dark btn-dots">
+                    <i class="bi bi-people me-1"></i> {% trans "Outreach Screening" %}
+                </a>
+                <a href="{% url 'tb_case_create' %}" class="btn btn-danger btn-dots shadow-sm">
+                    <i class="bi bi-plus-lg me-1"></i> {% trans "Register New Case" %}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="row g-4 mb-4">
+        <!-- Active Cases -->
+        <div class="col-xl-3 col-sm-6">
+            <div class="card stat-card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-shape bg-danger bg-opacity-10 text-danger me-3">
+                            <i class="bi bi-person-check fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small fw-bold text-uppercase mb-0">{% trans "Active Cases" %}</p>
+                            <h3 class="fw-bold mb-0">{{ stats.active_cases }}</h3>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-danger" role="progressbar" style="width: 70%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Visits Today -->
+        <div class="col-xl-3 col-sm-6">
+            <div class="card stat-card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-shape bg-primary bg-opacity-10 text-primary me-3">
+                            <i class="bi bi-calendar-event fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small fw-bold text-uppercase mb-0">{% trans "Visits Today" %}</p>
+                            <h3 class="fw-bold mb-0">{{ stats.visits_today }}</h3>
+                        </div>
+                    </div>
+                    <p class="mb-0 mt-3 small text-muted">
+                        <i class="bi bi-clock me-1"></i> {{ today|date:"l, d M Y" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        <!-- Monthly Volume -->
+        <div class="col-xl-3 col-sm-6">
+            <div class="card stat-card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-shape bg-success bg-opacity-10 text-success me-3">
+                            <i class="bi bi-graph-up fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small fw-bold text-uppercase mb-0">{% trans "Monthly Visits" %}</p>
+                            <h3 class="fw-bold mb-0">{{ stats.visits_month }}</h3>
+                        </div>
+                    </div>
+                    <p class="mb-0 mt-3 small text-muted">
+                        {% trans "Total to date" %}: <strong>{{ stats.visits_total }}</strong>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <!-- Inactive/Completed -->
+        <div class="col-xl-3 col-sm-6">
+            <div class="card stat-card shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="icon-shape bg-secondary bg-opacity-10 text-secondary me-3">
+                            <i class="bi bi-archive fs-4"></i>
+                        </div>
+                        <div>
+                            <p class="text-muted small fw-bold text-uppercase mb-0">{% trans "Inactive/Closed" %}</p>
+                            <h3 class="fw-bold mb-0">{{ stats.inactive_cases }}</h3>
+                        </div>
+                    </div>
+                    <p class="mb-0 mt-3 small text-muted">
+                        {% trans "Cured, Completed, or LTFU" %}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Table Area -->
+    <div class="table-container mb-4">
+        <div class="p-4 border-bottom bg-white">
+            <form method="get" class="row g-3 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group search-input-group">
+                        <span class="input-group-text bg-white border-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="q" class="form-control" 
+                               placeholder="{% trans 'Search by name, ID, or TB Reg Number...' %}" value="{{ query }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <button type="submit" class="btn btn-dark btn-dots px-4">{% trans "Filter Results" %}</button>
+                    {% if query %}
+                        <a href="{% url 'tb_treatment_dashboard' %}" class="btn btn-link text-muted text-decoration-none small">{% trans "Clear Search" %}</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table tb-table mb-0 align-middle">
+                <thead>
+                    <tr>
+                        <th class="ps-4">{% trans "Patient" %}</th>
+                        <th>{% trans "TB Reg Number" %}</th>
+                        <th>{% trans "Diagnosis / Category" %}</th>
+                        <th class="text-center">{% trans "Start Date" %}</th>
+                        <th class="text-center">{% trans "Total Visits" %}</th>
+                        <th class="text-center">{% trans "Status" %}</th>
+                        <th class="text-end pe-4">{% trans "Actions" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for case in cases %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <div class="patient-avatar me-3">
+                                    {{ case.patient.full_name|slice:":1"|upper }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">{{ case.patient.full_name }}</div>
+                                    <div class="text-muted smaller">ID: {{ case.patient.patient_id }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark border-0 p-2 fw-bold" style="font-family: monospace;">
+                                {{ case.tb_registration_number }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="fw-semibold">{{ case.get_case_type_display }}</div>
+                            <div class="text-muted smaller">{{ case.get_category_display }}</div>
+                        </td>
+                        <td class="text-center">
+                            <div class="fw-bold">{{ case.date_started|date:"d M Y" }}</div>
+                            <div class="text-muted smaller">{{ case.date_started|timesince }} {% trans "ago" %}</div>
+                        </td>
+                        <td class="text-center">
+                            <div class="d-inline-flex align-items-center justify-content-center bg-light rounded-pill px-3 py-1">
+                                <i class="bi bi-journal-medical text-primary me-2"></i>
+                                <span class="fw-bold">{{ case.tb_visit_count }}</span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            {% if case.is_active %}
+                                <span class="status-badge bg-success bg-opacity-10 text-success">
+                                    <i class="bi bi-record-fill me-1"></i>{% trans "ACTIVE" %}
+                                </span>
+                            {% else %}
+                                <span class="status-badge bg-secondary bg-opacity-10 text-secondary">
+                                    {{ case.get_outcome_display|default:"INACTIVE" }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="dropdown">
+                                <a href="{% url 'tb_treatment_card' case.uuid %}" class="btn btn-sm btn-danger btn-dots">
+                                    <i class="bi bi-card-checklist me-1"></i> {% trans "Treatment Card" %}
+                                </a>
+                                <button class="btn btn-sm btn-outline-secondary btn-dots ms-1" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                    <li><a class="dropdown-item" href="{% url 'patient_dashboard' case.patient.uuid %}"><i class="bi bi-person-circle me-2"></i>{% trans "Patient Profile" %}</a></li>
+                                    <li><a class="dropdown-item" href="#"><i class="bi bi-pencil me-2"></i>{% trans "Edit Case Info" %}</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-archive me-2"></i>{% trans "Close Case" %}</a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <div class="py-4">
+                                <i class="bi bi-search fs-1 text-muted opacity-25"></i>
+                                <h5 class="mt-3 text-muted">{% trans "No active TB cases found matching your search." %}</h5>
+                                <a href="{% url 'tb_case_create' %}" class="btn btn-danger btn-dots mt-2">{% trans "Register First Case" %}</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if cases.has_other_pages %}
+        <div class="p-4 bg-light border-top">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if cases.has_previous %}
+                        <li class="page-item"><a class="page-link border-0 shadow-none" href="?page={{ cases.previous_page_number }}{% if query %}&q={{ query }}{% endif %}">{% trans "Previous" %}</a></li>
+                    {% endif %}
+                    
+                    {% for i in cases.paginator.page_range %}
+                        {% if cases.number == i %}
+                            <li class="page-item active"><span class="page-link border-0">{{ i }}</span></li>
+                        {% elif i > cases.number|add:'-3' and i < cases.number|add:'3' %}
+                            <li class="page-item"><a class="page-link border-0" href="?page={{ i }}{% if query %}&q={{ query }}{% endif %}">{{ i }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if cases.has_next %}
+                        <li class="page-item"><a class="page-link border-0 shadow-none" href="?page={{ cases.next_page_number }}{% if query %}&q={{ query }}{% endif %}">{% trans "Next" %}</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

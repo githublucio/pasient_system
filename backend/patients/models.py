@@ -211,6 +211,7 @@ class Patient(models.Model):
 
     # Images for Card
     qr_code_image = models.ImageField(upload_to='qrcodes/', blank=True, null=True)
+    qr_code_data = models.CharField(_('QR Code Data'), max_length=255, blank=True, null=True)
     barcode_image = models.ImageField(upload_to='barcodes/', blank=True, null=True)
 
     registration_fee = models.DecimalField(
@@ -245,6 +246,12 @@ class Patient(models.Model):
             self.municipio.name if self.municipio else '',
         ]
         return ', '.join(p for p in parts if p) or self.address
+
+    @property
+    def active_tb_case(self):
+        """Returns the current active TB case for the patient if it exists."""
+        from medical_records.models import TBCase
+        return TBCase.objects.filter(patient=self, is_active=True).first()
 
     @staticmethod
     def generate_next_id():

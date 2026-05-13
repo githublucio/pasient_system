@@ -1,1 +1,1 @@
-web: cd backend && python manage.py collectstatic --no-input && python manage.py migrate && python import_production_data.py && python fix_jose.py && python fix_cloud_perms.py && python regenerate_assets.py && gunicorn clinic_core.wsgi
+web: cd backend && python manage.py collectstatic --no-input && python manage.py migrate && python import_production_data.py && python seed_system.py && python fix_cloud_perms.py && python regenerate_assets.py && gunicorn clinic_core.wsgi

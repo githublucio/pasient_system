@@ -1,49 +1,58 @@
 import os
 import django
 
-# Setup Django environment
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'clinic_core.settings')
 django.setup()
 
 from django.contrib.auth.models import User
-from patients.models import Patient, PatientID, DailyQueue
-from medical_records.models import Visit, TBCase, HIVAssessment, Diagnosis
-from staff.models import StaffProfile
-from appointments.models import Appointment
-from billing.models import Invoice, Payment
-from pharmacy.models import MedicineInventory, Prescription
-from laboratory.models import LabRequest
-from django.db import connection
+from patients.models import Patient
+from medical_records.models import Visit
+from staff.models import StaffProfile, Department, StaffCategory
 
-def reset_data():
-    print("--- Memulai Pembersihan Database (FULL RESET) ---")
+def full_reset_and_setup():
+    print("--- Memulai Pembersihan Total ---")
+    # Hapus semua data
+    Visit.objects.all().delete()
+    Patient.objects.all().delete()
+    StaffProfile.objects.all().delete()
+    User.objects.all().delete()
+    print("Database sudah dikosongkan.")
+
+    # 1. Buat Superuser (Admin)
+    print("Membuat Admin baru...")
+    admin = User.objects.create_superuser('admin', 'admin@example.com', 'admin123')
     
-    try:
-        # Hapus data transaksi dengan urutan yang benar (menghindari constraint error)
-        print("Menghapus data transaksi (Visits, Billing, Pharmacy, Lab)...")
-        Payment.objects.all().delete()
-        Invoice.objects.all().delete()
-        Prescription.objects.all().delete()
-        LabRequest.objects.all().delete()
-        Appointment.objects.all().delete()
-        TBCase.objects.all().delete()
-        HIVAssessment.objects.all().delete()
-        Visit.objects.all().delete()
-        
-        # Hapus data pasien
-        print("Menghapus data pasien...")
-        PatientID.objects.all().delete()
-        Patient.objects.all().delete()
-        DailyQueue.objects.all().delete()
-        
-        # Hapus data staff dan user
-        print("Menghapus data user dan staff...")
-        StaffProfile.objects.all().delete()
-        User.objects.all().delete()
-        
-        print("--- DATABASE BERSIH TOTAL ---")
-    except Exception as e:
-        print(f"Error saat membersihkan data: {str(e)}")
+    # 2. Buat Departemen TB (Jika belum ada)
+    tb_dept, _ = Department.objects.get_or_create(name='Tuberculosis', code='TB')
+    doc_cat, _ = StaffCategory.objects.get_or_create(name='Dokter')
+
+    # 3. Buat User Jose
+    print("Membuat user Jose...")
+    jose = User.objects.create_user('jose', 'jose@example.com', 'jose123')
+    jose.is_staff = True
+    jose.save()
+    
+    # Berikan Jose Staff Profile di departemen TB
+    StaffProfile.objects.create(
+        user=jose,
+        department=tb_dept,
+        category=doc_cat,
+        is_active=True
+    )
+    
+    # Berikan izin ke Jose agar bisa akses Dashboard
+    from django.contrib.auth.models import Permission
+    from django.contrib.contenttypes.models import ContentType
+    
+    # Tambahkan izin dasar yang diperlukan
+    permissions = Permission.objects.filter(codename__in=[
+        'view_menu_medical_records', 'view_patient', 'add_visit', 'change_visit'
+    ])
+    jose.user_permissions.set(permissions)
+
+    print("--- SETUP SELESAI ---")
+    print("User Admin: admin / admin123")
+    print("User Jose: jose / jose123")
 
 if __name__ == "__main__":
-    reset_data()
+    full_reset_and_setup()

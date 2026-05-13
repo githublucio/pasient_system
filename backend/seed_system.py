@@ -13,9 +13,12 @@ def run_seed():
     print("--- Memulai Seeding System Dasar ---")
     
     # 1. Buat Superuser jika belum ada
-    if not User.objects.filter(username='admin').exists():
-        User.objects.create_superuser('admin', 'admin@example.com', 'admin123')
+    admin_user = User.objects.filter(username='admin').first()
+    if not admin_user:
+        admin_user = User.objects.create_superuser('admin', 'admin@example.com', 'admin123')
         print("Admin user created (admin/admin123)")
+    else:
+        print("Admin user already exists.")
 
     # 2. Buat Departemen Dasar
     depts = [
@@ -47,7 +50,22 @@ def run_seed():
         Room.objects.get_or_create(code=r['code'], defaults={'name': r['name'], 'order': r['order']})
     print("Rooms created.")
 
-    # 5. Pastikan Jose ada
+    # 5. Pastikan Admin & Jose punya profil
+    adm_dept, _ = Department.objects.get_or_create(code='ADM', defaults={'name': 'Administrasi'})
+    
+    # Profil untuk Admin
+    StaffProfile.objects.get_or_create(
+        user=admin_user,
+        defaults={
+            'staff_id': 'STAFF-ADMIN',
+            'department': adm_dept,
+            'category': cat_paramedis,
+            'position': pos_perawat,
+            'is_active': True
+        }
+    )
+    print("Admin profile ensured.")
+
     jose = User.objects.filter(username='jose').first()
     if not jose:
         jose = User.objects.create_user('jose', 'jose@example.com', 'jose123')

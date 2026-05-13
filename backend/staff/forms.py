@@ -35,6 +35,12 @@ class IntegratedStaffForm(forms.ModelForm):
             seq = 1
         return f"CLB{seq:04d}"
 
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if User.objects.filter(username=username).exists():
+            raise forms.ValidationError(_("Username already exists. Please choose another one."))
+        return username
+
     def save(self, commit=True):
         user = User.objects.create_user(
             username=self.cleaned_data['username'],
